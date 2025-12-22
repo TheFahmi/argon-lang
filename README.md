@@ -18,22 +18,22 @@ Argon Toolchain uses Docker to ensure a consistent build environment.
 Generate a full MVC Backend skeleton:
 ```bash
 # Git Bash / Linux / Mac
-./ar new my_api
+./argon new my_api
 
 # Windows CMD
-ar new my_api
+argon new my_api
 ```
 
 ### 2. Run
 Compile and run the project immediately (starts HTTP server on port 3000):
 ```bash
-./ar run my_api
+./argon run my_api
 ```
 
 ### 3. Build only
 Produces a native executable inside `dist/`:
 ```bash
-./ar build my_api
+./argon build my_api
 ```
 
 ## Project Structure
