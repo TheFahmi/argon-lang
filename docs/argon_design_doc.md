@@ -1,204 +1,101 @@
-# Argon Language: Initial Design Document
+# Argon Language: Architecture & Design
 
-**Version:** 0.1.0-draft
-**Target Audience:** Systems Programmers, Compiler Engineers
-**Code Name:** Argon
-
----
-
-## 1. The Safety Mechanism: "Scoped Regions & Linear Capabilities"
-
-The biggest hurdle in Rust is the cognitive load of lifetime annotations (`'a`) and the Borrow Checker's granular analysis. Argon proposes a different model that achieves memory safety without GC, focusing on **First-Class Regions** combined with **Linear Capabilities**.
-
-### The Core Concept: Allocation Regions (Arenas) as First-Class Citizens
-Instead of tracking the lifetime of every single object individually, Argon groups object lifetimes into *Regions*.
-
-1.  **Region-Based Memory Management (RBMM):**
-    *   All heap allocations must happen within a `Region`.
-    *   A Region is a memory arena (bump allocator). Deallocation happens *en masse* when the Region goes out of scope.
-    *   This eliminates memory fragmentation and creates extremely fast allocation/deallocation cycles (zero-cost abstraction).
-    *   **Safety Rule:** A reference to an object in Region A cannot outlive Region A.
-
-2.  **Linear Capabilities (Ownership 2.0):**
-    *   Objects that own resources (sockets, file handles, or unique pointers to other regions) are *Linear*.
-    *   They must be used exactly once (moved) or explicitly destroyed.
-    *   There is no "implicit drop" for complex resources, forcing the developer to handle cleanup paths (eliminating resource leaks).
-
-3.  **Why it kills Rust's Complexity:**
-    *   No explicit lifetime parameters `<'a>` on functions in 90% of cases.
-    *   The compiler infers lifetimes based on Region scoping.
-    *   Cyclic data structures (a pain in Rust) are trivial inside a single Region (references within the same region can cycle safely).
-
-### Comparison
-*   **Rust:** `&'a val`. Granular, precise, but high cognitive load.
-*   **Argon:** `val @ Region`. Coarser (bulk freeing), but significantly simpler mental model and faster runtime performance for batch workloads (compilers, game engines, servers).
+**Version:** 2.1.0 (Self-Hosted)
+**Status:** Production Ready (Toolchain & MVC)
+**Backend:** LLVM 15+
 
 ---
 
-## 2. Syntax Philosophy & Examples
+## 1. Introduction
+Argon is a high-performance, self-hosted systems programming language designed to provide memory safety without a Garbage Collector (GC) or the complexity of Rust's lifetime annotations. It achieves this through **Region-Based Memory Management (RBMM)** and **Linear Capabilities**.
 
-Argon aims for a "Refined C-Family" aesthetic. usage is read-heavy, so explicit keywords are preferred over symbols.
-
-### Philosophy
-*   **Explicit Mutability:** Everything is immutable by default.
-*   **Expression-Based:** Like Rust/Ruby, blocks return values.
-*   **No Header Files:** Module-based import system.
-
-### Examples
-
-#### Variable Declaration
-```argon
-// Immutable by default
-let pi: f64 = 3.14159;
-
-// Mutable variable
-mut counter: i32 = 0;
-counter += 1;
-
-// Type Inference
-let message = "Hello, World"; // Inferred as StringSlice
-```
-
-#### Functions & Return Values
-```argon
-// explicit 'fn' keyword
-// return type follows '->'
-fn calculate_area(radius: f64) -> f64 {
-    let area = 3.14 * radius * radius;
-    return area; // Explicit return preferred, but implicit last-expression works too
-}
-
-// Result type for error handling (algebraic implementation)
-fn divide(a: i32, b: i32) -> Result<i32, Error> {
-    if (b == 0) {
-        return Error("Division by zero");
-    }
-    return Ok(a / b);
-}
-```
-
-#### Structs & Methods (Data-Oriented)
-Argon separates Data (Structs) from Behavior (Traits/Impls).
-
-```argon
-// A pure data structure (POD)
-struct Vector3 {
-    x: f32,
-    y: f32,
-    z: f32,
-}
-
-// Implementation block
-impl Vector3 {
-    // Static constructor ("new" is just a convention)
-    fn new(x: f32, y: f32, z: f32) -> Vector3 {
-        Vector3 { x, y, z }
-    }
-
-    // Method taking a reference (borrowing)
-    fn mag_sq(self: &Vector3) -> f32 {
-        self.x * self.x + self.y * self.y + self.z * self.z
-    }
-    
-    // Method modifying self
-    fn normalize(mut self: &Vector3) {
-        let m = sqrt(self.mag_sq());
-        self.x /= m;
-        self.y /= m;
-        self.z /= m;
-    }
-}
-```
-
-#### Safety in Action: The `region` block
-This demonstrates the Region-based safety.
-
-```argon
-fn process_requests() {
-    // 1. Permanent/Global Region exists by default (heap)
-    let global_config = new(Global) Config();
-
-    // 2. Transitive Region (Scope-based Arena)
-    region request_scope {
-        // 'alloc' keyword specifies the region
-        let user_data = alloc(request_scope) UserData::fetch(101);
-        
-        // References are valid here
-        validate(user_data);
-        
-        // COMPILE ERROR: Cannot move 'user_data' out of 'request_scope'
-        // global_config.last_user = user_data; 
-    } 
-    // 'request_scope' acts like an Arena. 
-    // All memory allocated via 'alloc(request_scope)' is freed here instantly.
-    // No individual destructors run for POD types (speed!).
-}
-```
+Argon has reached a major milestone: **Self-Hosting**. The compiler (`compiler.ar`) is written in Argon itself and runs on the `argon-toolchain` Docker environment, generating optimized LLVM IR.
 
 ---
 
-## 3. The Compiler Architecture Roadmap
+## 2. Core Concepts
 
-We will write the bootstrap compiler in **Modern C++ (C++20)**. This gives us direct, zero-overhead access to the LLVM C++ API (which is written in C++) and establishes Argon as a standalone system without depending on its rival's toolchain.
+### 2.1 Region-Based Memory Management (RBMM)
+Instead of tracking individual object lifetimes, Argon groups allocations into **Regions** (Arenas).
+- **Allocations**: Simply bump a pointer in the current region (O(1)).
+- **Deallocations**: Free the entire region at once when it goes out of scope (O(1)).
+- **Safety**: The compiler ensures no reference outlives its region.
 
-### Phase 0: Setup
-*   **Language:** C++20 (GCC 11+ or Clang 14+).
-*   **Build System:** CMake (Standard for LLVM-based projects).
-*   **Dependencies:** `LLVM` (Core, Support, IR, Analysis, Target).
+### 2.2 Linear Capabilities
+Resources like Sockets, File Handles, or Unique Pointers are **Linear**.
+- **Must be used exactly once** (moved) or explicitly closed.
+- Prevents resource leaks at compile time.
 
-### Phase 1: Frontend (The Parser)
-**Goal:** Source Code -> Abstract Syntax Tree (AST).
-1.  **Lexer (Tokenization):** A hand-written state-machine lexer in C++.
-    *   Input: `std::string_view` (source file).
-    *   Output: `std::vector<Token>`.
-    *   Why hand-written? Maximum speed and easiest to generate "did you mean?" error suggestions.
-2.  **Parser (Syntax Analysis):** **Recursive Descent Parser**.
-    *   Structure: A class `Parser` consuming the token stream.
-    *   Output: `std::unique_ptr<AST::Node>` (Smart pointers for AST ownership).
-3.  **Module System:** A simple filesystem crawler to resolve `import` statements.
+### 2.3 Data Representation (Tagged Pointers)
+Creating a truly self-hosted dynamic system required a uniform data representation. Use of **Tagged Integers** avoids heap allocation for small numbers:
+- **Integers**: Represented as `(n << 1) | 1`. The lowest bit is always `1`.
+- **Pointers**: Represented as raw 64-bit addresses. The lowest bit is always `0` (due to alignment).
+- **Booleans**: `true` is represented as `3` (integer 1), and `false` as `1` (integer 0).
+- **Null**: Represented as `0`.
 
-### Phase 2: Semantic Analysis (The Brain)
-**Goal:** AST -> Typed High-Level IR (HIR) + Safety Guarantees.
-*   **Symbol Table:** `std::unordered_map<std::string, SymbolInfo>` handling scopes.
-*   **Type Checker:** Implement a unification algorithm (Hindley-Milner) tailored for C-like syntax.
-*   **The "Region Verifier" (The Police):**
-    *   Traverse the AST *after* type checking.
-    *   Simulate the "Region Stack".
-    *   Ensure no pointer in `Region<Inner>` is assigned to a variable in `Region<Outer>` without a linear move.
+---
 
-### Phase 3: Code Generation (The Backend)
-**Goal:** HIR -> LLVM IR -> Native Machine Code.
-1.  **LLVM Context:** Initialize `llvm::LLVMContext` and `llvm::Module`.
-2.  **IR Builder:** Use `llvm::IRBuilder<>` to generate instructions.
-    *   Data structures (structs) map to `llvm::StructType`.
-    *   Regions map to calls to intrinsic memory functions (e.g., `@argon_alloc(region_ptr, size)`).
-3.  **Optimization:** Use the new `llvm::PassManagerBuilder` to run default O3 pipelines.
-4.  **Driver:** A simple `main.cpp` that invokes `clang` or `lld` to link the object files.
+## 3. Architecture
 
-### Implementation Status (✓ = Done)
+### 3.1 The Compiler (`compiler.ar`)
+The compiler is a monolithic application written in Argon (approx. 1500 lines).
+1.  **Lexer**: Tokenizes source code (`.ar` files), handling complex string escapes and operators.
+2.  **Parser**: Recursive Descent parser generating a lightweight AST. Includes support for `if/else if/else`, `while` loops, and function definitions.
+3.  **Code Generator**: Emits LLVM IR (Text format). Uses tagged integer arithmetic.
+    - **Fast Path Optimization**: Detects integer parsing at compile time to emit native LLVM instructions (`add`, `sub`, `icmp`) instead of runtime calls, guarding them with runtime type checks.
+    - **Tail Call Optimization (TCO)**: Automatically converts recursive function calls into jumps where possible.
+4.  **Backend**: Invokes `clang++` to optimize LLVM IR and link with the runtime.
 
-| Component | Status | File |
-|-----------|--------|------|
-| Project Setup | ✓ | `CMakeLists.txt` |
-| Token Definitions | ✓ | `include/argon/Token.h` |
-| Lexer | ✓ | `include/argon/Lexer.h`, `src/Lexer.cpp` |
-| AST Nodes | ✓ | `include/argon/AST.h` |
-| Parser | ✓ | `include/argon/Parser.h`, `src/Parser.cpp` |
-| Type System | ✓ | `include/argon/Type.h` |
-| Type Checker | ✓ | `include/argon/TypeChecker.h`, `src/TypeChecker.cpp` |
-| Region Verifier | ✓ | `include/argon/RegionVerifier.h`, `src/RegionVerifier.cpp` |
-| Code Generator | ✓ | `include/argon/CodeGen.h`, `src/CodeGen.cpp` |
-| Main Driver | ✓ | `src/main.cpp` |
+### 3.2 The Runtime (`runtime.rs`)
+A minimal runtime written in Rust (compiled to `libruntime_argon.a`).
+- Provides Intrinsics: `argon_str_new`, `argon_print`, `argon_add`.
+- Networking: `argon_listen`, `argon_accept`, `argon_socket_read`.
+- Memory: Bump allocator primitives.
 
-### Next Steps (TODO)
-1.  ~~Initialize project: `mkdir argc && cd argc`.~~ ✓
-2.  ~~Create `CMakeLists.txt` finding LLVM package.~~ ✓
-3.  ~~Write `include/argon/Token.h`.~~ ✓
-4.  Implement struct/impl parsing.
-5.  Add function parameters and return type parsing.
-6.  Implement `alloc(region)` expression parsing.
-7.  Add match/pattern matching syntax.
-8.  Implement trait system.
-9.  Add standard library runtime (argon_alloc, argon_free_region).
-10. Self-hosting: rewrite compiler in Argon itself.
+### 3.3 The Toolchain (`argon`)
+A Docker-based wrapper ensuring consistent builds across Windows, Linux, and Mac.
+- **Scaffolding**: `argon new` generates MVC project structures.
+- **Bundler**: Merges source files for compilation.
+- **Builder**: Compiles and Links native binaries.
 
+---
+
+## 4. Syntax & Features
+
+### 4.1 Basic Syntax
+```typescript
+fn main() {
+    let x = 10;
+    print("Hello: " + x);
+}
+```
+
+### 4.2 Networking (v2.1)
+```typescript
+fn start_server() {
+    let s = argon_listen(3000);
+    while (1) {
+        let c = argon_accept(s);
+        if (c != -1) {
+             argon_socket_write(c, "HTTP/1.1 200 OK\r\n\r\nHello");
+             argon_socket_close(c);
+        }
+    }
+}
+```
+
+### 4.3 MVC Structure
+Argon v2.1 promotes structured backend development:
+- `controllers/`: Request handling.
+- `services/`: Business logic.
+- `models/`: Data persistence.
+
+---
+
+## 5. Roadmap
+1.  [x] Self-Hosting (v1.0)
+2.  [x] Native Networking (v2.1)
+3.  [x] Tagged Integer Optimization
+4.  [ ] Multi-threading support (Arc/Mutex)
+5.  [ ] Advanced Type System (Generics/Traits)
+6.  [ ] Package Manager (dependency resolution)
