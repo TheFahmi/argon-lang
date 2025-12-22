@@ -1,4 +1,5 @@
 # Argon Programming Language (v2.1)
+![Argon Logo](logo.png)
 
 Argon is a high-performance, self-hosted systems programming language that compiles directly to LLVM IR and Native Machine Code.
 Version 2.1 introduces native Networking capabilities (HTTP Server) and a production-ready MVC Project Generator.
