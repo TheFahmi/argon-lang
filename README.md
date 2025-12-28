@@ -1,15 +1,15 @@
-# Argon Programming Language (v2.1)
+# Argon Programming Language (v2.3)
 ![Argon Logo](logo.png)
 
-Argon is a high-performance, self-hosted systems programming language that compiles directly to LLVM IR and Native Machine Code.
-Version 2.1 introduces native Networking capabilities (HTTP Server) and a production-ready MVC Project Generator.
+Argon is a high-performance, **self-hosted** systems programming language that compiles directly to LLVM IR and Native Machine Code.
 
-## Features
-- **Self-Hosted**: Compiler written in Argon (`self-host/compiler.argon`).
-- **Native Backend**: Uses LLVM for optimized native binary generation.
-- **Networking**: Built-in TCP Socket support (`listen`, `accept`, `read`, `write`).
-- **Toolchain**: Integrated Project Scaffolding, Bundler, and Builder.
-- **Performance**: High-speed integer arithmetic (tagged pointers optimized).
+## ✨ Highlights
+- **Self-Hosted**: Compiler written in Argon itself (`self-host/compiler.ar`)
+- **Verified**: Stage 1 (self-compiled) produces identical output when compiling itself
+- **Native Backend**: Uses LLVM for optimized native binary generation
+- **Networking**: Built-in TCP Socket support (v2.1)
+- **Multi-threading**: Atomics, Mutex, and Thread support (v2.3)
+- **High Performance**: Tagged pointer optimization for fast integer arithmetic
 
 ## Quick Start
 Argon Toolchain uses Docker to ensure a consistent build environment.
@@ -50,13 +50,37 @@ my_api/
 └── tests/           # Unit Tests
 ```
 
-## Networking API (v2.1)
-The runtime now supports primitive TCP networking:
-- `argon_listen(port)`: Binds to 0.0.0.0:port. Returns server socket ID.
-- `argon_accept(server)`: Blocks and waits for connection. Returns client socket ID.
-- `argon_socket_read(client)`: Reads data from client. Returns String.
-- `argon_socket_write(client, data)`: Writes string data to client.
-- `argon_socket_close(client)`: Closes connection.
+## API Reference
+
+### Networking (v2.1)
+| Function | Description |
+|----------|-------------|
+| `argon_listen(port)` | Bind to 0.0.0.0:port, returns server ID |
+| `argon_accept(server)` | Accept connection, returns client ID |
+| `argon_socket_read(client)` | Read data from client |
+| `argon_socket_write(client, data)` | Write string to client |
+| `argon_socket_close(client)` | Close connection |
+
+### Multi-threading (v2.3)
+| Function | Description |
+|----------|-------------|
+| `argon_thread_spawn(fn)` | Spawn thread with function |
+| `argon_thread_join(id)` | Wait for thread completion |
+| `argon_mutex_new()` | Create mutex |
+| `argon_mutex_lock(id)` | Lock mutex |
+| `argon_mutex_unlock(id)` | Unlock mutex |
+| `argon_atomic_new(v)` | Create atomic integer |
+| `argon_atomic_load(id)` | Load atomic value |
+| `argon_atomic_store(id, v)` | Store atomic value |
+| `argon_atomic_add(id, v)` | Atomic add, returns old value |
+| `argon_atomic_cas(id, exp, new)` | Compare-and-swap |
+| `argon_sleep(ms)` | Sleep for milliseconds |
 
 ## Requirements
 - **Docker**: The toolchain runs inside the `argon-toolchain` image.
+
+## Version History
+- **v2.3**: Multi-threading support (Atomics, Mutex, Sleep)
+- **v2.2**: Verified Self-Hosting (Stage 1 == Stage 2)
+- **v2.1**: Native Networking (TCP Sockets)
+- **v1.0**: Self-Hosting Compiler
