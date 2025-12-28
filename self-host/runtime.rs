@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 #![allow(unused_imports)]
+#![allow(static_mut_refs)]
 
 use std::ffi::CStr;
 use std::os::raw::c_char;

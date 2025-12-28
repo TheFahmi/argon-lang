@@ -1,24 +1,16 @@
-# Argon Toolchain Build
-FROM argon-bench as cache
-
+# Argon Toolchain v2.3
+# Pre-built with multi-threading support
 FROM rust:slim
-RUN apt-get update && apt-get install -y clang llvm
+
+RUN apt-get update && apt-get install -y clang llvm && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Get Rust interpreter from cache
-COPY --from=cache /app/argon ./argon
+# Copy pre-built compiler and runtime
+COPY self-host/argonc_v23 /usr/bin/argonc
+COPY self-host/libruntime_new.a /usr/lib/libruntime_argon.a
 
-# Copy source files
-COPY self-host ./self-host
-COPY bootstrap.sh .
-
-# Run bootstrap
-RUN chmod +x bootstrap.sh
-RUN ./bootstrap.sh
-
-# Install globally
-RUN cp argonc /usr/bin/argonc
-RUN cp libruntime_rust.a /usr/lib/libruntime_argon.a
+# Verify installation
+RUN chmod +x /usr/bin/argonc
 
 CMD ["bash"]
