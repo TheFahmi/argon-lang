@@ -1,5 +1,5 @@
 // ============================================
-// ARGON SELF-HOSTING COMPILER v2.0
+// ARGON SELF-HOSTING COMPILER v2.3
 // Written entirely in Argon
 // Complete Lexer, Parser, and Code Generator
 // ============================================
@@ -1600,7 +1600,7 @@ fn cg_generate(nodes: any) {
 
 fn compile_file(filename: string) {
     print("========================================");
-    print("  ARGON SELF-HOSTING COMPILER v2.0");
+    print("  ARGON SELF-HOSTING COMPILER v2.3");
     print("  Written 100% in Argon Language");
     print("========================================");
     print("");
