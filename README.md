@@ -1,4 +1,4 @@
-# Argon Programming Language (v2.4)
+# Argon Programming Language (v2.5)
 ![Argon Logo](logo.png)
 
 Argon is a high-performance, **self-hosted** systems programming language that compiles directly to LLVM IR and Native Machine Code.
@@ -7,6 +7,7 @@ Argon is a high-performance, **self-hosted** systems programming language that c
 - **Self-Hosted**: Compiler written in Argon itself (`self-host/compiler.ar`)
 - **Verified**: Stage 1 (self-compiled) produces identical output when compiling itself
 - **Native Backend**: Uses LLVM for optimized native binary generation
+- **Methods**: Support for methods on structs (v2.5)
 - **Structs**: Full struct support with definitions, instantiation, and field access (v2.4)
 - **Networking**: Built-in TCP Socket support (v2.1)
 - **Multi-threading**: Atomics, Mutex, and Thread support (v2.3)
@@ -52,6 +53,24 @@ my_api/
 ```
 
 ## Language Features
+
+### Methods (v2.5)
+```javascript
+struct Circle {
+    radius: int
+}
+
+impl Circle {
+    fn area(self) {
+        return 3 * self.radius * self.radius;
+    }
+}
+
+fn main() {
+    let c = Circle { radius: 10 };
+    print(c.area()); // 300
+}
+```
 
 ### Structs (v2.4)
 ```javascript
