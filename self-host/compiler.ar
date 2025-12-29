@@ -1,8 +1,8 @@
 // ============================================
-// ARGON SELF-HOSTING COMPILER v2.6
+// ARGON SELF-HOSTING COMPILER v2.7
 // Written entirely in Argon
 // Complete Lexer, Parser, and Code Generator
-// With Struct, Method, Enum & Match Support
+// With Struct, Method, Enum, Match & Modules
 // ============================================
 
 let OPT_UNSAFE = 0; // Optimization flag
@@ -56,6 +56,8 @@ let TOK_STRUCT = 56;
 let TOK_ENUM = 58;
 let TOK_MATCH = 59;
 let TOK_ARROW = 61;
+let TOK_IMPORT = 62;
+let TOK_FROM = 63;
 
 // =================== LEXER ===================
 
@@ -367,6 +369,8 @@ fn tokenize(source: string) {
             else if (id_str == "struct") { tokens = push(tokens, make_token(TOK_STRUCT, "struct")); }
             else if (id_str == "enum") { tokens = push(tokens, make_token(TOK_ENUM, "enum")); }
             else if (id_str == "match") { tokens = push(tokens, make_token(TOK_MATCH, "match")); }
+            else if (id_str == "import") { tokens = push(tokens, make_token(TOK_IMPORT, "import")); }
+            else if (id_str == "from") { tokens = push(tokens, make_token(TOK_FROM, "from")); }
             else { tokens = push(tokens, make_token(TOK_ID, id_str)); }
         }
         // Skip unknown
@@ -403,6 +407,7 @@ let AST_FIELD_ACCESS = 102;
 let AST_METHOD_CALL = 103;
 let AST_ENUM_DEF = 110;
 let AST_MATCH = 111;
+let AST_IMPORT = 120;
 
 // =================== PARSER ===================
 
@@ -1071,6 +1076,13 @@ fn parse_program(tokens: any) {
         } else if (xz_cur_type == 58) { // TOK_ENUM = 58
             let xz_en = parse_enum_def();
             xz_nodes = push(xz_nodes, xz_en);
+        } else if (xz_cur_type == 62) { // TOK_IMPORT = 62
+            // import "filename";
+            p_advance(); // skip 'import'
+            let import_path = p_current_val();
+            p_expect(12); // TOK_STR = 12
+            p_expect(50); // TOK_SEMI = 50
+            xz_nodes = push(xz_nodes, [120, import_path]); // AST_IMPORT = 120
         } else {
             // Assume it's a statement (let, etc)
             let xz_stmt = parse_statement();
@@ -2247,9 +2259,9 @@ fn cg_generate(cg_input_nodes: any) {
 
 fn compile_file(filename: string) {
     print("========================================");
-    print("  ARGON SELF-HOSTING COMPILER v2.6");
+    print("  ARGON SELF-HOSTING COMPILER v2.7");
     print("  Written 100% in Argon Language");
-    print("  With Struct, Method, Enum & Match");
+    print("  With Modules & Pattern Matching");
     print("========================================");
     print("");
     print("Compiling: " + filename);
@@ -2271,11 +2283,65 @@ fn compile_file(filename: string) {
     // Phase 2: Parsing
     print("[2/3] Parsing...");
     let ast = parse_program(tokens);
-    print("      Parsed " + len(ast) + " functions");
+    print("      Parsed " + len(ast) + " top-level items");
     
+    // Phase 2.5: Module Resolution (process imports)
+    let imported_files = [];
+    let final_ast = [];
+    let ast_i = 0;
+    while (ast_i < len(ast)) {
+        let node = ast[ast_i];
+        if (node[0] == 120) { // AST_IMPORT
+            let import_path = node[1];
+            
+            // Check if already imported (avoid circular imports)
+            let already_imported = false;
+            let imp_j = 0;
+            while (imp_j < len(imported_files)) {
+                if (imported_files[imp_j] == import_path) {
+                    already_imported = true;
+                    imp_j = len(imported_files);
+                }
+                imp_j = imp_j + 1;
+            }
+            
+            if (already_imported == false) {
+                imported_files = push(imported_files, import_path);
+                
+                // Read and parse imported file
+                if (fileExists(import_path)) {
+                    print("      Importing: " + import_path);
+                    let imp_source = readFile(import_path);
+                    let imp_tokens = tokenize(imp_source);
+                    let imp_ast = parse_program(imp_tokens);
+                    
+                    // Merge imported AST nodes (excluding imports)
+                    let imp_k = 0;
+                    while (imp_k < len(imp_ast)) {
+                        let imp_node = imp_ast[imp_k];
+                        if (imp_node[0] != 120) { // Don't re-add imports
+                            final_ast = push(final_ast, imp_node);
+                        }
+                        imp_k = imp_k + 1;
+                    }
+                } else {
+                    print("      Warning: Import not found: " + import_path);
+                }
+            }
+        } else {
+            // Regular node, keep it
+            final_ast = push(final_ast, node);
+        }
+        ast_i = ast_i + 1;
+    }
+    
+    if (len(imported_files) > 0) {
+        print("      Imported " + len(imported_files) + " modules");
+    }
+
     // Phase 3: Code Generation
     print("[3/3] Code Generation (LLVM IR)...");
-    let llvm_ir = cg_generate(ast);
+    let llvm_ir = cg_generate(final_ast);
     print("      Generated " + len(llvm_ir) + " bytes of LLVM IR");
     print("");
     

@@ -181,6 +181,6 @@ Argon v2.1 promotes structured backend development:
 7.  [x] Methods on structs (`p.method()`) (v2.5)
 8.  [x] Enum types with pattern matching (v2.6)
 9.  [ ] Generic types (`Array<T>`)
-10. [ ] Module system / imports
+10. [x] Module system / imports (v2.7)
 11. [ ] Package Manager (dependency resolution)
 12. [ ] LSP (Language Server Protocol) for IDE support

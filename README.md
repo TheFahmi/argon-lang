@@ -1,4 +1,4 @@
-# Argon Programming Language (v2.6)
+# Argon Programming Language (v2.7)
 ![Argon Logo](logo.png)
 
 Argon is a high-performance, **self-hosted** systems programming language that compiles directly to LLVM IR and Native Machine Code.
@@ -9,6 +9,7 @@ Argon is a high-performance, **self-hosted** systems programming language that c
 - **Native Backend**: Uses LLVM for optimized native binary generation
 - **Methods**: Support for methods on structs (v2.5)
 - **Enums**: Enum types with pattern matching (v2.6)
+- **Modules**: Import system for code organization (v2.7)
 - **Structs**: Full struct support with definitions, instantiation, and field access (v2.4)
 - **Networking**: Built-in TCP Socket support (v2.1)
 - **Multi-threading**: Atomics, Mutex, and Thread support (v2.3)
@@ -54,6 +55,21 @@ my_api/
 ```
 
 ## Language Features
+
+### Modules & Imports (v2.7)
+```javascript
+// math_utils.ar
+fn math_add(a, b) {
+    return a + b;
+}
+
+// main.ar
+import "math_utils.ar";
+
+fn main() {
+    print(math_add(5, 3)); // 8
+}
+```
 
 ### Enums & Pattern Matching (v2.6)
 ```javascript
@@ -135,6 +151,7 @@ fn main() {
 - **Docker**: The toolchain runs inside the `argon-toolchain` image.
 
 ## Version History
+- **v2.7**: Module system / imports (`import "module.ar";`)
 - **v2.6**: Enum types with pattern matching (`match expr { ... }`)
 - **v2.5**: Methods on structs (`p.get_x()`, `p.sum()`)
 - **v2.4**: Struct support (definitions, instantiation, field access)
@@ -146,6 +163,6 @@ fn main() {
 ## Roadmap
 - [x] Methods on structs (`p.method()`) ✅
 - [x] Enum types with pattern matching ✅
+- [x] Module system / imports ✅
 - [ ] Generic types (`Array<T>`)
-- [ ] Module system / imports
 - [ ] Standard library
