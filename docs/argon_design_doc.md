@@ -1,9 +1,9 @@
 # Argon Language: Architecture & Design
 
-**Version:** 2.2.0 (Self-Hosted & Stable)
+**Version:** 2.4.0 (Self-Hosted & Stable)
 **Status:** Production Ready (Self-Hosting Verified)
 **Backend:** LLVM 15+
-**Last Updated:** 2025-12-28
+**Last Updated:** 2025-12-29
 
 ---
 
@@ -39,7 +39,7 @@ Creating a truly self-hosted dynamic system required a uniform data representati
 ## 3. Architecture
 
 ### 3.1 The Compiler (`compiler.ar`)
-The compiler is a monolithic application written in Argon (~1650 lines).
+The compiler is a monolithic application written in Argon (~1930 lines).
 1.  **Lexer**: Tokenizes source code (`.ar` files), handling complex string escapes and operators.
 2.  **Parser**: Recursive Descent parser generating a lightweight AST. Includes support for `if/else if/else`, `while` loops, `break/continue`, and function definitions.
 3.  **Code Generator**: Emits LLVM IR (Text format). Uses tagged integer arithmetic.
@@ -142,7 +142,28 @@ fn main() {
 | `argon_atomic_cas(id, exp, new)` | Compare-and-swap |
 | `argon_sleep(ms)` | Sleep milliseconds |
 
-### 5.4 MVC Structure
+### 5.4 Structs (v2.4)
+```typescript
+struct Point {
+    x: int,
+    y: int
+}
+
+fn create_point(x, y) {
+    return Point { x: x, y: y };
+}
+
+fn main() {
+    let p = Point { x: 10, y: 20 };
+    print(p.x);  // 10
+    print(p.y);  // 20
+    
+    let p2 = create_point(30, 40);
+    print(p2.x + p2.y);  // 70
+}
+```
+
+### 5.5 MVC Structure
 Argon v2.1 promotes structured backend development:
 - `controllers/`: Request handling.
 - `services/`: Business logic.
@@ -156,7 +177,10 @@ Argon v2.1 promotes structured backend development:
 3.  [x] Tagged Integer Optimization
 4.  [x] Verified Self-Hosting - Stage 1 == Stage 2 (v2.2)
 5.  [x] Multi-threading support (Atomics/Sleep) (v2.3)
-6.  [ ] Advanced Type System (Generics/Traits)
-7.  [ ] Struct/Enum types
-8.  [ ] Package Manager (dependency resolution)
-9.  [ ] LSP (Language Server Protocol) for IDE support
+6.  [x] Struct types with field access (v2.4)
+7.  [ ] Methods on structs (`p.distance()`)
+8.  [ ] Enum types with pattern matching
+9.  [ ] Generic types (`Array<T>`)
+10. [ ] Module system / imports
+11. [ ] Package Manager (dependency resolution)
+12. [ ] LSP (Language Server Protocol) for IDE support

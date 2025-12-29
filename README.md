@@ -1,4 +1,4 @@
-# Argon Programming Language (v2.3)
+# Argon Programming Language (v2.4)
 ![Argon Logo](logo.png)
 
 Argon is a high-performance, **self-hosted** systems programming language that compiles directly to LLVM IR and Native Machine Code.
@@ -7,6 +7,7 @@ Argon is a high-performance, **self-hosted** systems programming language that c
 - **Self-Hosted**: Compiler written in Argon itself (`self-host/compiler.ar`)
 - **Verified**: Stage 1 (self-compiled) produces identical output when compiling itself
 - **Native Backend**: Uses LLVM for optimized native binary generation
+- **Structs**: Full struct support with definitions, instantiation, and field access (v2.4)
 - **Networking**: Built-in TCP Socket support (v2.1)
 - **Multi-threading**: Atomics, Mutex, and Thread support (v2.3)
 - **High Performance**: Tagged pointer optimization for fast integer arithmetic
@@ -50,7 +51,21 @@ my_api/
 └── tests/           # Unit Tests
 ```
 
-## API Reference
+## Language Features
+
+### Structs (v2.4)
+```javascript
+struct Point {
+    x: int,
+    y: int
+}
+
+fn main() {
+    let p = Point { x: 10, y: 20 };
+    print(p.x);  // 10
+    print(p.y);  // 20
+}
+```
 
 ### Networking (v2.1)
 | Function | Description |
@@ -80,7 +95,15 @@ my_api/
 - **Docker**: The toolchain runs inside the `argon-toolchain` image.
 
 ## Version History
+- **v2.4**: Struct support (definitions, instantiation, field access)
 - **v2.3**: Multi-threading support (Atomics, Mutex, Sleep)
 - **v2.2**: Verified Self-Hosting (Stage 1 == Stage 2)
 - **v2.1**: Native Networking (TCP Sockets)
 - **v1.0**: Self-Hosting Compiler
+
+## Roadmap
+- [ ] Methods on structs (`p.distance()`)
+- [ ] Generic types (`Array<T>`)
+- [ ] Pattern matching
+- [ ] Module system / imports
+- [ ] Standard library

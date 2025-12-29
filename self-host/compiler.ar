@@ -1,7 +1,8 @@
 // ============================================
-// ARGON SELF-HOSTING COMPILER v2.3
+// ARGON SELF-HOSTING COMPILER v2.4
 // Written entirely in Argon
 // Complete Lexer, Parser, and Code Generator
+// With Struct Support
 // ============================================
 
 let OPT_UNSAFE = 0; // Optimization flag
@@ -51,6 +52,7 @@ let TOK_COMMA = 51;
 let TOK_COLON = 52;
 let TOK_BREAK = 54;
 let TOK_CONTINUE = 55;
+let TOK_STRUCT = 56;
 
 // =================== LEXER ===================
 
@@ -356,6 +358,7 @@ fn tokenize(source: string) {
             else if (id_str == "null") { tokens = push(tokens, make_token(60, "null")); }
             else if (id_str == "break") { tokens = push(tokens, make_token(TOK_BREAK, "break")); }
             else if (id_str == "continue") { tokens = push(tokens, make_token(TOK_CONTINUE, "continue")); }
+            else if (id_str == "struct") { tokens = push(tokens, make_token(TOK_STRUCT, "struct")); }
             else { tokens = push(tokens, make_token(TOK_ID, id_str)); }
         }
         // Skip unknown
@@ -384,6 +387,11 @@ let AST_FUNC = 20;
 let AST_BLOCK = 21;
 let AST_BREAK = 22;
 let AST_CONTINUE = 23;
+
+// Struct-related AST types (using 100+ to avoid conflicts)
+let AST_STRUCT_DEF = 100;
+let AST_STRUCT_INST = 101;
+let AST_FIELD_ACCESS = 102;
 
 // =================== PARSER ===================
 
@@ -506,48 +514,82 @@ fn parse_primary() {
         p_advance();
         return make_num(parseInt(v));
     }
-    // Variable or function call
+    // Variable, function call, struct instantiation, or field access
     if (t == TOK_ID) {
-        let name = v;
+        let id_name = v;
         p_advance();
+        
+        // Check for struct instantiation: StructName { field: value, ... }
+        if (p_current_type() == TOK_LBRACE) {
+            p_advance(); // skip {
+            let inst_fields = [];
+            
+            while (p_current_type() != TOK_RBRACE) {
+                let inst_fname = p_current_val();
+                p_advance();
+                p_expect(TOK_COLON);
+                let inst_fval = parse_expr();
+                
+                let inst_entry = [];
+                inst_entry = push(inst_entry, inst_fname);
+                inst_entry = push(inst_entry, inst_fval);
+                inst_fields = push(inst_fields, inst_entry);
+                
+                if (p_current_type() == TOK_COMMA) {
+                    p_advance();
+                }
+            }
+            p_expect(TOK_RBRACE);
+            return [101, id_name, inst_fields]; // AST_STRUCT_INST = 101
+        }
         
         // Check for function call
         if (p_current_type() == TOK_LPAREN) {
             p_advance(); // skip (
-            let args = [];
+            let call_args = [];
             
             if (p_current_type() != TOK_RPAREN) {
-                args = push(args, parse_expr());
+                call_args = push(call_args, parse_expr());
                 while (p_current_type() == TOK_COMMA) {
                     p_advance();
-                    args = push(args, parse_expr());
+                    call_args = push(call_args, parse_expr());
                 }
             }
             p_expect(TOK_RPAREN);
-            return make_call(name, args);
+            return make_call(id_name, call_args);
         }
         
         // Check for index access [expr]
         if (p_current_type() == 34) { // TOK_LBRACK
             p_advance();
-            let idx = parse_expr();
+            let idx_expr = parse_expr();
             p_expect(35); // TOK_RBRACK
-            // Desugar to argon_get(var, idx)
-            // But wait, make_call expects args array.
-            let args = [];
-            args = push(args, make_var(name));
-            args = push(args, idx);
-            return [AST_CALL, "argon_get", args];
+            let idx_args = [];
+            idx_args = push(idx_args, make_var(id_name));
+            idx_args = push(idx_args, idx_expr);
+            return [AST_CALL, "argon_get", idx_args];
         }
         
-        return make_var(name);
+        // Check for field access .field
+        if (p_current_type() == 53) { // TOK_DOT = 53
+            let field_result = make_var(id_name);
+            while (p_current_type() == 53) {
+                p_advance(); // skip .
+                let access_field = p_current_val();
+                p_advance();
+                field_result = [102, field_result, access_field]; // AST_FIELD_ACCESS = 102
+            }
+            return field_result;
+        }
+        
+        return make_var(id_name);
     }
     // Parenthesized expression
     if (t == TOK_LPAREN) {
         p_advance();
-        let expr = parse_expr();
+        let paren_expr = parse_expr();
         p_expect(TOK_RPAREN);
-        return expr;
+        return paren_expr;
     }
     // True/False literals
     if (t == TOK_TRUE) {
@@ -652,7 +694,7 @@ fn parse_statement() {
     // let statement
     if (t == TOK_LET) {
         p_advance();
-        let name = p_current_val();
+        let let_name = p_current_val();
         p_expect(TOK_ID);
         
         // Optional type annotation
@@ -662,30 +704,30 @@ fn parse_statement() {
         }
         
         p_expect(TOK_EQ);
-        let init = parse_expr();
+        let let_init = parse_expr();
         p_expect(TOK_SEMI);
-        return make_let(name, init);
+        return make_let(let_name, let_init);
     }
     
     // print statement
     if (t == TOK_PRINT) {
         p_advance();
         p_expect(TOK_LPAREN);
-        let expr = parse_expr();
+        let print_arg = parse_expr();
         p_expect(TOK_RPAREN);
         p_expect(TOK_SEMI);
-        return make_print(expr);
+        return make_print(print_arg);
     }
     
     // return statement
     if (t == TOK_RETURN) {
         p_advance();
-        let expr = make_num(0);
+        let ret_expr = make_num(0);
         if (p_current_type() != TOK_SEMI) {
-            expr = parse_expr();
+            ret_expr = parse_expr();
         }
         p_expect(TOK_SEMI);
-        return make_return(expr);
+        return make_return(ret_expr);
     }
     
     // if statement
@@ -754,21 +796,21 @@ fn parse_statement() {
     
     // Assignment or expression statement
     if (t == TOK_ID) {
-        let name = p_current_val();
+        let assign_name = p_current_val();
         p_advance();
         
         if (p_current_type() == TOK_EQ) {
             p_advance();
-            let val = parse_expr();
+            let assign_val = parse_expr();
             p_expect(TOK_SEMI);
-            return make_assign(name, val);
+            return make_assign(assign_name, assign_val);
         }
         
         // Expression statement (function call)
         p_pos = p_pos - 1; // backtrack
-        let expr = parse_expr();
+        let stmt_expr = parse_expr();
         p_expect(TOK_SEMI);
-        return expr;
+        return stmt_expr;
     }
     
     print("Unexpected token in statement: " + p_current_val());
@@ -778,13 +820,13 @@ fn parse_statement() {
 
 fn parse_function() {
     p_expect(TOK_FN);
-    let name = p_current_val();
+    let fn_name = p_current_val();
     p_expect(TOK_ID);
     p_expect(TOK_LPAREN);
     
-    let params = [];
+    let fn_params = [];
     if (p_current_type() == TOK_ID) {
-        params = push(params, p_current_val());
+        fn_params = push(fn_params, p_current_val());
         p_advance();
         
         // Skip type annotation
@@ -795,7 +837,7 @@ fn parse_function() {
         
         while (p_current_type() == TOK_COMMA) {
             p_advance();
-            params = push(params, p_current_val());
+            fn_params = push(fn_params, p_current_val());
             p_advance();
             if (p_current_type() == TOK_COLON) {
                 p_advance();
@@ -806,37 +848,83 @@ fn parse_function() {
     p_expect(TOK_RPAREN);
     p_expect(TOK_LBRACE);
     
-    let body = [];
+    let fn_body = [];
     while (p_current_type() != TOK_RBRACE) {
-        body = push(body, parse_statement());
+        fn_body = push(fn_body, parse_statement());
     }
     p_expect(TOK_RBRACE);
     
-    return make_func(name, params, make_block(body));
+    return make_func(fn_name, fn_params, make_block(fn_body));
+}
+
+fn parse_struct_def() {
+    p_advance(); // skip 'struct'
+    let struct_name = p_current_val();
+    p_advance(); // skip name
+    p_expect(TOK_LBRACE);
+    
+    let struct_fields = [];
+    while (p_current_type() != TOK_RBRACE) {
+        let field_name = p_current_val();
+        p_advance(); // field name
+        p_expect(TOK_COLON);
+        let field_type = p_current_val();
+        p_advance(); // type
+        
+        let field_def = [];
+        field_def = push(field_def, field_name);
+        field_def = push(field_def, field_type);
+        struct_fields = push(struct_fields, field_def);
+        
+        if (p_current_type() == TOK_COMMA) {
+            p_advance();
+        }
+    }
+    p_expect(TOK_RBRACE);
+    
+    return [100, struct_name, struct_fields]; // AST_STRUCT_DEF = 100
 }
 
 fn parse_program(tokens: any) {
     p_tokens = tokens;
     p_pos = 0;
     
-    let nodes = [];
+    let xz_nodes = [];
     while (p_current_type() != TOK_EOF) {
-        let cur_type = p_current_type();
-        if (cur_type == TOK_FN) {
-            nodes = push(nodes, parse_function());
+        let xz_cur_type = p_current_type();
+        // DEBUG
+        print("parse_program: cur_type = ");
+        print(xz_cur_type);
+        print("cur_val = ");
+        print(p_current_val());
+        
+        if (xz_cur_type == 1) { // TOK_FN = 1
+            let xz_fn = parse_function();
+            xz_nodes = push(xz_nodes, xz_fn);
+        } else if (xz_cur_type == 56) { // TOK_STRUCT = 56
+            print("FOUND STRUCT!");
+            let xz_st = parse_struct_def();
+            print("struct_result[0] = ");
+            print(xz_st[0]);
+            xz_nodes = push(xz_nodes, xz_st);
+            print("xz_nodes len after push = ");
+            print(len(xz_nodes));
         } else {
             // Assume it's a statement (let, etc)
-            nodes = push(nodes, parse_statement());
+            let xz_stmt = parse_statement();
+            xz_nodes = push(xz_nodes, xz_stmt);
         }
         
         // Prevent infinite loop if parser gets stuck
         if (p_pos > len(tokens) + 10) {
             print("Parse Error: Infinite loop detected at pos " + p_pos);
-            return nodes;
+            return xz_nodes;
         }
     }
     
-    return nodes;
+    print("Final xz_nodes len = ");
+    print(len(xz_nodes));
+    return xz_nodes;
 }
 
 // =================== CODE GENERATOR (LLVM IR) ===================
@@ -851,6 +939,30 @@ let cg_strings = []; // [ [id, content], ... ]
 let cg_str_id_counter = 0;
 let cg_loop_cond_label = ""; // For continue
 let cg_loop_end_label = "";  // For break
+let cg_structs = []; // Track struct definitions [[name, fields], ...]
+let cg_sinst_return = ""; // Workaround for struct instantiation return value
+let cg_last_expr = ""; // Store last expression result for AST_RETURN workaround
+
+fn cg_find_field_index(ffi_fname: string) {
+    print(ffi_fname);
+    let ffi_si = 0;
+    while (ffi_si < len(cg_structs)) {
+        let ffi_struct_def = cg_structs[ffi_si];
+        let ffi_fields = ffi_struct_def[1];
+        let ffi_fi = 0;
+        while (ffi_fi < len(ffi_fields)) {
+            let ffi_field_entry = ffi_fields[ffi_fi];
+            let ffi_fn = ffi_field_entry[0];
+            if (ffi_fn == ffi_fname) {
+                print(ffi_fi);
+                return ffi_fi;
+            }
+            ffi_fi = ffi_fi + 1;
+        }
+        ffi_si = ffi_si + 1;
+    }
+    return 0;
+}
 
 fn cg_is_global(name: string) {
     let i = 0;
@@ -870,15 +982,15 @@ fn cg_emit_raw(s: string) {
 }
 
 fn cg_next_temp() {
-    let t = "%t" + cg_temp;
+    let temp_result = "%t" + cg_temp;
     cg_temp = cg_temp + 1;
-    return t;
+    return temp_result;
 }
 
 fn cg_next_label() {
-    let l = "L" + cg_label;
+    let label_result = "L" + cg_label;
     cg_label = cg_label + 1;
-    return l;
+    return label_result;
 }
 
 fn cg_find_var(name: string) {
@@ -898,31 +1010,38 @@ fn cg_add_var(name: string, ptr: string) {
 }
 
 fn cg_get_str_const(content: string) {
+    print(content);
     // Check if exists
     let i = 0;
+    print(len(cg_strings));
     while (i < len(cg_strings)) {
-        let entry = cg_strings[i];
-        if (entry[1] == content) {
-            return "@.str." + entry[0];
+        let cached_entry = cg_strings[i];
+        let cached_content = cached_entry[1];
+        if (cached_content == content) {
+            let cached_id = cached_entry[0];
+            return "@.str." + cached_id;
         }
         i = i + 1;
     }
     // Add new
-    let id = cg_str_id_counter;
+    let new_id = cg_str_id_counter;
     cg_str_id_counter = cg_str_id_counter + 1;
-    let entry = [id, content];
-    cg_strings = push(cg_strings, entry);
-    return "@.str." + id;
+    let new_entry = [new_id, content];
+    cg_strings = push(cg_strings, new_entry);
+    return "@.str." + new_id;
 }
 
-fn cg_gen_expr(expr: any) {
-    let node_type = expr[0];
+fn cg_gen_expr(cge_input: any) {
+    let node_type = cge_input[0];
+    // DEBUG
+    print("cg_gen_expr node_type:");
+    print(node_type);
     
     // Number literal - Tagged Integer format (n*2+1)
     // In Stage 0, parseInt returns raw value, so we tag it.
     // In Stage 1, parseInt returns already-tagged value, so we use it as-is.
     if (node_type == AST_NUM) {
-        let n = expr[1];  // Could be raw or tagged depending on stage
+        let n = cge_input[1];  // Could be raw or tagged depending on stage
         if (IS_STAGE1 == 1) {
             // n is already tagged from parseInt
             return "" + n;
@@ -934,11 +1053,17 @@ fn cg_gen_expr(expr: any) {
     
     // String Literal
     if (node_type == 30) { // AST_STR
-        let s = expr[1];
-        let str_ptr = cg_get_str_const(s);
+        let str_val = cge_input[1];
+        print(str_val);
+        let str_ptr = cg_get_str_const(str_val);
         let t1 = cg_next_temp();
-        let array_len = len(s) + 1;
+        print(t1);
+        let str_len = len(str_val);
+        print(str_len);
+        let array_len = str_len + 1;
+        print(array_len);
         let cast = "getelementptr inbounds ([" + array_len + " x i8], [" + array_len + " x i8]* " + str_ptr + ", i64 0, i64 0)";
+        print(cast);
         // Fix: Call argon_str_new to create a valid Object from the raw C-string
         cg_emit(t1 + " = call i64 @argon_str_new(i8* " + cast + ")");
         return t1;
@@ -948,41 +1073,43 @@ fn cg_gen_expr(expr: any) {
     
     // Variable
     if (node_type == AST_VAR) {
-        let name = expr[1];
+        let var_name = cge_input[1];
         
-        if (cg_is_global(name)) {
-             let temp = cg_next_temp();
-             cg_emit(temp + " = load i64, i64* @" + name);
-             return temp;
+        if (cg_is_global(var_name)) {
+             let var_temp = cg_next_temp();
+             cg_emit(var_temp + " = load i64, i64* @" + var_name);
+             return var_temp;
         }
         
-        let ptr = cg_find_var(name);
-        if (ptr != null) {
-            let temp = cg_next_temp();
-            cg_emit(temp + " = load i64, i64* " + ptr);
-            return temp;
+        let var_ptr = cg_find_var(var_name);
+        if (var_ptr != null) {
+            let var_temp2 = cg_next_temp();
+            cg_emit(var_temp2 + " = load i64, i64* " + var_ptr);
+            return var_temp2;
         }
         return "0";
     }
     
     // Binary operation
     if (node_type == AST_BINOP) {
-        let op = expr[1];
-        let left = expr[2];
-        let right = expr[3];
+        let binop_op = cge_input[1];
+        let binop_left = cge_input[2];
+        let binop_right = cge_input[3];
         
-        let l = cg_gen_expr(left);
-        let r = cg_gen_expr(right);
-        let res = cg_next_temp();
+        let binop_l = cg_gen_expr(binop_left);
+        let binop_r = cg_gen_expr(binop_right);
+        let binop_res = cg_next_temp();
+        print(binop_l);
+        print(binop_r);
         
         // OPTIMIZATION: Fast Path for Integers
         // Operations: +, -, <, >, ==
         let can_opt = false;
-        if (op == "+") { can_opt = true; }
-        else if (op == "-") { can_opt = true; }
-        else if (op == "<") { can_opt = true; }
-        else if (op == ">") { can_opt = true; }
-        else if (op == "==") { can_opt = true; }
+        if (binop_op == "+") { can_opt = true; }
+        else if (binop_op == "-") { can_opt = true; }
+        else if (binop_op == "<") { can_opt = true; }
+        else if (binop_op == ">") { can_opt = true; }
+        else if (binop_op == "==") { can_opt = true; }
         
         if (can_opt) {
              let label_fast = cg_next_label();
@@ -990,50 +1117,50 @@ fn cg_gen_expr(expr: any) {
              let label_done = cg_next_label();
              
              // Check if both are integers: (left & right & 1) == 1
-             let t1 = cg_next_temp();
-             let t2 = cg_next_temp();
-             let t3 = cg_next_temp();
-             cg_emit(t1 + " = and i64 " + l + ", " + r);
-             cg_emit(t2 + " = and i64 " + t1 + ", 1");
+             let binop_t1 = cg_next_temp();
+             let binop_t2 = cg_next_temp();
+             let binop_t3 = cg_next_temp();
+             cg_emit(binop_t1 + " = and i64 " + binop_l + ", " + binop_r);
+             cg_emit(binop_t2 + " = and i64 " + binop_t1 + ", 1");
              
              if (OPT_UNSAFE == 1) {
                  cg_emit("br label %" + label_fast);
              } else {
-                 cg_emit(t3 + " = icmp eq i64 " + t2 + ", 1");
-                 let t3_ex = cg_next_temp();
-                 cg_emit(t3_ex + " = call i1 @llvm.expect.i1(i1 " + t3 + ", i1 1)");
-                 cg_emit("br i1 " + t3_ex + ", label %" + label_fast + ", label %" + label_slow);
+                 cg_emit(binop_t3 + " = icmp eq i64 " + binop_t2 + ", 1");
+                 let binop_t3_ex = cg_next_temp();
+                 cg_emit(binop_t3_ex + " = call i1 @llvm.expect.i1(i1 " + binop_t3 + ", i1 1)");
+                 cg_emit("br i1 " + binop_t3_ex + ", label %" + label_fast + ", label %" + label_slow);
              }
              
              // --- FAST PATH (Native Instructions) ---
              cg_emit_raw("\n" + label_fast + ":");
              let res_fast = cg_next_temp();
              
-             if (op == "+") {
+             if (binop_op == "+") {
                  // (2n+1) + (2m+1) - 1 = 2(n+m) + 1
                  let t_add = cg_next_temp();
-                 cg_emit(t_add + " = add i64 " + l + ", " + r);
+                 cg_emit(t_add + " = add i64 " + binop_l + ", " + binop_r);
                  cg_emit(res_fast + " = sub i64 " + t_add + ", 1");
              }
-             else if (op == "-") {
+             else if (binop_op == "-") {
                  // (2n+1) - (2m+1) + 1 = 2(n-m) + 1
                  let t_sub = cg_next_temp();
-                 cg_emit(t_sub + " = sub i64 " + l + ", " + r);
+                 cg_emit(t_sub + " = sub i64 " + binop_l + ", " + binop_r);
                  cg_emit(res_fast + " = add i64 " + t_sub + ", 1");
              }
-             else if (op == "==") {
+             else if (binop_op == "==") {
                   let t_cmp = cg_next_temp();
-                  cg_emit(t_cmp + " = icmp eq i64 " + l + ", " + r);
+                  cg_emit(t_cmp + " = icmp eq i64 " + binop_l + ", " + binop_r);
                   cg_emit(res_fast + " = select i1 " + t_cmp + ", i64 3, i64 1");
              }
-             else if (op == "<") {
+             else if (binop_op == "<") {
                   let t_cmp = cg_next_temp();
-                  cg_emit(t_cmp + " = icmp slt i64 " + l + ", " + r);
+                  cg_emit(t_cmp + " = icmp slt i64 " + binop_l + ", " + binop_r);
                   cg_emit(res_fast + " = select i1 " + t_cmp + ", i64 3, i64 1");
              }
-             else if (op == ">") {
+             else if (binop_op == ">") {
                   let t_cmp = cg_next_temp();
-                  cg_emit(t_cmp + " = icmp sgt i64 " + l + ", " + r);
+                  cg_emit(t_cmp + " = icmp sgt i64 " + binop_l + ", " + binop_r);
                   cg_emit(res_fast + " = select i1 " + t_cmp + ", i64 3, i64 1");
              }
              cg_emit("br label %" + label_done);
@@ -1041,14 +1168,14 @@ fn cg_gen_expr(expr: any) {
              // --- SLOW PATH (Function Call) ---
              cg_emit_raw("\n" + label_slow + ":");
              let target = "";
-             if (op == "+") { target = "argon_add"; }
-             else if (op == "-") { target = "argon_sub"; }
-             else if (op == "<") { target = "argon_lt"; }
-             else if (op == ">") { target = "argon_gt"; }
-             else if (op == "==") { target = "argon_eq"; }
+             if (binop_op == "+") { target = "argon_add"; }
+             else if (binop_op == "-") { target = "argon_sub"; }
+             else if (binop_op == "<") { target = "argon_lt"; }
+             else if (binop_op == ">") { target = "argon_gt"; }
+             else if (binop_op == "==") { target = "argon_eq"; }
              
              let res_slow = cg_next_temp();
-             cg_emit(res_slow + " = call i64 @" + target + "(i64 " + l + ", i64 " + r + ")");
+             cg_emit(res_slow + " = call i64 @" + target + "(i64 " + binop_l + ", i64 " + binop_r + ")");
              cg_emit("br label %" + label_done);
              
              // --- MERGE ---
@@ -1059,37 +1186,37 @@ fn cg_gen_expr(expr: any) {
         }
 
         let target = "";
-        if (op == "*") { target = "argon_mul"; }
-        else if (op == "/") { target = "argon_div"; }
+        if (binop_op == "*") { target = "argon_mul"; }
+        else if (binop_op == "/") { target = "argon_div"; }
         
         if (target != "") {
-             cg_emit(res + " = call i64 @" + target + "(i64 " + l + ", i64 " + r + ")");
-             return res;
+             cg_emit(binop_res + " = call i64 @" + target + "(i64 " + binop_l + ", i64 " + binop_r + ")");
+             return binop_res;
         }
         
-        if (op == "!=") {
+        if (binop_op == "!=") {
              let eq_res = cg_next_temp();
-             cg_emit(eq_res + " = call i64 @argon_eq(i64 " + l + ", i64 " + r + ")");
-             cg_emit(res + " = xor i64 " + eq_res + ", 2");
-             return res;
+             cg_emit(eq_res + " = call i64 @argon_eq(i64 " + binop_l + ", i64 " + binop_r + ")");
+             cg_emit(binop_res + " = xor i64 " + eq_res + ", 2");
+             return binop_res;
         }
         
-        if (op == "<=") {
+        if (binop_op == "<=") {
              let lt_res = cg_next_temp();
              let eq_res = cg_next_temp();
-             cg_emit(lt_res + " = call i64 @argon_lt(i64 " + l + ", i64 " + r + ")");
-             cg_emit(eq_res + " = call i64 @argon_eq(i64 " + l + ", i64 " + r + ")");
-             cg_emit(res + " = or i64 " + lt_res + ", " + eq_res);
-             return res;
+             cg_emit(lt_res + " = call i64 @argon_lt(i64 " + binop_l + ", i64 " + binop_r + ")");
+             cg_emit(eq_res + " = call i64 @argon_eq(i64 " + binop_l + ", i64 " + binop_r + ")");
+             cg_emit(binop_res + " = or i64 " + lt_res + ", " + eq_res);
+             return binop_res;
         }
         
-        if (op == ">=") {
+        if (binop_op == ">=") {
              let gt_res = cg_next_temp();
              let eq_res = cg_next_temp();
-             cg_emit(gt_res + " = call i64 @argon_gt(i64 " + l + ", i64 " + r + ")");
-             cg_emit(eq_res + " = call i64 @argon_eq(i64 " + l + ", i64 " + r + ")");
-             cg_emit(res + " = or i64 " + gt_res + ", " + eq_res);
-             return res;
+             cg_emit(gt_res + " = call i64 @argon_gt(i64 " + binop_l + ", i64 " + binop_r + ")");
+             cg_emit(eq_res + " = call i64 @argon_eq(i64 " + binop_l + ", i64 " + binop_r + ")");
+             cg_emit(binop_res + " = or i64 " + gt_res + ", " + eq_res);
+             return binop_res;
         }
         
         return "0";
@@ -1097,37 +1224,37 @@ fn cg_gen_expr(expr: any) {
     
     // Function call
     if (node_type == AST_CALL) {
-        let name = expr[1];
-        let args = expr[2];
-        let res = cg_next_temp();
+        let call_name = cge_input[1];
+        let call_args = cge_input[2];
+        let call_res = cg_next_temp();
         
         // Map intrinsics (Restored for compat)
-        let target = name;
-        if (name == "len") { target = "argon_len"; }
-        else if (name == "push") { target = "argon_push"; }
-        else if (name == "charCodeAt") { target = "argon_char_code_at"; }
-        else if (name == "parseInt") { target = "argon_parse_int"; }
-        else if (name == "readFile") { target = "argon_read_file"; }
-        else if (name == "writeFile") { target = "argon_write_file"; }
-        else if (name == "fileExists") { target = "argon_file_exists"; }
-        else if (name == "getArgs") { target = "argon_get_args"; }
+        let call_target = call_name;
+        if (call_name == "len") { call_target = "argon_len"; }
+        else if (call_name == "push") { call_target = "argon_push"; }
+        else if (call_name == "charCodeAt") { call_target = "argon_char_code_at"; }
+        else if (call_name == "parseInt") { call_target = "argon_parse_int"; }
+        else if (call_name == "readFile") { call_target = "argon_read_file"; }
+        else if (call_name == "writeFile") { call_target = "argon_write_file"; }
+        else if (call_name == "fileExists") { call_target = "argon_file_exists"; }
+        else if (call_name == "getArgs") { call_target = "argon_get_args"; }
         
-        let arg_str = "";
-        let i = 0;
-        while (i < len(args)) {
-             if (i > 0) { arg_str = arg_str + ", "; }
-             let val = cg_gen_expr(args[i]);
-             arg_str = arg_str + "i64 " + val;
-             i = i + 1;
+        let call_arg_str = "";
+        let ci = 0;
+        while (ci < len(call_args)) {
+             if (ci > 0) { call_arg_str = call_arg_str + ", "; }
+             let call_arg_val = cg_gen_expr(call_args[ci]);
+             call_arg_str = call_arg_str + "i64 " + call_arg_val;
+             ci = ci + 1;
         }
         
-        cg_emit(res + " = call i64 @" + target + "(" + arg_str + ")");
-        return res;
+        cg_emit(call_res + " = call i64 @" + call_target + "(" + call_arg_str + ")");
+        return call_res;
     }
     
     // Array literal
     if (node_type == 31) { // AST_ARRAY
-        let items = expr[1];
+        let items = cge_input[1];
         let arr = cg_next_temp();
         cg_emit(arr + " = call i64 @argon_arr_new()");
         
@@ -1135,12 +1262,77 @@ fn cg_gen_expr(expr: any) {
         while (i < len(items)) {
             let item = items[i];
             let val = cg_gen_expr(item);
-            // push returns new len, ignore it.
             let dummy = cg_next_temp();
             cg_emit(dummy + " = call i64 @argon_push(i64 " + arr + ", i64 " + val + ")");
             i = i + 1;
         }
         return arr;
+    }
+    
+    // Struct instantiation: create array with field values
+    if (node_type == 101) { // AST_STRUCT_INST = 101
+        let sinst_field_inits = cge_input[2]; // [[fname, fval], ...]
+        
+        // Get temp for struct array - save to GLOBAL before any recursive calls
+        // This works around potential return value corruption in Stage 1
+        let sinst_my_arr = cg_next_temp();
+        cg_sinst_return = sinst_my_arr; // Save to global immediately
+        print(sinst_my_arr);
+        print(cg_sinst_return);
+        cg_emit(sinst_my_arr + " = call i64 @argon_arr_new()");
+        
+        // Collect all field values FIRST (without using local)
+        let sinst_vals = [];
+        let sinst_i = 0;
+        while (sinst_i < len(sinst_field_inits)) {
+            let sinst_field = sinst_field_inits[sinst_i];
+            let sinst_expr = sinst_field[1];
+            let sinst_val = cg_gen_expr(sinst_expr);
+            sinst_vals = push(sinst_vals, sinst_val);
+            sinst_i = sinst_i + 1;
+        }
+        
+        print(cg_sinst_return);
+        
+        // Now emit push calls using collected values AND global saved temp
+        let sinst_j = 0;
+        while (sinst_j < len(sinst_vals)) {
+            let sinst_v = sinst_vals[sinst_j];
+            let sinst_dummy = cg_next_temp();
+            cg_emit(sinst_dummy + " = call i64 @argon_push(i64 " + cg_sinst_return + ", i64 " + sinst_v + ")");
+            sinst_j = sinst_j + 1;
+        }
+        
+        print(cg_sinst_return);
+        
+        // Return the global saved value, not the local
+        let sinst_result = cg_sinst_return;
+        return sinst_result;
+    }
+    
+    // Field access: get field by index
+    if (node_type == 102) { // AST_FIELD_ACCESS = 102
+        let access_base = cge_input[1];
+        let access_fname = cge_input[2];
+        
+        let access_base_val = cg_gen_expr(access_base);
+        let access_idx = cg_find_field_index(access_fname);
+        
+        // For LLVM IR, we need tagged format: idx*2+1
+        // access_idx is 0, 1, 2, etc (raw value)
+        // Tagged values: 0->1, 1->3, 2->5, etc
+        let access_idx_val = "1"; // default for index 0
+        if (access_idx == 1) { access_idx_val = "3"; }
+        if (access_idx == 2) { access_idx_val = "5"; }
+        if (access_idx == 3) { access_idx_val = "7"; }
+        if (access_idx == 4) { access_idx_val = "9"; }
+        
+        print(access_idx);
+        print(access_idx_val);
+        
+        let access_result = cg_next_temp();
+        cg_emit(access_result + " = call i64 @argon_get(i64 " + access_base_val + ", i64 " + access_idx_val + ")");
+        return access_result;
     }
     
     return "0";
@@ -1151,33 +1343,34 @@ fn cg_gen_stmt(stmt: any) {
     
     // Let statement
     if (node_type == AST_LET) {
-        let name = stmt[1];
-        let init = stmt[2];
-        let val = cg_gen_expr(init);
+        let let_name = stmt[1];
+        let let_init = stmt[2];
+        let let_val = cg_gen_expr(let_init);
+        print(let_val);
         
         // This is local let, alloc stack
-        let ptr = "%" + name + ".ptr." + cg_temp;
+        let let_ptr = "%" + let_name + ".ptr." + cg_temp;
         cg_temp = cg_temp + 1;
         
-        cg_emit(ptr + " = alloca i64");
-        cg_emit("store i64 " + val + ", i64* " + ptr);
+        cg_emit(let_ptr + " = alloca i64");
+        cg_emit("store i64 " + let_val + ", i64* " + let_ptr);
         
-        cg_add_var(name, ptr);
+        cg_add_var(let_name, let_ptr);
         return;
     }
     
     // Assignment
     if (node_type == AST_ASSIGN) {
-        let name = stmt[1];
-        let val_expr = stmt[2];
-        let val = cg_gen_expr(val_expr);
+        let assign_name = stmt[1];
+        let assign_expr = stmt[2];
+        let assign_val = cg_gen_expr(assign_expr);
         
-        if (cg_is_global(name)) {
-            cg_emit("store i64 " + val + ", i64* @" + name);
+        if (cg_is_global(assign_name)) {
+            cg_emit("store i64 " + assign_val + ", i64* @" + assign_name);
         } else {
-            let ptr = cg_find_var(name);
-            if (ptr != null) {
-                cg_emit("store i64 " + val + ", i64* " + ptr);
+            let assign_ptr = cg_find_var(assign_name);
+            if (assign_ptr != null) {
+                cg_emit("store i64 " + assign_val + ", i64* " + assign_ptr);
             }
         }
         return;
@@ -1185,11 +1378,12 @@ fn cg_gen_stmt(stmt: any) {
     
     // Print statement
     if (node_type == AST_PRINT) {
-        let expr = stmt[1];
-        let val = cg_gen_expr(expr);
+        let print_expr = stmt[1];
+        let print_val = cg_gen_expr(print_expr);
+        print(print_val);
         
         // Use argon_print which handles all Argon value types
-        cg_emit("call void @argon_print(i64 " + val + ")");
+        cg_emit("call void @argon_print(i64 " + print_val + ")");
         return;
     }
     
@@ -1197,7 +1391,7 @@ fn cg_gen_stmt(stmt: any) {
     if (node_type == AST_RETURN) {
         let expr = stmt[1];
         
-        // TAIL CALL OPTIMIZATION
+        // TAIL CALL OPTIMIZATION - still use direct approach for simple calls
         if (expr[0] == AST_CALL) {
              let name = expr[1];
              let args = expr[2];
@@ -1206,8 +1400,12 @@ fn cg_gen_stmt(stmt: any) {
              let i = 0;
              while (i < len(args)) {
                   if (i > 0) { arg_str = arg_str + ", "; }
-                  let val = cg_gen_expr(args[i]);
-                  arg_str = arg_str + "i64 " + val;
+                  // Save temp before recursive call
+                  let arg_temp_start = cg_temp;
+                  cg_gen_expr(args[i]);
+                  // Use the temp that was allocated
+                  let arg_result = "%t" + arg_temp_start;
+                  arg_str = arg_str + "i64 " + arg_result;
                   i = i + 1;
              }
              
@@ -1217,8 +1415,32 @@ fn cg_gen_stmt(stmt: any) {
              return;
         }
         
-        let val = cg_gen_expr(expr);
-        cg_emit("ret i64 " + val);
+        // For all other expressions: track temp count
+        // This works because cg_gen_expr allocates temps sequentially
+        let ret_temp_start = cg_temp;
+        cg_gen_expr(expr);
+        
+        // The result temp is the LAST one allocated (cg_temp - 1)
+        // For complex expressions like binop, the result is the final temp
+        if (cg_temp > ret_temp_start) {
+            // At least one temp was allocated - use the last one
+            let ret_result = "%t" + (cg_temp - 1);
+            cg_emit("ret i64 " + ret_result);
+        } else {
+            // No temp allocated - must be a simple literal
+            // For AST_NUM, the value is returned as string directly
+            // We need to handle this differently
+            if (expr[0] == 1) { // AST_NUM
+                let n = expr[1];
+                if (IS_STAGE1 == 1) {
+                    cg_emit("ret i64 " + n);
+                } else {
+                    cg_emit("ret i64 " + ((n * 2) + 1));
+                }
+            } else {
+                cg_emit("ret i64 0");
+            }
+        }
         return;
     }
     
@@ -1414,25 +1636,44 @@ fn escape_llvm(s: string) {
     return res;
 }
 
-fn cg_generate(nodes: any) {
+fn cg_generate(cg_input_nodes: any) {
+    // DEBUG 
+    print("cg_generate START");
+    print(len(cg_input_nodes));
+    
     cg_output = "";
     cg_strings = [];
     cg_str_id_counter = 0;
     
-    // 1. Collect Globals and Generate Declarations
+    // 1. Collect Globals, Structs, and Generate Declarations
     cg_global_vars = [];
+    cg_structs = [];
     let globals_decl = "";
     
     let i = 0;
-    while (i < len(nodes)) {
-        let node = nodes[i];
-        if (node[0] == 10) { // AST_LET
-            let name = node[1];
-            cg_global_vars = push(cg_global_vars, name);
-            globals_decl = globals_decl + "@" + name + " = global i64 0\n";
+    while (i < len(cg_input_nodes)) {
+        let glob_node = cg_input_nodes[i];
+        if (glob_node[0] == 10) { // AST_LET
+            let glob_name = glob_node[1];
+            cg_global_vars = push(cg_global_vars, glob_name);
+            globals_decl = globals_decl + "@" + glob_name + " = global i64 0\n";
+        }
+        if (glob_node[0] == 100) { // AST_STRUCT_DEF = 100
+            let glob_sname = glob_node[1];
+            let glob_sfields = glob_node[2];
+            let glob_sdef = [];
+            glob_sdef = push(glob_sdef, glob_sname);
+            glob_sdef = push(glob_sdef, glob_sfields);
+            cg_structs = push(cg_structs, glob_sdef);
         }
         i = i + 1;
     }
+    
+    // DEBUG
+    print("After globals collection");
+    print(len(cg_global_vars));
+    print("cg_structs len =");
+    print(len(cg_structs));
     
     // 2. Generate __init_globals
     // Reset temp counters
@@ -1446,14 +1687,14 @@ fn cg_generate(nodes: any) {
         cg_emit_raw("entry:");
         
         i = 0;
-        while (i < len(nodes)) {
-            let node = nodes[i];
-            if (node[0] == 10) { // AST_LET
-                 let name = node[1];
-                 let init = node[2];
+        while (i < len(cg_input_nodes)) {
+            let init_node = cg_input_nodes[i];
+            if (init_node[0] == 10) { // AST_LET
+                 let init_name = init_node[1];
+                 let init_expr = init_node[2];
                  // Generate init value
-                 let val = cg_gen_expr(init);
-                 cg_emit("store i64 " + val + ", i64* @" + name);
+                 let init_val = cg_gen_expr(init_expr);
+                 cg_emit("store i64 " + init_val + ", i64* @" + init_name);
             }
             i = i + 1;
         }
@@ -1464,13 +1705,37 @@ fn cg_generate(nodes: any) {
     }
     
     // 3. Generate Functions
-    i = 0;
-    while (i < len(nodes)) {
-        let node = nodes[i];
-        if (node[0] == 20) { // AST_FUNC
-            let name = node[1];
-            let params = node[2];
-            let body = node[3];
+    // DEBUG
+    print("Before func gen loop");
+    
+    let fn_i = 0;
+    while (fn_i < len(cg_input_nodes)) {
+        let fn_node = cg_input_nodes[fn_i];
+        // DEBUG
+        print("Processing node:");
+        print(fn_i);
+        print("node length:");
+        print(len(fn_node));
+        print("node[0]:");
+        print(fn_node[0]);
+        print("node[1] type test:");
+        let fn_elem1 = fn_node[1];
+        print(fn_elem1);
+        
+        if (fn_node[0] == 20) { // AST_FUNC
+            // DEBUG
+            print("Is AST_FUNC");
+            
+            let fn_name = fn_node[1];
+            // DEBUG
+            print("Got func_name");
+            print(fn_name);
+            
+            let fn_params = fn_node[2];
+            let fn_body = fn_node[3];
+            
+            // DEBUG
+            print("Got params and body");
             
             // Inline function generation logic to access params correctly
             // Reset local state for function
@@ -1479,7 +1744,10 @@ fn cg_generate(nodes: any) {
             cg_vars = [];
             cg_var_names = [];
             
-            if (name == "main") {
+            // DEBUG
+            print("Checking if main");
+            
+            if (fn_name == "main") {
                 cg_emit_raw("define i32 @main(i32 %argc, i8** %argv) {");
                 cg_emit_raw("entry:");
                 
@@ -1488,35 +1756,35 @@ fn cg_generate(nodes: any) {
                     cg_emit("call void @__init_globals()");
                 }
                 
-                let stmts = body[1];
-                let j = 0;
-                while (j < len(stmts)) {
-                    cg_gen_stmt(stmts[j]);
-                    j = j + 1;
+                let main_stmts = fn_body[1];
+                let mj = 0;
+                while (mj < len(main_stmts)) {
+                    cg_gen_stmt(main_stmts[mj]);
+                    mj = mj + 1;
                 }
                 cg_emit("ret i32 0");
                 cg_emit_raw("}");
             } else {
-                let param_str = cg_gen_param_str(params);
-                cg_emit_raw("define i64 @" + name + "(" + param_str + ") {");
+                let fn_param_str = cg_gen_param_str(fn_params);
+                cg_emit_raw("define i64 @" + fn_name + "(" + fn_param_str + ") {");
                 cg_emit_raw("entry:");
                 
                 // Allow stack allocation for params
-                let k = 0;
-                while (k < len(params)) {
-                    let pname = params[k];
-                    let ptr = "%" + pname + ".ptr";
-                    cg_emit(ptr + " = alloca i64");
-                    cg_emit("store i64 %arg" + k + ", i64* " + ptr);
-                    cg_add_var(pname, ptr);
-                    k = k + 1;
+                let pk = 0;
+                while (pk < len(fn_params)) {
+                    let fn_pname = fn_params[pk];
+                    let fn_ptr = "%" + fn_pname + ".ptr";
+                    cg_emit(fn_ptr + " = alloca i64");
+                    cg_emit("store i64 %arg" + pk + ", i64* " + fn_ptr);
+                    cg_add_var(fn_pname, fn_ptr);
+                    pk = pk + 1;
                 }
                 
-                let stmts = body[1];
-                let j = 0;
-                while (j < len(stmts)) {
-                    cg_gen_stmt(stmts[j]);
-                    j = j + 1;
+                let other_stmts = fn_body[1];
+                let oj = 0;
+                while (oj < len(other_stmts)) {
+                    cg_gen_stmt(other_stmts[oj]);
+                    oj = oj + 1;
                 }
                 // Implicit return 0
                 cg_emit("ret i64 0");
@@ -1524,7 +1792,7 @@ fn cg_generate(nodes: any) {
             }
             cg_emit_raw("");
         }
-        i = i + 1;
+        fn_i = fn_i + 1;
     }
     
     let body_code = cg_output;
@@ -1583,11 +1851,12 @@ fn cg_generate(nodes: any) {
     // 5. String Constants
     i = 0;
     while (i < len(cg_strings)) {
-        let entry = cg_strings[i];
-        let id_name = entry[0];
-        let content = entry[1];
-        let esc = escape_llvm(content);
-        cg_emit_raw("@.str." + id_name + " = private constant [" + (len(content)+1) + " x i8] c\"" + esc + "\\00\"");
+        let str_entry = cg_strings[i];
+        let str_id = str_entry[0];
+        let str_content = str_entry[1];
+        let str_esc = escape_llvm(str_content);
+        let str_len = len(str_content) + 1;
+        cg_emit_raw("@.str." + str_id + " = private constant [" + str_len + " x i8] c\"" + str_esc + "\\00\"");
         i = i + 1;
     }
     
@@ -1600,8 +1869,9 @@ fn cg_generate(nodes: any) {
 
 fn compile_file(filename: string) {
     print("========================================");
-    print("  ARGON SELF-HOSTING COMPILER v2.3");
+    print("  ARGON SELF-HOSTING COMPILER v2.4");
     print("  Written 100% in Argon Language");
+    print("  With Struct Support");
     print("========================================");
     print("");
     print("Compiling: " + filename);
