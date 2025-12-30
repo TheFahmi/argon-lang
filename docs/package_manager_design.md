@@ -100,8 +100,11 @@ apm add package-name
 - [x] argon remove command
 - [x] argon search command
 
-### Future: Central Registry
-- [ ] Central package registry server
-- [ ] Version resolution algorithm
-- [ ] Semantic versioning support
+### Phase 4: Central Registry (v2.10.0) ✅
+- [x] registry/index.json format
+- [x] apm search - list all packages
+- [x] apm search <query> - filter packages
+- [x] apm info <pkg> - show package info
+- [x] Version resolution from registry
+- [x] Fallback to GitHub if registry unavailable
 

@@ -7,7 +7,7 @@
 
 set -e
 
-VERSION="2.0.0"
+VERSION="2.1.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEPS_DIR="deps"
 REGISTRY_URL="https://raw.githubusercontent.com/anthropics/argon-packages/main"
@@ -360,33 +360,130 @@ install_registry_dep() {
     mkdir -p "${DEPS_DIR}"
     local target="${DEPS_DIR}/${name}"
     
-    # For now, registry packages are GitHub repos
-    # Format: https://github.com/argon-lang/pkg-{name}
-    local url="https://github.com/argon-lang/pkg-${name}"
-    
     print_info "Fetching ${name}@${version} from registry..."
     
-    # Try to download
+    # Try to fetch registry index
+    local registry_index=""
+    local registry_file="${SCRIPT_DIR}/registry/index.json"
+    
+    if [[ -f "$registry_file" ]]; then
+        # Use local registry
+        registry_index=$(cat "$registry_file")
+    else
+        # Try to fetch from remote
+        registry_index=$(curl -sL "${REGISTRY_URL}/index.json" 2>/dev/null || echo "")
+    fi
+    
+    if [[ -z "$registry_index" ]]; then
+        print_warning "Could not fetch registry index"
+        # Fallback to GitHub convention
+        local url="https://github.com/argon-lang/pkg-${name}"
+        return $(install_git_dep_fallback "$name" "$url" "$version")
+    fi
+    
+    # Parse package info from registry (simple JSON parsing)
+    local pkg_repo=$(echo "$registry_index" | grep -A20 "\"${name}\"" | grep '"repository"' | head -1 | sed 's/.*: *"\([^"]*\)".*/\1/')
+    local pkg_latest=$(echo "$registry_index" | grep -A20 "\"${name}\"" | grep '"latest"' | head -1 | sed 's/.*: *"\([^"]*\)".*/\1/')
+    
+    if [[ -z "$pkg_repo" ]]; then
+        print_warning "Package not found in registry: ${name}"
+        print_info "Try: apm search ${name}"
+        return 1
+    fi
+    
+    # Resolve version
+    if [[ "$version" == "latest" ]] || [[ -z "$version" ]]; then
+        version="$pkg_latest"
+    fi
+    
+    print_info "Resolved: ${name}@${version}"
+    
+    # Clone from repository
     rm -rf "$target"
     
-    if git clone --depth 1 --branch "v${version}" "$url" "$target" 2>/dev/null; then
+    if git clone --depth 1 --branch "v${version}" "$pkg_repo" "$target" 2>/dev/null; then
         local commit=$(cd "$target" && git rev-parse HEAD 2>/dev/null)
-        print_success "Installed: ${name}@${version}"
-        echo "$commit"
+        print_success "Installed: ${name}@${version} (${commit:0:8})"
+        return 0
+    elif git clone --depth 1 --branch "${version}" "$pkg_repo" "$target" 2>/dev/null; then
+        local commit=$(cd "$target" && git rev-parse HEAD 2>/dev/null)
+        print_success "Installed: ${name}@${version} (${commit:0:8})"
         return 0
     else
-        # Fallback: try without 'v' prefix
-        if git clone --depth 1 --branch "${version}" "$url" "$target" 2>/dev/null; then
+        # Try latest/main branch
+        if git clone --depth 1 "$pkg_repo" "$target" 2>/dev/null; then
             local commit=$(cd "$target" && git rev-parse HEAD 2>/dev/null)
-            print_success "Installed: ${name}@${version}"
-            echo "$commit"
+            print_success "Installed: ${name}@latest (${commit:0:8})"
             return 0
         fi
         
-        print_warning "Package not in registry: ${name}"
-        print_info "Try: apm add github.com/user/${name} --git"
+        print_error "Failed to install: ${name}@${version}"
         return 1
     fi
+}
+
+install_git_dep_fallback() {
+    local name="$1"
+    local url="$2"
+    local version="$3"
+    
+    local target="${DEPS_DIR}/${name}"
+    rm -rf "$target"
+    
+    if [[ -n "$version" ]] && [[ "$version" != "latest" ]]; then
+        git clone --depth 1 --branch "v${version}" "$url" "$target" 2>/dev/null || \
+        git clone --depth 1 --branch "${version}" "$url" "$target" 2>/dev/null || \
+        git clone --depth 1 "$url" "$target" 2>/dev/null
+    else
+        git clone --depth 1 "$url" "$target" 2>/dev/null
+    fi
+    
+    if [[ -d "$target" ]]; then
+        print_success "Installed: ${name}"
+        return 0
+    fi
+    return 1
+}
+
+# Fetch and display package info
+get_package_info() {
+    local name="$1"
+    local registry_file="${SCRIPT_DIR}/registry/index.json"
+    
+    if [[ ! -f "$registry_file" ]]; then
+        return 1
+    fi
+    
+    local in_pkg=false
+    local pkg_desc=""
+    local pkg_repo=""
+    local pkg_latest=""
+    local pkg_versions=""
+    
+    while IFS= read -r line; do
+        if [[ "$line" =~ \"${name}\"[[:space:]]*: ]]; then
+            in_pkg=true
+        elif $in_pkg; then
+            if [[ "$line" =~ \"description\"[[:space:]]*:[[:space:]]*\"([^\"]+)\" ]]; then
+                pkg_desc="${BASH_REMATCH[1]}"
+            elif [[ "$line" =~ \"repository\"[[:space:]]*:[[:space:]]*\"([^\"]+)\" ]]; then
+                pkg_repo="${BASH_REMATCH[1]}"
+            elif [[ "$line" =~ \"latest\"[[:space:]]*:[[:space:]]*\"([^\"]+)\" ]]; then
+                pkg_latest="${BASH_REMATCH[1]}"
+            elif [[ "$line" =~ ^[[:space:]]*\} ]]; then
+                break
+            fi
+        fi
+    done < "$registry_file"
+    
+    if [[ -n "$pkg_desc" ]]; then
+        echo "name:${name}"
+        echo "description:${pkg_desc}"
+        echo "repository:${pkg_repo}"
+        echo "latest:${pkg_latest}"
+        return 0
+    fi
+    return 1
 }
 
 # ============================================
@@ -673,17 +770,104 @@ cmd_search() {
     local query="$1"
     
     print_header
-    print_info "Searching for: ${query}"
+    
+    if [[ -z "$query" ]]; then
+        print_info "Available packages in registry:"
+        echo ""
+    else
+        print_info "Searching for: ${query}"
+        echo ""
+    fi
+    
+    local registry_file="${SCRIPT_DIR}/registry/index.json"
+    
+    if [[ -f "$registry_file" ]]; then
+        local found=0
+        
+        # Simple approach: find package names by looking for pattern
+        # "package-name": {
+        #   "description": "...",
+        # (after the "packages": { line)
+        
+        # Get all package definitions
+        local packages=$(grep -E '^\s*"[a-z][a-z0-9-]*"\s*:\s*\{' "$registry_file" | \
+                        grep -v '"packages"' | grep -v '"versions"' | grep -v '"dependencies"' | \
+                        sed 's/.*"\([^"]*\)".*/\1/')
+        
+        for pkg in $packages; do
+            # Get description and latest for this package
+            local pkg_section=$(sed -n "/\"${pkg}\"/,/\"latest\"/p" "$registry_file" | head -20)
+            local desc=$(echo "$pkg_section" | grep '"description"' | head -1 | sed 's/.*"\([^"]*\)"[^"]*$/\1/')
+            local latest=$(echo "$pkg_section" | grep '"latest"' | head -1 | sed 's/.*"\([^"]*\)"[^"]*$/\1/')
+            
+            # Filter by query if provided
+            if [[ -z "$query" ]] || [[ "$pkg" == *"$query"* ]] || [[ "$desc" == *"$query"* ]]; then
+                echo -e "  ${GREEN}${pkg}${NC} (${latest})"
+                echo "    ${desc}"
+                echo ""
+                found=$((found + 1))
+            fi
+        done
+        
+        if [[ $found -eq 0 ]]; then
+            if [[ -n "$query" ]]; then
+                print_warning "No packages found matching: ${query}"
+            else
+                print_warning "No packages in registry"
+            fi
+        else
+            echo "Found ${found} package(s)"
+        fi
+        
+        echo ""
+        echo "Install a package:"
+        echo "  apm add <package-name>"
+    else
+        print_warning "Local registry not found"
+        echo ""
+        echo "Search on GitHub:"
+        echo "  https://github.com/search?q=argon+${query}&type=repositories"
+        echo ""
+        echo "To add a GitHub package:"
+        echo "  apm add user/repo --git"
+    fi
+}
+
+# Show package info
+cmd_info() {
+    local pkg="$1"
+    
+    print_header
+    
+    if [[ -z "$pkg" ]]; then
+        print_error "Usage: apm info <package>"
+        exit 1
+    fi
+    
+    print_info "Package: ${pkg}"
     echo ""
     
-    # For now, just suggest GitHub search
-    print_warning "Central registry not yet available"
-    echo ""
-    echo "Search on GitHub:"
-    echo "  https://github.com/search?q=argon+${query}&type=repositories"
-    echo ""
-    echo "To add a GitHub package:"
-    echo "  apm add user/repo --git"
+    local info=$(get_package_info "$pkg")
+    
+    if [[ -n "$info" ]]; then
+        while IFS=':' read -r key value; do
+            case "$key" in
+                name) echo "  Name:        ${value}" ;;
+                description) echo "  Description: ${value}" ;;
+                repository) echo "  Repository:  ${value}" ;;
+                latest) echo "  Latest:      ${value}" ;;
+            esac
+        done <<< "$info"
+        
+        echo ""
+        echo "Install:"
+        echo "  apm add ${pkg}"
+    else
+        print_warning "Package not found: ${pkg}"
+        echo ""
+        echo "Try searching:"
+        echo "  apm search ${pkg}"
+    fi
 }
 
 cmd_publish() {
@@ -837,6 +1021,7 @@ main() {
         update|up)  cmd_update "$@" ;;
         list|ls)    cmd_list "$@" ;;
         search|s)   cmd_search "$@" ;;
+        info)       cmd_info "$@" ;;
         publish)    cmd_publish "$@" ;;
         clean)      cmd_clean "$@" ;;
         version|--version|-v) cmd_version ;;
