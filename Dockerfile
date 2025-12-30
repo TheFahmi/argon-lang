@@ -1,5 +1,5 @@
-# Argon Toolchain v2.7.1
-# Pre-built with snake_case intrinsics
+# Argon Toolchain v2.13.0
+# With: NOT operator, char_from_code runtime
 FROM rust:slim
 
 RUN apt-get update && apt-get install -y clang llvm && rm -rf /var/lib/apt/lists/*

@@ -58,6 +58,7 @@ let TOK_MATCH = 59;
 let TOK_ARROW = 61;
 let TOK_IMPORT = 62;
 let TOK_FROM = 63;
+let TOK_NOT = 70;
 
 // =================== LEXER ===================
 
@@ -283,9 +284,12 @@ fn tokenize(source: string) {
                     tokens = push(tokens, make_token(44, "!="));
                     pos = pos + 2;
                 } else {
+                    // Single ! is NOT operator
+                    tokens = push(tokens, make_token(70, "!"));
                     pos = pos + 1;
                 }
             } else {
+                tokens = push(tokens, make_token(70, "!"));
                 pos = pos + 1;
             }
         }
@@ -503,6 +507,13 @@ fn make_block(stmts: any) {
 fn parse_primary() {
     let t = p_current_type();
     let v = p_current_val();
+    
+    // NOT operator: !expr
+    if (t == TOK_NOT) {
+        p_advance();
+        let not_expr = parse_primary();
+        return [71, not_expr]; // AST_NOT = 71
+    }
     
     // String literal
     if (t == TOK_STR) {
@@ -1277,6 +1288,18 @@ fn cg_gen_expr(cge_input: any) {
             return var_temp2;
         }
         return "0";
+    }
+    
+    // NOT operator: !expr
+    // In tagged format: true = 3, false = 1
+    // NOT flips: 3 -> 1, 1 -> 3
+    if (node_type == 71) { // AST_NOT = 71
+        let not_input = cge_input[1];
+        let not_val = cg_gen_expr(not_input);
+        let not_res = cg_next_temp();
+        // XOR with 2 flips the second bit: 1 (01) -> 3 (11), 3 (11) -> 1 (01)
+        cg_emit(not_res + " = xor i64 " + not_val + ", 2");
+        return not_res;
     }
     
     // Binary operation
@@ -2262,6 +2285,9 @@ fn cg_generate(cg_input_nodes: any) {
     cg_emit_raw("declare i64 @argon_atomic_add(i64, i64)");
     cg_emit_raw("declare i64 @argon_atomic_cas(i64, i64, i64)");
     cg_emit_raw("declare i64 @argon_sleep(i64)");
+    cg_emit_raw("declare i64 @argon_char_from_code(i64)");
+    cg_emit_raw("declare i64 @argon_exit(i64)");
+    cg_emit_raw("declare i64 @argon_get_env(i64)");
     cg_emit_raw("@.str.int = private constant [5 x i8] c\"%ld\\0A\\00\"");
     cg_emit_raw("@.str.str = private constant [4 x i8] c\"%s\\0A\\00\"");
     
