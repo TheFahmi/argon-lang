@@ -634,6 +634,18 @@ fn parse_primary() {
                     base_obj = [102, base_obj, member_name]; // AST_FIELD_ACCESS
                 }
             }
+            
+            // Check for array indexing after field access: obj.field[idx]
+            while (p_current_type() == 34) { // TOK_LBRACK
+                p_advance();
+                let idx_expr = parse_expr();
+                p_expect(35); // TOK_RBRACK
+                let idx_args = [];
+                idx_args = push(idx_args, base_obj);
+                idx_args = push(idx_args, idx_expr);
+                base_obj = [AST_CALL, "argon_get", idx_args];
+            }
+            
             return base_obj;
         }
         
