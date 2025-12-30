@@ -570,6 +570,21 @@ fn parse_primary() {
             return [101, id_name, inst_fields]; // AST_STRUCT_INST = 101
         }
         
+        // Check for generic type arguments: func<int, string>(...)
+        if (p_current_type() == TOK_LT) {
+            // Could be generic call OR comparison (a < b)
+            // Heuristic: if followed by identifier/type and then > or ,, it's generic
+            p_advance(); // skip <
+            while (p_current_type() != TOK_GT) {
+                p_advance(); // skip type arg
+                if (p_current_type() == TOK_COMMA) {
+                    p_advance();
+                }
+            }
+            p_expect(TOK_GT);
+            // Now check for ( - if present, it's a generic call
+        }
+        
         // Check for function call
         if (p_current_type() == TOK_LPAREN) {
             p_advance(); // skip (
