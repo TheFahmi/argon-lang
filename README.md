@@ -1,4 +1,4 @@
-# Argon Programming Language (v2.7)
+# Argon Programming Language (v2.7.1)
 ![Argon Logo](logo.png)
 
 Argon is a high-performance, **self-hosted** systems programming language that compiles directly to LLVM IR and Native Machine Code.
@@ -7,12 +7,12 @@ Argon is a high-performance, **self-hosted** systems programming language that c
 - **Self-Hosted**: Compiler written in Argon itself (`self-host/compiler.ar`)
 - **Verified**: Stage 1 (self-compiled) produces identical output when compiling itself
 - **Native Backend**: Uses LLVM for optimized native binary generation
-- **Methods**: Support for methods on structs (v2.5)
-- **Enums**: Enum types with pattern matching (v2.6)
-- **Modules**: Import system for code organization (v2.7)
-- **Structs**: Full struct support with definitions, instantiation, and field access (v2.4)
-- **Networking**: Built-in TCP Socket support (v2.1)
-- **Multi-threading**: Atomics, Mutex, and Thread support (v2.3)
+- **Methods**: Support for methods on structs (v2.5.0)
+- **Enums**: Enum types with pattern matching (v2.6.0)
+- **Modules**: Import system for code organization (v2.7.0)
+- **Structs**: Full struct support with definitions, instantiation, and field access (v2.4.0)
+- **Networking**: Built-in TCP Socket support (v2.1.0)
+- **Multi-threading**: Atomics, Mutex, and Thread support (v2.3.0)
 - **High Performance**: Tagged pointer optimization for fast integer arithmetic
 
 ## Quick Start
@@ -56,7 +56,7 @@ my_api/
 
 ## Language Features
 
-### Modules & Imports (v2.7)
+### Modules & Imports (v2.7.0)
 ```javascript
 // math_utils.ar
 fn math_add(a, b) { return a + b; }
@@ -73,7 +73,7 @@ fn main() {
 }
 ```
 
-### Enums & Pattern Matching (v2.6)
+### Enums & Pattern Matching (v2.6.0)
 ```javascript
 enum Result {
     Ok(val),
@@ -93,7 +93,7 @@ fn main() {
 }
 ```
 
-### Methods (v2.5)
+### Methods (v2.5.0)
 ```javascript
 struct Circle {
     radius: int
@@ -111,7 +111,7 @@ fn main() {
 }
 ```
 
-### Structs (v2.4)
+### Structs (v2.4.0)
 ```javascript
 struct Point {
     x: int,
@@ -125,7 +125,7 @@ fn main() {
 }
 ```
 
-### Networking (v2.1)
+### Networking (v2.1.0)
 | Function | Description |
 |----------|-------------|
 | `argon_listen(port)` | Bind to 0.0.0.0:port, returns server ID |
@@ -134,7 +134,7 @@ fn main() {
 | `argon_socket_write(client, data)` | Write string to client |
 | `argon_socket_close(client)` | Close connection |
 
-### Multi-threading (v2.3)
+### Multi-threading (v2.3.0)
 | Function | Description |
 |----------|-------------|
 | `argon_thread_spawn(fn)` | Spawn thread with function |
@@ -153,19 +153,21 @@ fn main() {
 - **Docker**: The toolchain runs inside the `argon-toolchain` image.
 
 ## Version History
-- **v2.7**: Module system / imports (`import "module.ar";`)
-- **v2.6**: Enum types with pattern matching (`match expr { ... }`)
-- **v2.5**: Methods on structs (`p.get_x()`, `p.sum()`)
-- **v2.4**: Struct support (definitions, instantiation, field access)
-- **v2.3**: Multi-threading support (Atomics, Mutex, Sleep)
-- **v2.2**: Verified Self-Hosting (Stage 1 == Stage 2)
-- **v2.1**: Native Networking (TCP Sockets)
-- **v1.0**: Self-Hosting Compiler
+- **v2.7.1**: Bug fixes, Standard Library (math, string, array, datetime, json, http, fs, console)
+- **v2.7.0**: Module system / imports (`import "module.ar";`)
+- **v2.6.0**: Enum types with pattern matching (`match expr { ... }`)
+- **v2.5.0**: Methods on structs (`p.get_x()`, `p.sum()`)
+- **v2.4.0**: Struct support (definitions, instantiation, field access)
+- **v2.3.0**: Multi-threading support (Atomics, Mutex, Sleep)
+- **v2.2.0**: Verified Self-Hosting (Stage 1 == Stage 2)
+- **v2.1.0**: Native Networking (TCP Sockets)
+- **v1.0.0**: Self-Hosting Compiler
 
 ## Roadmap
 - [x] Methods on structs (`p.method()`) ✅
 - [x] Enum types with pattern matching ✅
 - [x] Module system / imports ✅
+- [x] Standard library (math, string, array, etc) ✅
 - [ ] First-class functions (for map/filter/reduce)
-- [ ] Standard library
 - [ ] Generic types (`Array<T>`)
+- [ ] Package manager

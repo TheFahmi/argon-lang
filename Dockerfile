@@ -1,4 +1,4 @@
-# Argon Toolchain v2.8
+# Argon Toolchain v2.7.1
 # Pre-built with snake_case intrinsics
 FROM rust:slim
 

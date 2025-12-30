@@ -172,15 +172,16 @@ Argon v2.1 promotes structured backend development:
 ---
 
 ## 6. Roadmap
-1.  [x] Self-Hosting (v1.0)
-2.  [x] Native Networking (v2.1)
+1.  [x] Self-Hosting (v1.0.0)
+2.  [x] Native Networking (v2.1.0)
 3.  [x] Tagged Integer Optimization
-4.  [x] Verified Self-Hosting - Stage 1 == Stage 2 (v2.2)
-5.  [x] Multi-threading support (Atomics/Sleep) (v2.3)
-6.  [x] Struct types with field access (v2.4)
-7.  [x] Methods on structs (`p.method()`) (v2.5)
-8.  [x] Enum types with pattern matching (v2.6)
-9.  [ ] Generic types (`Array<T>`)
-10. [x] Module system / imports (v2.7)
-11. [ ] Package Manager (dependency resolution)
-12. [ ] LSP (Language Server Protocol) for IDE support
+4.  [x] Verified Self-Hosting - Stage 1 == Stage 2 (v2.2.0)
+5.  [x] Multi-threading support (Atomics/Sleep) (v2.3.0)
+6.  [x] Struct types with field access (v2.4.0)
+7.  [x] Methods on structs (`p.method()`) (v2.5.0)
+8.  [x] Enum types with pattern matching (v2.6.0)
+9.  [x] Module system / imports (v2.7.0)
+10. [x] Standard Library - math, string, array, json, http, fs, datetime, console (v2.7.1)
+11. [ ] Generic types (`Array<T>`)
+12. [ ] Package Manager (dependency resolution)
+13. [ ] LSP (Language Server Protocol) for IDE support
