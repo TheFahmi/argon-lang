@@ -1863,32 +1863,10 @@ fn cg_gen_stmt(stmt: any) {
              return;
         }
         
-        // For all other expressions: track temp count
-        // This works because cg_gen_expr allocates temps sequentially
-        let ret_temp_start = cg_temp;
-        cg_gen_expr(expr);
-        
-        // The result temp is the LAST one allocated (cg_temp - 1)
-        // For complex expressions like binop, the result is the final temp
-        if (cg_temp > ret_temp_start) {
-            // At least one temp was allocated - use the last one
-            let ret_result = "%t" + (cg_temp - 1);
-            cg_emit("ret i64 " + ret_result);
-        } else {
-            // No temp allocated - must be a simple literal
-            // For AST_NUM, the value is returned as string directly
-            // We need to handle this differently
-            if (expr[0] == 1) { // AST_NUM
-                let n = expr[1];
-                if (IS_STAGE1 == 1) {
-                    cg_emit("ret i64 " + n);
-                } else {
-                    cg_emit("ret i64 " + ((n * 2) + 1));
-                }
-            } else {
-                cg_emit("ret i64 0");
-            }
-        }
+        // For all other expressions: use the actual result from cg_gen_expr
+        // CRITICAL FIX: Don't assume last temp is the result - use the actual return value
+        let ret_result = cg_gen_expr(expr);
+        cg_emit("ret i64 " + ret_result);
         return;
     }
     
