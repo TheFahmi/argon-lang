@@ -191,6 +191,8 @@ fn main() {
 - **Node.js** (optional): For LSP/VS Code extension
 
 ## Version History
+- **v2.15.0**: Generic type syntax support (`struct Box<T>`, `fn map<T>`)
+- **v2.14.1**: REPL interactive mode, system(), input() functions
 - **v2.14.0**: Full LSP implementation (Navigation, Editing, Autocomplete)
 - **v2.13.1**: Fixed chained field access and array indexing bugs
 - **v2.13.0**: Fixed NOT operator and runtime functions

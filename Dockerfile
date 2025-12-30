@@ -1,5 +1,5 @@
-# Argon Toolchain v2.13.0
-# With: NOT operator, char_from_code runtime
+# Argon Toolchain v2.15.0
+# With: Generics, REPL, Full LSP, system(), input()
 FROM rust:slim
 
 RUN apt-get update && apt-get install -y clang llvm && rm -rf /var/lib/apt/lists/*

@@ -1,8 +1,8 @@
 // ============================================
-// ARGON SELF-HOSTING COMPILER v2.13.0
+// ARGON SELF-HOSTING COMPILER v2.15.0
 // Written entirely in Argon
 // Complete Lexer, Parser, and Code Generator
-// With Struct, Method, Enum, Match, Modules & NOT
+// With Generics, REPL, Structs, Enums & Match
 // ============================================
 
 let OPT_UNSAFE = 0; // Optimization flag
@@ -2391,9 +2391,9 @@ fn cg_generate(cg_input_nodes: any) {
 
 fn compile_file(filename: string) {
     print("========================================");
-    print("  ARGON SELF-HOSTING COMPILER v2.13.0");
+    print("  ARGON SELF-HOSTING COMPILER v2.15.0");
     print("  Written 100% in Argon Language");
-    print("  With Modules, Pattern Matching & NOT");
+    print("  With Generics, REPL & Full LSP Support");
     print("========================================");
     print("");
     print("Compiling: " + filename);
