@@ -1,5 +1,5 @@
 // ============================================
-// ARGON SELF-HOSTING COMPILER v2.15.0
+// ARGON SELF-HOSTING COMPILER v2.16.0
 // Written entirely in Argon
 // Complete Lexer, Parser, and Code Generator
 // With Generics, REPL, Structs, Enums & Match
@@ -2534,7 +2534,7 @@ fn cg_generate(cg_input_nodes: any) {
 
 fn compile_file(filename: string) {
     print("========================================");
-    print("  ARGON SELF-HOSTING COMPILER v2.15.0");
+    print("  ARGON SELF-HOSTING COMPILER v2.16.0");
     print("  Written 100% in Argon Language");
     print("  With Generics, REPL & Full LSP Support");
     print("========================================");

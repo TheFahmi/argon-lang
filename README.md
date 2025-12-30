@@ -191,7 +191,7 @@ fn main() {
 - **Node.js** (optional): For LSP/VS Code extension
 
 ## Version History
-- **v2.16.0**: Generic types with full monomorphization support
+- **v2.16.0**: Generic types with full monomorphization, fixed duplicate function bug, Rust interpreter bootstrap
 - **v2.15.0**: Generic type syntax support (`struct Box<T>`, `fn map<T>`)
 - **v2.14.1**: REPL interactive mode, system(), input() functions
 - **v2.14.0**: Full LSP implementation (Navigation, Editing, Autocomplete)

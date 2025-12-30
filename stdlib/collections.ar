@@ -1,4 +1,5 @@
-// Collections Module - Stack, Queue, Optional, Pair, Range
+// ARGON STANDARD LIBRARY: COLLECTIONS (v2.16.0)
+// Stack, Queue, Optional, Pair, Range
 fn _empty_arr() { let arr = []; return arr; }
 
 struct Stack { items: any, size: int }

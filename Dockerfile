@@ -1,16 +1,14 @@
-# Argon Toolchain v2.15.0
-# With: Generics, REPL, Full LSP, system(), input()
+# Argon Toolchain v2.16.0
 FROM rust:slim
 
 RUN apt-get update && apt-get install -y clang llvm && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy pre-built compiler and runtime
-COPY self-host/new_argonc /usr/bin/argonc
+# Copy compiler v2.16.0 and runtime
+COPY self-host/argonc_v216 /usr/bin/argonc
 COPY self-host/libruntime_new.a /usr/lib/libruntime_argon.a
 
-# Verify installation
 RUN chmod +x /usr/bin/argonc
 
 CMD ["bash"]
