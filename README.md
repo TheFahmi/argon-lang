@@ -1,4 +1,4 @@
-# Argon Programming Language (v2.7.1)
+# Argon Programming Language (v2.10.0)
 ![Argon Logo](logo.png)
 
 Argon is a high-performance, **self-hosted** systems programming language that compiles directly to LLVM IR and Native Machine Code.
@@ -7,6 +7,8 @@ Argon is a high-performance, **self-hosted** systems programming language that c
 - **Self-Hosted**: Compiler written in Argon itself (`self-host/compiler.ar`)
 - **Verified**: Stage 1 (self-compiled) produces identical output when compiling itself
 - **Native Backend**: Uses LLVM for optimized native binary generation
+- **Package Manager**: APM with registry, git deps, and lock files (v2.10.0)
+- **Standard Library**: 18 modules (math, string, array, json, http, fs, etc)
 - **Methods**: Support for methods on structs (v2.5.0)
 - **Enums**: Enum types with pattern matching (v2.6.0)
 - **Modules**: Import system for code organization (v2.7.0)
@@ -16,42 +18,68 @@ Argon is a high-performance, **self-hosted** systems programming language that c
 - **High Performance**: Tagged pointer optimization for fast integer arithmetic
 
 ## Quick Start
-Argon Toolchain uses Docker to ensure a consistent build environment.
 
-### 1. Create a New Project
-Generate a full MVC Backend skeleton:
+### Using APM (Recommended)
 ```bash
-# Git Bash / Linux / Mac
+# Create new project
+./apm.sh init my-app
+cd my-app
+
+# Install dependencies
+./apm.sh install
+
+# Build and run
+./apm.sh run
+```
+
+### Using Docker Toolchain
+```bash
+# Create MVC Backend skeleton
 ./argon new my_api
 
-# Windows CMD
-argon new my_api
-```
-
-### 2. Run
-Compile and run the project immediately (starts HTTP server on port 3000):
-```bash
+# Run (starts HTTP server on port 3000)
 ./argon run my_api
-```
 
-### 3. Build only
-Produces a native executable inside `dist/`:
-```bash
+# Build only
 ./argon build my_api
 ```
 
+## 📦 Package Manager (APM)
+
+### Commands
+| Command | Description |
+|---------|-------------|
+| `apm init <name>` | Create new project |
+| `apm build` | Compile project |
+| `apm run` | Build and run |
+| `apm install` | Install dependencies |
+| `apm add <pkg>` | Add from registry |
+| `apm add user/repo --git` | Add from GitHub |
+| `apm add ../lib --path` | Add local dependency |
+| `apm search` | List available packages |
+| `apm publish` | Publish package |
+
+### Example: Adding Dependencies
+```bash
+# From GitHub
+apm add TheFahmi/json-utils --git
+
+# Local path
+apm add ../my-lib --path
+
+# Then import in your code
+import "deps/json-utils/lib/lib.ar";
+```
+
 ## Project Structure
-An Argon MVC project looks like this:
 ```text
-my_api/
-├── dist/            # Compiled Binaries & LLVM IR
-├── src/
-│   ├── main.ar      # Entry Point
-│   ├── server.ar    # HTTP Server Loop
-│   ├── controllers/ # Request Handlers
-│   ├── services/    # Business Logic
-│   └── models/      # Data Models
-└── tests/           # Unit Tests
+my_app/
+├── argon.toml       # Project manifest
+├── argon.lock       # Lock file (generated)
+├── src/main.ar      # Entry point
+├── lib/             # Library code
+├── deps/            # Dependencies (installed)
+└── tests/           # Unit tests
 ```
 
 ## Language Features
@@ -125,50 +153,60 @@ fn main() {
 }
 ```
 
+### Standard Library (v2.7.2)
+| Module | Functions |
+|--------|-----------|
+| math | abs, min, max, pow, sqrt, gcd, lcm |
+| string | trim, split, join, replace, to_upper |
+| array | push, pop, map, filter, reduce |
+| datetime | now, format, is_leap_year |
+| regex | match, replace, is_email, glob |
+| process | command, spawn, execute |
+| crypto | hash, base64, hex |
+| ... | 18 modules total |
+
 ### Networking (v2.1.0)
 | Function | Description |
 |----------|-------------|
-| `argon_listen(port)` | Bind to 0.0.0.0:port, returns server ID |
-| `argon_accept(server)` | Accept connection, returns client ID |
-| `argon_socket_read(client)` | Read data from client |
-| `argon_socket_write(client, data)` | Write string to client |
+| `argon_listen(port)` | Bind to 0.0.0.0:port |
+| `argon_accept(server)` | Accept connection |
+| `argon_socket_read(client)` | Read data |
+| `argon_socket_write(client, data)` | Write data |
 | `argon_socket_close(client)` | Close connection |
 
 ### Multi-threading (v2.3.0)
 | Function | Description |
 |----------|-------------|
-| `argon_thread_spawn(fn)` | Spawn thread with function |
-| `argon_thread_join(id)` | Wait for thread completion |
+| `argon_thread_spawn(fn)` | Spawn thread |
+| `argon_thread_join(id)` | Wait for thread |
 | `argon_mutex_new()` | Create mutex |
-| `argon_mutex_lock(id)` | Lock mutex |
-| `argon_mutex_unlock(id)` | Unlock mutex |
-| `argon_atomic_new(v)` | Create atomic integer |
-| `argon_atomic_load(id)` | Load atomic value |
-| `argon_atomic_store(id, v)` | Store atomic value |
-| `argon_atomic_add(id, v)` | Atomic add, returns old value |
-| `argon_atomic_cas(id, exp, new)` | Compare-and-swap |
-| `argon_sleep(ms)` | Sleep for milliseconds |
+| `argon_atomic_new(v)` | Create atomic |
+| `argon_sleep(ms)` | Sleep |
 
 ## Requirements
 - **Docker**: The toolchain runs inside the `argon-toolchain` image.
 
 ## Version History
-- **v2.7.2**: Added process and regex modules (18 stdlib modules total)
-- **v2.7.1**: Standard Library (16 modules: math, string, array, json, http, fs, datetime, console, random, result, testing, map, set, env, color, crypto)
-- **v2.7.0**: Module system / imports (`import "module.ar";`)
-- **v2.6.0**: Enum types with pattern matching (`match expr { ... }`)
-- **v2.5.0**: Methods on structs (`p.get_x()`, `p.sum()`)
-- **v2.4.0**: Struct support (definitions, instantiation, field access)
-- **v2.3.0**: Multi-threading support (Atomics, Mutex, Sleep)
-- **v2.2.0**: Verified Self-Hosting (Stage 1 == Stage 2)
-- **v2.1.0**: Native Networking (TCP Sockets)
+- **v2.10.0**: Package Manager with Central Registry
+- **v2.9.0**: APM with git dependencies and lock files
+- **v2.8.0**: APM basics (init, build, run, local deps)
+- **v2.7.2**: Added process and regex modules (18 stdlib modules)
+- **v2.7.0**: Module system / imports
+- **v2.6.0**: Enum types with pattern matching
+- **v2.5.0**: Methods on structs
+- **v2.4.0**: Struct support
+- **v2.3.0**: Multi-threading support
+- **v2.2.0**: Verified Self-Hosting
+- **v2.1.0**: Native Networking
 - **v1.0.0**: Self-Hosting Compiler
 
 ## Roadmap
-- [x] Methods on structs (`p.method()`) ✅
-- [x] Enum types with pattern matching ✅
+- [x] Self-Hosting Compiler ✅
+- [x] Networking & Multi-threading ✅
+- [x] Structs, Methods, Enums ✅
 - [x] Module system / imports ✅
-- [x] Standard library (math, string, array, etc) ✅
-- [ ] First-class functions (for map/filter/reduce)
+- [x] Standard library (18 modules) ✅
+- [x] Package Manager (APM) ✅
 - [ ] Generic types (`Array<T>`)
-- [ ] Package manager
+- [ ] LSP (Language Server Protocol)
+
