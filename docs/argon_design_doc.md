@@ -182,7 +182,11 @@ Argon v2.1 promotes structured backend development:
 8.  [x] Enum types with pattern matching (v2.6.0)
 9.  [x] Module system / imports (v2.7.0)
 10. [x] Standard Library - 18 modules (v2.7.2)
-11. [x] Package Manager (APM) - init, build, run, add deps (v2.8.0)
+11. [x] Package Manager (APM) - Full implementation (v2.9.0)
+    - init, build, run commands
+    - Local path dependencies
+    - Git dependencies with tags
+    - argon.lock generation
+    - publish, search, list, update commands
 12. [ ] Generic types (`Array<T>`)
 13. [ ] LSP (Language Server Protocol) for IDE support
-

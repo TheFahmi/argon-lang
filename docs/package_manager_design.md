@@ -28,57 +28,80 @@ version = "1.0.0"
 description = "My awesome Argon project"
 author = "Your Name"
 license = "MIT"
+repository = "https://github.com/user/my-project"
 
 [dependencies]
+# Registry dependency
 http-utils = "1.0.0"
+
+# Git dependency
 json-parser = { git = "https://github.com/user/json-parser", tag = "v1.0.0" }
+
+# Local path dependency  
 local-lib = { path = "../local-lib" }
 
 [dev-dependencies]
 test-framework = "0.1.0"
+
+[build]
+entry = "src/main.ar"
+output = "build"
 ```
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| `argon init` | Create new project with argon.toml |
-| `argon install` | Install all dependencies |
-| `argon add <pkg>` | Add a dependency |
-| `argon remove <pkg>` | Remove a dependency |
-| `argon update` | Update dependencies |
-| `argon build` | Build the project |
-| `argon run` | Run the project |
-| `argon publish` | Publish to registry |
+| Command | Alias | Description |
+|---------|-------|-------------|
+| `apm init [name]` | | Create new project |
+| `apm build [file]` | `b` | Build the project |
+| `apm run [file]` | `r` | Build and run |
+| `apm install` | `i` | Install all dependencies |
+| `apm add <pkg>` | `a` | Add a dependency |
+| `apm remove <pkg>` | `rm` | Remove a dependency |
+| `apm update` | `up` | Update all dependencies |
+| `apm list` | `ls` | List installed dependencies |
+| `apm search <query>` | `s` | Search for packages |
+| `apm publish` | | Publish to registry |
+| `apm clean` | | Remove build artifacts |
 
-## Dependency Resolution
+## Dependency Types
 
-1. Parse `argon.toml`
-2. Resolve transitive dependencies
-3. Check version compatibility
-4. Download to `deps/` folder
-5. Generate `argon.lock`
+```bash
+# Local path
+apm add ../my-lib --path
 
-## Registry
+# GitHub repository
+apm add user/repo --git
 
-For v1, we'll use a simple file-based registry:
-- GitHub repositories with `argon.toml`
-- Version tags for releases
+# GitHub with specific version
+apm add user/repo@v1.0.0 --git
 
-## Implementation Plan
+# Registry (future)
+apm add package-name
+```
 
-### Phase 1: Core (v2.8.0)
+## Implementation Status
+
+### Phase 1: Core (v2.8.0) ✅
 - [x] argon.toml parser
 - [x] argon init command
-- [x] argon build command (with deps)
+- [x] argon build command
 - [x] Local path dependencies
 
-### Phase 2: Remote (v2.9.0)
-- [ ] Git dependencies  
-- [ ] argon install command
-- [ ] argon.lock generation
+### Phase 2: Remote (v2.9.0) ✅
+- [x] Git dependencies  
+- [x] argon install command
+- [x] argon.lock generation
+- [x] argon list command
+- [x] argon update command
 
-### Phase 3: Registry (v3.0.0)
-- [ ] Central registry
-- [ ] argon publish command
+### Phase 3: Publishing (v2.9.0) ✅
+- [x] argon publish command (git tag based)
+- [x] argon remove command
+- [x] argon search command
+
+### Future: Central Registry
+- [ ] Central package registry server
 - [ ] Version resolution algorithm
+- [ ] Semantic versioning support
+

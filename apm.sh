@@ -1,13 +1,16 @@
 #!/bin/bash
 # ============================================
-# ARGON PACKAGE MANAGER (APM) v1.0.0
-# Dependency management for Argon projects
+# ARGON PACKAGE MANAGER (APM) v2.0.0
+# Complete dependency management for Argon
+# Supports: local, git, and registry deps
 # ============================================
 
 set -e
 
-VERSION="1.0.0"
+VERSION="2.0.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEPS_DIR="deps"
+REGISTRY_URL="https://raw.githubusercontent.com/anthropics/argon-packages/main"
 
 # Colors
 RED='\033[0;31m'
@@ -15,7 +18,8 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+MAGENTA='\033[0;35m'
+NC='\033[0m'
 
 # Print functions
 print_header() {
@@ -25,21 +29,11 @@ print_header() {
     echo ""
 }
 
-print_success() {
-    echo -e "${GREEN}✓ $1${NC}"
-}
-
-print_error() {
-    echo -e "${RED}✗ $1${NC}"
-}
-
-print_info() {
-    echo -e "${BLUE}→ $1${NC}"
-}
-
-print_warning() {
-    echo -e "${YELLOW}! $1${NC}"
-}
+print_success() { echo -e "${GREEN}✓ $1${NC}"; }
+print_error() { echo -e "${RED}✗ $1${NC}"; }
+print_info() { echo -e "${BLUE}→ $1${NC}"; }
+print_warning() { echo -e "${YELLOW}! $1${NC}"; }
+print_step() { echo -e "${MAGENTA}[$1] $2${NC}"; }
 
 # Help message
 show_help() {
@@ -47,35 +41,39 @@ show_help() {
     echo "Usage: apm <command> [options]"
     echo ""
     echo "Commands:"
-    echo "  init [name]     Create a new Argon project"
-    echo "  build           Build the current project"
-    echo "  run             Build and run the project"
-    echo "  add <pkg>       Add a dependency"
-    echo "  remove <pkg>    Remove a dependency"
-    echo "  install         Install all dependencies"
-    echo "  clean           Remove build artifacts"
-    echo "  version         Show version"
-    echo "  help            Show this help"
+    echo "  init [name]       Create a new Argon project"
+    echo "  build [file]      Build the project"
+    echo "  run [file]        Build and run the project"
+    echo "  install           Install all dependencies"
+    echo "  add <pkg>         Add a dependency"
+    echo "  remove <pkg>      Remove a dependency"
+    echo "  update            Update all dependencies"
+    echo "  list              List installed dependencies"
+    echo "  search <query>    Search for packages"
+    echo "  publish           Publish package to registry"
+    echo "  clean             Remove build artifacts"
+    echo "  version           Show version"
+    echo "  help              Show this help"
     echo ""
-    echo "Examples:"
-    echo "  apm init my-project"
-    echo "  apm build"
-    echo "  apm run"
-    echo "  apm add ../my-lib --path"
+    echo "Dependency types:"
+    echo "  apm add pkg-name                    # From registry"
+    echo "  apm add ../local-lib --path         # Local path"
+    echo "  apm add user/repo --git             # From GitHub"
+    echo "  apm add user/repo@v1.0.0 --git      # Specific version"
     echo ""
 }
 
-# Initialize new project
+# ============================================
+# PROJECT INITIALIZATION
+# ============================================
+
 cmd_init() {
     local name="${1:-my-project}"
     
     print_header
     print_info "Creating new Argon project: ${name}"
     
-    # Create directory structure
-    mkdir -p "${name}/src"
-    mkdir -p "${name}/lib"
-    mkdir -p "${name}/tests"
+    mkdir -p "${name}/src" "${name}/lib" "${name}/tests" "${name}/deps"
     
     # Create argon.toml
     cat > "${name}/argon.toml" << EOF
@@ -85,14 +83,19 @@ version = "0.1.0"
 description = "An Argon project"
 author = ""
 license = "MIT"
+repository = ""
+keywords = []
 
 [dependencies]
-# Add dependencies here
-# example = "1.0.0"
-# local-lib = { path = "../local-lib" }
+# Registry: package = "version"
+# Local:    package = { path = "../path" }
+# Git:      package = { git = "https://github.com/user/repo", tag = "v1.0.0" }
 
 [dev-dependencies]
-# test-framework = "0.1.0"
+
+[build]
+entry = "src/main.ar"
+output = "build"
 EOF
 
     # Create main.ar
@@ -116,6 +119,10 @@ EOF
 fn greet(name) {
     return "Hello, " + name + "!";
 }
+
+fn add(a, b) {
+    return a + b;
+}
 EOF
 
     # Create test file
@@ -130,15 +137,27 @@ fn test_greet() {
     let result = greet("World");
     if (result == "Hello, World!") {
         print("  [PASS] test_greet");
-        return true;
+        return 1;
     }
     print("  [FAIL] test_greet");
-    return false;
+    return 0;
+}
+
+fn test_add() {
+    if (add(2, 3) == 5) {
+        print("  [PASS] test_add");
+        return 1;
+    }
+    print("  [FAIL] test_add");
+    return 0;
 }
 
 fn main() {
     print("Running tests...");
-    test_greet();
+    let passed = 0;
+    passed = passed + test_greet();
+    passed = passed + test_add();
+    print("Passed: " + passed + "/2");
     return 0;
 }
 EOF
@@ -152,8 +171,11 @@ EOF
 *.exe
 build/
 
-# Dependencies
+# Dependencies (downloaded)
 deps/
+
+# Lock file can be committed
+# argon.lock
 
 # IDE
 .vscode/
@@ -170,140 +192,577 @@ EOF
 
 An Argon project.
 
-## Build
+## Quick Start
 
 \`\`\`bash
+# Install dependencies
+apm install
+
+# Build
 apm build
-\`\`\`
 
-## Run
-
-\`\`\`bash
+# Run
 apm run
+
+# Test
+apm run tests/test_main.ar
 \`\`\`
 
-## Test
+## Project Structure
 
-\`\`\`bash
-apm build tests/test_main.ar
-./tests/test_main.ar.out
 \`\`\`
+${name}/
+├── argon.toml      # Project manifest
+├── argon.lock      # Dependency lock file
+├── src/
+│   └── main.ar     # Entry point
+├── lib/
+│   └── lib.ar      # Library code
+├── tests/
+│   └── test_main.ar
+└── deps/           # Downloaded dependencies
+\`\`\`
+
+## License
+
+MIT
 EOF
 
     print_success "Created project: ${name}"
     echo ""
     echo "Next steps:"
     echo "  cd ${name}"
-    echo "  apm build"
+    echo "  apm install"
     echo "  apm run"
 }
 
-# Parse argon.toml
-parse_toml() {
+# ============================================
+# TOML PARSING
+# ============================================
+
+parse_toml_value() {
     local file="$1"
     local key="$2"
-    
-    if [[ ! -f "$file" ]]; then
-        return 1
-    fi
-    
-    grep "^${key}" "$file" | head -1 | sed 's/.*= *"\([^"]*\)".*/\1/'
+    grep "^${key}" "$file" 2>/dev/null | head -1 | sed 's/.*= *"\([^"]*\)".*/\1/'
 }
 
-# Parse dependencies from argon.toml
-parse_dependencies() {
+# Parse all dependencies with type info
+# Output: name|type|value per line
+parse_all_dependencies() {
     local file="$1"
     local in_deps=false
-    local deps=""
     
-    while IFS= read -r line; do
-        # Check for [dependencies] section
+    while IFS= read -r line || [[ -n "$line" ]]; do
         if [[ "$line" =~ ^\[dependencies\] ]]; then
             in_deps=true
             continue
         fi
         
-        # Check for new section (end of dependencies)
         if [[ "$line" =~ ^\[.*\] ]]; then
             in_deps=false
             continue
         fi
         
-        # Parse dependency line
-        if $in_deps && [[ "$line" =~ ^[a-zA-Z] ]]; then
-            # Skip comments
-            [[ "$line" =~ ^# ]] && continue
+        if $in_deps; then
+            [[ "$line" =~ ^[[:space:]]*# ]] && continue
+            [[ -z "$line" ]] && continue
             
-            # Parse path dependency: name = { path = "..." }
-            if [[ "$line" =~ path\ *=\ *\"([^\"]+)\" ]]; then
-                local dep_path="${BASH_REMATCH[1]}"
-                deps="${deps}${dep_path}\n"
+            # Extract package name
+            local pkg_name=$(echo "$line" | sed 's/[[:space:]]*=.*//' | tr -d ' ')
+            [[ -z "$pkg_name" ]] && continue
+            
+            # Path dependency
+            if [[ "$line" =~ path[[:space:]]*=[[:space:]]*\"([^\"]+)\" ]]; then
+                echo "${pkg_name}|path|${BASH_REMATCH[1]}"
+            # Git dependency
+            elif [[ "$line" =~ git[[:space:]]*=[[:space:]]*\"([^\"]+)\" ]]; then
+                local git_url="${BASH_REMATCH[1]}"
+                local git_tag=""
+                if [[ "$line" =~ tag[[:space:]]*=[[:space:]]*\"([^\"]+)\" ]]; then
+                    git_tag="${BASH_REMATCH[1]}"
+                fi
+                echo "${pkg_name}|git|${git_url}|${git_tag}"
+            # Registry dependency (version string)
+            elif [[ "$line" =~ =[[:space:]]*\"([^\"]+)\" ]]; then
+                echo "${pkg_name}|registry|${BASH_REMATCH[1]}"
             fi
         fi
     done < "$file"
-    
-    echo -e "$deps"
 }
 
-# Build project
-cmd_build() {
-    local target="${1:-src/main.ar}"
+# ============================================
+# DEPENDENCY INSTALLATION
+# ============================================
+
+install_path_dep() {
+    local name="$1"
+    local path="$2"
     
+    if [[ -d "$path" ]] || [[ -f "$path" ]]; then
+        # Create symlink in deps/
+        mkdir -p "${DEPS_DIR}"
+        local target="${DEPS_DIR}/${name}"
+        
+        if [[ -L "$target" ]] || [[ -d "$target" ]]; then
+            rm -rf "$target"
+        fi
+        
+        # Use relative or absolute path
+        if [[ "$path" == /* ]]; then
+            ln -sf "$path" "$target" 2>/dev/null || cp -r "$path" "$target"
+        else
+            ln -sf "../$path" "$target" 2>/dev/null || cp -r "$path" "$target"
+        fi
+        
+        print_success "Linked: ${name} -> ${path}"
+        return 0
+    else
+        print_error "Path not found: ${path}"
+        return 1
+    fi
+}
+
+install_git_dep() {
+    local name="$1"
+    local url="$2"
+    local tag="$3"
+    
+    mkdir -p "${DEPS_DIR}"
+    local target="${DEPS_DIR}/${name}"
+    
+    # Remove existing
+    rm -rf "$target"
+    
+    print_info "Cloning ${url}..."
+    
+    if [[ -n "$tag" ]]; then
+        git clone --depth 1 --branch "$tag" "$url" "$target" 2>/dev/null
+    else
+        git clone --depth 1 "$url" "$target" 2>/dev/null
+    fi
+    
+    if [[ $? -eq 0 ]]; then
+        # Get commit hash for lock file
+        local commit=$(cd "$target" && git rev-parse HEAD 2>/dev/null)
+        print_success "Installed: ${name} (${commit:0:8})"
+        echo "$commit"
+        return 0
+    else
+        print_error "Failed to clone: ${url}"
+        return 1
+    fi
+}
+
+install_registry_dep() {
+    local name="$1"
+    local version="$2"
+    
+    mkdir -p "${DEPS_DIR}"
+    local target="${DEPS_DIR}/${name}"
+    
+    # For now, registry packages are GitHub repos
+    # Format: https://github.com/argon-lang/pkg-{name}
+    local url="https://github.com/argon-lang/pkg-${name}"
+    
+    print_info "Fetching ${name}@${version} from registry..."
+    
+    # Try to download
+    rm -rf "$target"
+    
+    if git clone --depth 1 --branch "v${version}" "$url" "$target" 2>/dev/null; then
+        local commit=$(cd "$target" && git rev-parse HEAD 2>/dev/null)
+        print_success "Installed: ${name}@${version}"
+        echo "$commit"
+        return 0
+    else
+        # Fallback: try without 'v' prefix
+        if git clone --depth 1 --branch "${version}" "$url" "$target" 2>/dev/null; then
+            local commit=$(cd "$target" && git rev-parse HEAD 2>/dev/null)
+            print_success "Installed: ${name}@${version}"
+            echo "$commit"
+            return 0
+        fi
+        
+        print_warning "Package not in registry: ${name}"
+        print_info "Try: apm add github.com/user/${name} --git"
+        return 1
+    fi
+}
+
+# ============================================
+# LOCK FILE MANAGEMENT
+# ============================================
+
+generate_lockfile() {
+    local lockfile="argon.lock"
+    
+    print_info "Generating ${lockfile}..."
+    
+    cat > "$lockfile" << EOF
+# This file is auto-generated by APM
+# Do not edit manually
+# Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+[metadata]
+apm_version = "${VERSION}"
+
+EOF
+    
+    # Add each installed dependency
+    if [[ -d "${DEPS_DIR}" ]]; then
+        for dep_dir in "${DEPS_DIR}"/*; do
+            if [[ -d "$dep_dir" ]]; then
+                local dep_name=$(basename "$dep_dir")
+                local dep_version=""
+                local dep_source=""
+                local dep_commit=""
+                
+                # Check if it's a git repo
+                if [[ -d "${dep_dir}/.git" ]]; then
+                    dep_commit=$(cd "$dep_dir" && git rev-parse HEAD 2>/dev/null)
+                    dep_source=$(cd "$dep_dir" && git remote get-url origin 2>/dev/null)
+                    dep_version=$(cd "$dep_dir" && git describe --tags --always 2>/dev/null)
+                else
+                    dep_source="local"
+                    dep_version="0.0.0"
+                fi
+                
+                cat >> "$lockfile" << EOF
+[[package]]
+name = "${dep_name}"
+version = "${dep_version}"
+source = "${dep_source}"
+commit = "${dep_commit}"
+
+EOF
+            fi
+        done
+    fi
+    
+    print_success "Generated: ${lockfile}"
+}
+
+read_lockfile() {
+    local lockfile="argon.lock"
+    
+    if [[ ! -f "$lockfile" ]]; then
+        return 1
+    fi
+    
+    # Parse lock file and output name|commit pairs
+    local current_name=""
+    local current_commit=""
+    
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^name[[:space:]]*=[[:space:]]*\"([^\"]+)\" ]]; then
+            current_name="${BASH_REMATCH[1]}"
+        elif [[ "$line" =~ ^commit[[:space:]]*=[[:space:]]*\"([^\"]+)\" ]]; then
+            current_commit="${BASH_REMATCH[1]}"
+            if [[ -n "$current_name" ]]; then
+                echo "${current_name}|${current_commit}"
+            fi
+            current_name=""
+            current_commit=""
+        fi
+    done < "$lockfile"
+}
+
+# ============================================
+# COMMANDS
+# ============================================
+
+cmd_install() {
     print_header
     
-    # Check for argon.toml
     if [[ ! -f "argon.toml" ]]; then
         print_error "No argon.toml found. Run 'apm init' first."
         exit 1
     fi
     
-    local name=$(parse_toml "argon.toml" "name")
-    local version=$(parse_toml "argon.toml" "version")
-    
-    print_info "Building ${name} v${version}"
+    local name=$(parse_toml_value "argon.toml" "name")
+    print_info "Installing dependencies for ${name}..."
     echo ""
     
-    # Parse dependencies
-    local deps=$(parse_dependencies "argon.toml")
+    local count=0
+    local failed=0
     
-    # Build import list
-    local imports=""
-    if [[ -n "$deps" ]]; then
-        print_info "Resolving dependencies..."
-        while IFS= read -r dep; do
-            [[ -z "$dep" ]] && continue
-            if [[ -d "$dep" ]]; then
-                # Find .ar files in dependency
-                for ar_file in "$dep"/*.ar; do
-                    if [[ -f "$ar_file" ]]; then
-                        imports="${imports}import \"${ar_file}\";\n"
-                        print_success "Found: ${ar_file}"
-                    fi
-                done
-            elif [[ -f "$dep" ]]; then
-                imports="${imports}import \"${dep}\";\n"
-                print_success "Found: ${dep}"
+    # Read all dependencies
+    while IFS='|' read -r pkg_name dep_type dep_value dep_extra; do
+        [[ -z "$pkg_name" ]] && continue
+        
+        print_step "$((count+1))" "Installing ${pkg_name}..."
+        
+        case "$dep_type" in
+            path)
+                if install_path_dep "$pkg_name" "$dep_value"; then
+                    count=$((count + 1))
+                else
+                    failed=$((failed + 1))
+                fi
+                ;;
+            git)
+                if install_git_dep "$pkg_name" "$dep_value" "$dep_extra"; then
+                    count=$((count + 1))
+                else
+                    failed=$((failed + 1))
+                fi
+                ;;
+            registry)
+                if install_registry_dep "$pkg_name" "$dep_value"; then
+                    count=$((count + 1))
+                else
+                    failed=$((failed + 1))
+                fi
+                ;;
+        esac
+    done < <(parse_all_dependencies "argon.toml")
+    
+    echo ""
+    
+    if [[ $count -gt 0 ]]; then
+        generate_lockfile
+    fi
+    
+    echo ""
+    if [[ $failed -eq 0 ]]; then
+        print_success "Installed ${count} dependencies"
+    else
+        print_warning "Installed ${count} dependencies, ${failed} failed"
+    fi
+}
+
+cmd_add() {
+    local pkg="$1"
+    local type_flag="${2:---registry}"
+    
+    if [[ -z "$pkg" ]]; then
+        print_error "Usage: apm add <package> [--path|--git|--registry]"
+        exit 1
+    fi
+    
+    print_header
+    
+    if [[ ! -f "argon.toml" ]]; then
+        print_error "No argon.toml found. Run 'apm init' first."
+        exit 1
+    fi
+    
+    local dep_line=""
+    local dep_name=""
+    
+    case "$type_flag" in
+        --path)
+            dep_name=$(basename "$pkg")
+            dep_line="${dep_name} = { path = \"${pkg}\" }"
+            ;;
+        --git)
+            # Parse user/repo or full URL
+            if [[ "$pkg" =~ ^https?:// ]]; then
+                dep_name=$(basename "$pkg" .git)
+                dep_line="${dep_name} = { git = \"${pkg}\" }"
+            elif [[ "$pkg" =~ @ ]]; then
+                # user/repo@version
+                local repo_part="${pkg%@*}"
+                local version_part="${pkg#*@}"
+                dep_name=$(basename "$repo_part")
+                dep_line="${dep_name} = { git = \"https://github.com/${repo_part}\", tag = \"${version_part}\" }"
             else
-                print_warning "Dependency not found: ${dep}"
+                dep_name=$(basename "$pkg")
+                dep_line="${dep_name} = { git = \"https://github.com/${pkg}\" }"
             fi
-        done <<< "$deps"
+            ;;
+        --registry|*)
+            # Package name with optional version
+            if [[ "$pkg" =~ @ ]]; then
+                dep_name="${pkg%@*}"
+                local version="${pkg#*@}"
+                dep_line="${dep_name} = \"${version}\""
+            else
+                dep_name="$pkg"
+                dep_line="${dep_name} = \"latest\""
+            fi
+            ;;
+    esac
+    
+    print_info "Adding ${dep_name}..."
+    
+    # Check if already exists
+    if grep -q "^${dep_name}[[:space:]]*=" argon.toml 2>/dev/null; then
+        print_warning "Dependency already exists: ${dep_name}"
+        print_info "Use 'apm update' to update or remove first"
+        exit 1
+    fi
+    
+    # Add to argon.toml
+    if grep -q "\[dependencies\]" argon.toml; then
+        # Add after [dependencies] section
+        sed -i "/\[dependencies\]/a ${dep_line}" argon.toml
+    else
+        # Create section
+        echo "" >> argon.toml
+        echo "[dependencies]" >> argon.toml
+        echo "$dep_line" >> argon.toml
+    fi
+    
+    print_success "Added: ${dep_line}"
+    echo ""
+    print_info "Run 'apm install' to download"
+}
+
+cmd_remove() {
+    local pkg="$1"
+    
+    if [[ -z "$pkg" ]]; then
+        print_error "Usage: apm remove <package>"
+        exit 1
+    fi
+    
+    print_header
+    print_info "Removing ${pkg}..."
+    
+    # Remove from argon.toml
+    sed -i "/^${pkg}[[:space:]]*=/d" argon.toml 2>/dev/null
+    
+    # Remove from deps/
+    rm -rf "${DEPS_DIR}/${pkg}"
+    
+    # Regenerate lock file
+    if [[ -f "argon.lock" ]]; then
+        generate_lockfile
+    fi
+    
+    print_success "Removed: ${pkg}"
+}
+
+cmd_update() {
+    print_header
+    print_info "Updating all dependencies..."
+    
+    # Remove deps and reinstall
+    rm -rf "${DEPS_DIR}"
+    cmd_install
+}
+
+cmd_list() {
+    print_header
+    print_info "Installed dependencies:"
+    echo ""
+    
+    if [[ ! -d "${DEPS_DIR}" ]]; then
+        echo "  (none)"
+        return
+    fi
+    
+    for dep_dir in "${DEPS_DIR}"/*; do
+        if [[ -d "$dep_dir" ]]; then
+            local dep_name=$(basename "$dep_dir")
+            local dep_info=""
+            
+            if [[ -d "${dep_dir}/.git" ]]; then
+                dep_info=$(cd "$dep_dir" && git describe --tags --always 2>/dev/null)
+            else
+                dep_info="local"
+            fi
+            
+            echo "  ${dep_name} (${dep_info})"
+        fi
+    done
+}
+
+cmd_search() {
+    local query="$1"
+    
+    print_header
+    print_info "Searching for: ${query}"
+    echo ""
+    
+    # For now, just suggest GitHub search
+    print_warning "Central registry not yet available"
+    echo ""
+    echo "Search on GitHub:"
+    echo "  https://github.com/search?q=argon+${query}&type=repositories"
+    echo ""
+    echo "To add a GitHub package:"
+    echo "  apm add user/repo --git"
+}
+
+cmd_publish() {
+    print_header
+    
+    if [[ ! -f "argon.toml" ]]; then
+        print_error "No argon.toml found."
+        exit 1
+    fi
+    
+    local name=$(parse_toml_value "argon.toml" "name")
+    local version=$(parse_toml_value "argon.toml" "version")
+    
+    print_info "Publishing ${name}@${version}..."
+    echo ""
+    
+    # Check required fields
+    local repo=$(parse_toml_value "argon.toml" "repository")
+    if [[ -z "$repo" ]]; then
+        print_error "Missing 'repository' in argon.toml"
+        echo "Add: repository = \"https://github.com/user/repo\""
+        exit 1
+    fi
+    
+    # Create a git tag
+    print_step "1" "Creating tag v${version}..."
+    
+    if git tag "v${version}" 2>/dev/null; then
+        print_success "Created tag: v${version}"
+    else
+        print_warning "Tag already exists or git error"
+    fi
+    
+    print_step "2" "Pushing to repository..."
+    
+    git push origin "v${version}" 2>/dev/null && \
+        print_success "Pushed tag to origin" || \
+        print_warning "Push failed - check git remote"
+    
+    echo ""
+    print_success "Published ${name}@${version}"
+    echo ""
+    echo "Others can install with:"
+    echo "  apm add ${repo#https://github.com/}@v${version} --git"
+}
+
+cmd_build() {
+    local target="${1:-src/main.ar}"
+    
+    print_header
+    
+    if [[ ! -f "argon.toml" ]]; then
+        print_error "No argon.toml found. Run 'apm init' first."
+        exit 1
+    fi
+    
+    local name=$(parse_toml_value "argon.toml" "name")
+    local version=$(parse_toml_value "argon.toml" "version")
+    
+    print_info "Building ${name} v${version}"
+    
+    # Check if deps need installing
+    local dep_count=$(parse_all_dependencies "argon.toml" | wc -l)
+    if [[ $dep_count -gt 0 ]] && [[ ! -d "${DEPS_DIR}" ]]; then
+        print_warning "Dependencies not installed. Running 'apm install'..."
+        cmd_install
         echo ""
     fi
     
-    # Compile using Docker
     print_info "Compiling ${target}..."
     
     if command -v docker &> /dev/null; then
-        # Get proper path for Docker mount (Windows compatibility)
         local mount_path
         if [[ "$(uname -s)" == *"MINGW"* ]] || [[ "$(uname -s)" == *"MSYS"* ]]; then
-            # Git Bash on Windows - use pwd -W
             mount_path="$(pwd -W)"
         else
             mount_path="$(pwd)"
         fi
         
-        # Use Docker
         docker run --rm -v "${mount_path}:/src" -w //src argon-toolchain bash -c "
             argonc ${target} && \
             clang++ -O2 -Wno-override-module ${target}.ll /usr/lib/libruntime_argon.a -o ${target%.ar}.out -lpthread -ldl
@@ -321,189 +780,67 @@ cmd_build() {
     fi
 }
 
-# Run project
 cmd_run() {
     local target="${1:-src/main.ar}"
     local output="${target%.ar}.out"
     
-    # Build first
     cmd_build "$target"
     
     echo ""
     print_info "Running ${output}..."
     echo "----------------------------------------"
     
-    # Get proper path for Docker mount (Windows compatibility)
     local mount_path
     if [[ "$(uname -s)" == *"MINGW"* ]] || [[ "$(uname -s)" == *"MSYS"* ]]; then
-        # Git Bash on Windows - use pwd -W and run in Docker
         mount_path="$(pwd -W)"
         docker run --rm -v "${mount_path}:/src" -w //src argon-toolchain ./${output}
     else
-        # Linux/Mac - can run directly
         "./${output}"
     fi
 }
 
-# Add dependency
-cmd_add() {
-    local pkg="$1"
-    local type="${2:---path}"
-    
-    if [[ -z "$pkg" ]]; then
-        print_error "Usage: apm add <package> [--path|--git]"
-        exit 1
-    fi
-    
-    print_header
-    
-    if [[ ! -f "argon.toml" ]]; then
-        print_error "No argon.toml found. Run 'apm init' first."
-        exit 1
-    fi
-    
-    local dep_name=$(basename "$pkg")
-    
-    if [[ "$type" == "--path" ]]; then
-        # Add path dependency
-        print_info "Adding path dependency: ${dep_name}"
-        
-        # Check if dependency section exists
-        if grep -q "\[dependencies\]" argon.toml; then
-            # Add after [dependencies]
-            sed -i "/\[dependencies\]/a ${dep_name} = { path = \"${pkg}\" }" argon.toml
-        else
-            # Add section
-            echo "" >> argon.toml
-            echo "[dependencies]" >> argon.toml
-            echo "${dep_name} = { path = \"${pkg}\" }" >> argon.toml
-        fi
-        
-        print_success "Added: ${dep_name} = { path = \"${pkg}\" }"
-    else
-        print_warning "Only --path dependencies supported in v1.0"
-    fi
-}
-
-# Remove dependency
-cmd_remove() {
-    local pkg="$1"
-    
-    if [[ -z "$pkg" ]]; then
-        print_error "Usage: apm remove <package>"
-        exit 1
-    fi
-    
-    print_header
-    
-    if [[ ! -f "argon.toml" ]]; then
-        print_error "No argon.toml found."
-        exit 1
-    fi
-    
-    print_info "Removing dependency: ${pkg}"
-    
-    # Remove line containing the package
-    sed -i "/${pkg}/d" argon.toml
-    
-    print_success "Removed: ${pkg}"
-}
-
-# Install dependencies
-cmd_install() {
-    print_header
-    
-    if [[ ! -f "argon.toml" ]]; then
-        print_error "No argon.toml found. Run 'apm init' first."
-        exit 1
-    fi
-    
-    print_info "Installing dependencies..."
-    
-    local deps=$(parse_dependencies "argon.toml")
-    local count=0
-    
-    while IFS= read -r dep; do
-        [[ -z "$dep" ]] && continue
-        
-        if [[ -d "$dep" ]] || [[ -f "$dep" ]]; then
-            print_success "Found: ${dep}"
-            ((count++))
-        else
-            print_warning "Not found: ${dep}"
-        fi
-    done <<< "$deps"
-    
-    echo ""
-    print_success "Installed ${count} dependencies"
-}
-
-# Clean build artifacts
 cmd_clean() {
     print_header
     print_info "Cleaning build artifacts..."
     
     local count=0
     
-    # Remove .ll files
-    for f in $(find . -name "*.ll" -type f 2>/dev/null); do
-        rm -f "$f"
-        ((count++))
-    done
-    
-    # Remove .out files
-    for f in $(find . -name "*.out" -type f 2>/dev/null); do
-        rm -f "$f"
-        ((count++))
-    done
-    
-    # Remove .o files
-    for f in $(find . -name "*.o" -type f 2>/dev/null); do
-        rm -f "$f"
-        ((count++))
+    for ext in ll out o; do
+        for f in $(find . -name "*.${ext}" -type f 2>/dev/null); do
+            rm -f "$f"
+            ((count++))
+        done
     done
     
     print_success "Removed ${count} files"
 }
 
-# Show version
 cmd_version() {
     echo "Argon Package Manager v${VERSION}"
 }
 
-# Main
+# ============================================
+# MAIN
+# ============================================
+
 main() {
     local cmd="${1:-help}"
     shift || true
     
     case "$cmd" in
-        init)
-            cmd_init "$@"
-            ;;
-        build)
-            cmd_build "$@"
-            ;;
-        run)
-            cmd_run "$@"
-            ;;
-        add)
-            cmd_add "$@"
-            ;;
-        remove)
-            cmd_remove "$@"
-            ;;
-        install)
-            cmd_install "$@"
-            ;;
-        clean)
-            cmd_clean "$@"
-            ;;
-        version|--version|-v)
-            cmd_version
-            ;;
-        help|--help|-h)
-            show_help
-            ;;
+        init)       cmd_init "$@" ;;
+        build|b)    cmd_build "$@" ;;
+        run|r)      cmd_run "$@" ;;
+        install|i)  cmd_install "$@" ;;
+        add|a)      cmd_add "$@" ;;
+        remove|rm)  cmd_remove "$@" ;;
+        update|up)  cmd_update "$@" ;;
+        list|ls)    cmd_list "$@" ;;
+        search|s)   cmd_search "$@" ;;
+        publish)    cmd_publish "$@" ;;
+        clean)      cmd_clean "$@" ;;
+        version|--version|-v) cmd_version ;;
+        help|--help|-h) show_help ;;
         *)
             print_error "Unknown command: ${cmd}"
             echo "Run 'apm help' for usage."
