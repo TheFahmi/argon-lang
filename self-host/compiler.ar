@@ -1203,52 +1203,6 @@ fn parse_enum_def() {
     return [110, enum_name, enum_variants]; // AST_ENUM_DEF = 110
 }
 
-// Generate specialized functions from generic templates
-fn generate_specialized_funcs() {
-    let result = [];
-    let i = 0;
-    
-    while (i < len(instantiations)) {
-        let inst = instantiations[i];
-        let gen_name = inst[0];
-        let type_args = inst[1];
-        let mangled = inst[2];
-        
-        // Check if already generated
-        let already = 0;
-        let gi = 0;
-        while (gi < len(generated_specs)) {
-            if (generated_specs[gi] == mangled) {
-                already = 1;
-            }
-            gi = gi + 1;
-        }
-        
-        if (already == 0) {
-            // Find the generic template
-            let ti = 0;
-            while (ti < len(generic_funcs)) {
-                let tmpl = generic_funcs[ti];
-                if (tmpl[0] == gen_name) {
-                    // Found! Generate specialized version
-                    let tmpl_params = tmpl[2]; // fn params
-                    let tmpl_body = tmpl[3];   // fn body
-                    
-                    // Create specialized function node
-                    let spec_func = [AST_FUNC, mangled, tmpl_params, tmpl_body];
-                    result = push(result, spec_func);
-                    generated_specs = push(generated_specs, mangled);
-                }
-                ti = ti + 1;
-            }
-        }
-        
-        i = i + 1;
-    }
-    
-    return result;
-}
-
 fn parse_program(tokens: any) {
     p_tokens = tokens;
     p_pos = 0;
