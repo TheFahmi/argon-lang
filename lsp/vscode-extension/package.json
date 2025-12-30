@@ -1,0 +1,42 @@
+{
+    "name": "argon-lang",
+    "displayName": "Argon Language",
+    "description": "Language support for Argon programming language",
+    "version": "1.0.0",
+    "publisher": "argon-lang",
+    "engines": {
+        "vscode": "^1.75.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "activationEvents": [
+        "onLanguage:argon"
+    ],
+    "main": "./extension.js",
+    "contributes": {
+        "languages": [
+            {
+                "id": "argon",
+                "aliases": [
+                    "Argon",
+                    "argon"
+                ],
+                "extensions": [
+                    ".ar"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "argon",
+                "scopeName": "source.argon",
+                "path": "./syntaxes/argon.tmLanguage.json"
+            }
+        ]
+    },
+    "dependencies": {
+        "vscode-languageclient": "^8.0.0"
+    }
+}
