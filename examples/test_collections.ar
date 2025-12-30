@@ -1,0 +1,63 @@
+// ============================================
+// Test Collections Module
+// ============================================
+
+import "stdlib/collections.ar";
+
+fn main() {
+    print("=== Collections Tests ===");
+    print("");
+    
+    // Test Stack
+    print("[STACK]");
+    let s = stack_new();
+    s = stack_push(s, 10);
+    s = stack_push(s, 20);
+    s = stack_push(s, 30);
+    print("  Size: " + stack_size(s));
+    print("  Peek: " + stack_peek(s));
+    s = stack_pop(s);
+    print("  After pop: " + stack_peek(s));
+    
+    // Test Queue
+    print("");
+    print("[QUEUE]");
+    let q = queue_new();
+    q = queue_enqueue(q, "first");
+    q = queue_enqueue(q, "second");
+    q = queue_enqueue(q, "third");
+    print("  Size: " + queue_size(q));
+    print("  Front: " + queue_front(q));
+    q = queue_dequeue(q);
+    print("  After dequeue: " + queue_front(q));
+    
+    // Test Optional
+    print("");
+    print("[OPTIONAL]");
+    let opt1 = some(42);
+    let opt2 = none();
+    print("  some(42) has value: " + optional_is_some(opt1));
+    print("  none() has value: " + optional_is_some(opt2));
+    print("  unwrap some: " + optional_unwrap(opt1));
+    print("  unwrap_or none: " + optional_unwrap_or(opt2, 99));
+    
+    // Test Pair
+    print("");
+    print("[PAIR]");
+    let p = pair_new("hello", 123);
+    print("  first: " + p.first);
+    print("  second: " + p.second);
+    
+    // Test Range
+    print("");
+    print("[RANGE]");
+    let r = range_new(0, 5);
+    print("  range(0,5) len: " + range_len(r));
+    print("  contains 3: " + range_contains(r, 3));
+    print("  contains 5: " + range_contains(r, 5));
+    
+    print("");
+    print("=== All Tests Done ===");
+    
+    return 0;
+}
