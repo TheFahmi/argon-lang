@@ -11,6 +11,12 @@ let MS_HOUR = 3600000;
 let MS_DAY = 86400000;
 let MS_WEEK = 604800000;
 
+// Time unit constants
+let SECONDS_PER_MINUTE = 60;
+let MINUTES_PER_HOUR = 60;
+let HOURS_PER_DAY = 24;
+let DAYS_PER_WEEK = 7;
+
 // Days per month (non-leap year)
 let DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 

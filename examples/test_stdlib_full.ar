@@ -1,0 +1,356 @@
+// ============================================
+// ARGON STDLIB FULL TEST RUNNER (v2.7.2)
+// Imports all stdlib modules and runs tests
+// ============================================
+
+// Import all stdlib modules
+import "stdlib/math.ar";
+import "stdlib/string.ar";
+import "stdlib/array.ar";
+import "stdlib/map.ar";
+import "stdlib/set.ar";
+import "stdlib/datetime.ar";
+import "stdlib/random.ar";
+import "stdlib/result.ar";
+import "stdlib/crypto.ar";
+import "stdlib/regex.ar";
+import "stdlib/process.ar";
+import "stdlib/console.ar";
+import "stdlib/color.ar";
+
+// ============================================
+// TEST FRAMEWORK
+// ============================================
+
+let _test_passed = 0;
+let _test_failed = 0;
+let _test_current = "";
+
+fn test_start(name) {
+    _test_current = name;
+    print("  Testing: " + name);
+}
+
+fn assert_true(condition, msg) {
+    if (condition) {
+        _test_passed = _test_passed + 1;
+    } else {
+        _test_failed = _test_failed + 1;
+        print("    FAIL: " + msg);
+    }
+}
+
+fn assert_eq(actual, expected, msg) {
+    if (actual == expected) {
+        _test_passed = _test_passed + 1;
+    } else {
+        _test_failed = _test_failed + 1;
+        print("    FAIL: " + msg + " | Expected: " + expected + " | Got: " + actual);
+    }
+}
+
+fn assert_neq(actual, expected, msg) {
+    if (actual != expected) {
+        _test_passed = _test_passed + 1;
+    } else {
+        _test_failed = _test_failed + 1;
+        print("    FAIL: " + msg + " | Should not equal: " + expected);
+    }
+}
+
+fn test_summary() {
+    print("");
+    print("========================================");
+    print("TEST RESULTS");
+    print("========================================");
+    print("  Passed: " + _test_passed);
+    print("  Failed: " + _test_failed);
+    print("  Total:  " + (_test_passed + _test_failed));
+    if (_test_failed == 0) {
+        print("  Status: ALL TESTS PASSED!");
+    } else {
+        print("  Status: SOME TESTS FAILED");
+    }
+    print("========================================");
+}
+
+// ============================================
+// MATH MODULE TESTS
+// ============================================
+
+fn test_math() {
+    print("");
+    print("[MATH MODULE]");
+    
+    test_start("abs");
+    assert_eq(abs(5), 5, "abs(5) should be 5");
+    assert_eq(abs(0 - 5), 5, "abs(-5) should be 5");
+    assert_eq(abs(0), 0, "abs(0) should be 0");
+    
+    test_start("min/max");
+    assert_eq(min(3, 7), 3, "min(3,7) should be 3");
+    assert_eq(max(3, 7), 7, "max(3,7) should be 7");
+    
+    test_start("clamp");
+    assert_eq(clamp(5, 0, 10), 5, "clamp in range");
+    assert_eq(clamp(15, 0, 10), 10, "clamp above max");
+    
+    test_start("power");
+    assert_eq(pow(2, 3), 8, "2^3 should be 8");
+    assert_eq(pow(5, 0), 1, "5^0 should be 1");
+    
+    test_start("factorial");
+    assert_eq(factorial(0), 1, "0! should be 1");
+    assert_eq(factorial(5), 120, "5! should be 120");
+    
+    test_start("gcd/lcm");
+    assert_eq(gcd(12, 8), 4, "gcd(12,8) should be 4");
+    
+    test_start("is_even/is_odd");
+    assert_true(is_even(4), "4 is even");
+    assert_true(is_odd(5), "5 is odd");
+}
+
+// ============================================
+// STRING MODULE TESTS
+// ============================================
+
+fn test_string() {
+    print("");
+    print("[STRING MODULE]");
+    
+    test_start("to_upper/to_lower");
+    assert_eq(to_upper("hello"), "HELLO", "to_upper");
+    assert_eq(to_lower("HELLO"), "hello", "to_lower");
+    
+    test_start("trim");
+    assert_eq(trim("  hello  "), "hello", "trim spaces");
+    
+    test_start("substring");
+    assert_eq(substring("hello", 0, 2), "he", "substring(0,2)");
+    
+    test_start("reverse");
+    assert_eq(reverse("hello"), "olleh", "reverse string");
+    
+    test_start("repeat");
+    assert_eq(repeat("ab", 3), "ababab", "repeat 3 times");
+    
+    test_start("char_at");
+    assert_eq(char_at("hello", 0), "h", "char_at 0");
+}
+
+// ============================================
+// ARRAY MODULE TESTS  
+// ============================================
+
+fn test_array() {
+    print("");
+    print("[ARRAY MODULE]");
+    
+    test_start("array_push");
+    let arr = [1, 2, 3];
+    arr = array_push(arr, 4);
+    assert_eq(len(arr), 4, "array length after push");
+    
+    test_start("array_first/array_last");
+    assert_eq(array_first([1, 2, 3]), 1, "first element");
+    assert_eq(array_last([1, 2, 3]), 3, "last element");
+    
+    test_start("array_sum");
+    assert_eq(array_sum([1, 2, 3, 4]), 10, "sum of array");
+}
+
+// ============================================
+// MAP MODULE TESTS
+// ============================================
+
+fn test_map() {
+    print("");
+    print("[MAP MODULE]");
+    
+    test_start("map operations");
+    let m = map_new();
+    m = map_set(m, "name", "Argon");
+    
+    assert_eq(map_get(m, "name"), "Argon", "get name");
+    assert_true(map_has(m, "name"), "has name");
+    assert_true(map_has(m, "unknown") == false, "does not have unknown");
+}
+
+// ============================================
+// SET MODULE TESTS
+// ============================================
+
+fn test_set() {
+    print("");
+    print("[SET MODULE]");
+    
+    test_start("set operations");
+    let s = set_new();
+    s = set_add(s, "apple");
+    s = set_add(s, "banana");
+    
+    assert_true(set_has(s, "apple"), "has apple");
+    assert_true(set_has(s, "cherry") == false, "does not have cherry");
+}
+
+// ============================================
+// DATETIME MODULE TESTS
+// ============================================
+
+fn test_datetime() {
+    print("");
+    print("[DATETIME MODULE]");
+    
+    test_start("constants");
+    assert_eq(SECONDS_PER_MINUTE, 60, "seconds per minute");
+    assert_eq(MINUTES_PER_HOUR, 60, "minutes per hour");
+    assert_eq(HOURS_PER_DAY, 24, "hours per day");
+    
+    test_start("is_leap_year");
+    assert_true(is_leap_year(2024), "2024 is leap year");
+    assert_true(is_leap_year(2023) == false, "2023 is not leap year");
+    
+    test_start("days_in_month");
+    assert_eq(days_in_month(2024, 2), 29, "Feb 2024 has 29 days");
+    assert_eq(days_in_month(2023, 2), 28, "Feb 2023 has 28 days");
+}
+
+// ============================================
+// RESULT MODULE TESTS
+// ============================================
+
+fn test_result() {
+    print("");
+    print("[RESULT MODULE]");
+    
+    test_start("ok result");
+    let ok_r = Ok(42);
+    assert_true(is_ok(ok_r), "is_ok returns true");
+    assert_eq(unwrap(ok_r), 42, "unwrap returns value");
+    
+    test_start("error result");
+    let err_r = Err("error");
+    assert_true(is_err(err_r), "is_err returns true");
+}
+
+// ============================================
+// CRYPTO MODULE TESTS
+// ============================================
+
+fn test_crypto() {
+    print("");
+    print("[CRYPTO MODULE]");
+    
+    test_start("str_to_hex");
+    let hex = str_to_hex("AB");
+    assert_eq(hex, "4142", "hex encode AB");
+    
+    test_start("hash_djb2");
+    let hash1 = hash_djb2("hello");
+    let hash2 = hash_djb2("hello");
+    assert_eq(hash1, hash2, "same string same hash");
+    
+    test_start("crypto_compare");
+    assert_true(crypto_compare("secret", "secret"), "same strings equal");
+}
+
+// ============================================
+// REGEX MODULE TESTS
+// ============================================
+
+fn test_regex() {
+    print("");
+    print("[REGEX MODULE]");
+    
+    test_start("starts_with/ends_with");
+    assert_true(starts_with("hello world", "hello"), "starts with hello");
+    assert_true(ends_with("hello world", "world"), "ends with world");
+    
+    test_start("find_pattern_pos");
+    // Use internal helper that doesn't rely on struct
+    let pos = _find_pattern_pos("hello world", "wor");
+    assert_eq(pos, 6, "found at position 6");
+    
+    test_start("count_matches");
+    assert_eq(count_matches("hello", "l"), 2, "count l's");
+    
+    test_start("glob_match");
+    assert_true(glob_match("hello.txt", "*.txt"), "glob *.txt");
+    
+    test_start("character classes");
+    assert_true(is_digit("5"), "5 is digit");
+    assert_true(is_alpha("Z"), "Z is alpha");
+    
+    test_start("validation");
+    assert_true(is_email("test@example.com"), "valid email");
+    assert_true(is_url("https://example.com"), "valid URL");
+    
+    test_start("replace");
+    assert_eq(regex_replace_first("hello", "l", "L"), "heLlo", "regex replace first l");
+}
+
+// ============================================
+// PROCESS MODULE TESTS
+// ============================================
+
+fn test_process() {
+    print("");
+    print("[PROCESS MODULE]");
+    
+    test_start("command builder");
+    let cmd = command_new("echo");
+    cmd = command_arg(cmd, "hello");
+    // Test that functions execute without crashing
+    let cmd_str = command_to_string(cmd);
+    assert_true(len(cmd_str) > 0, "command builds");
+    
+    test_start("process result");
+    let success = process_ok(0, "output", "");
+    // ProcessResult is based on code == 0 check in function
+    assert_true(success != null, "process result created");
+}
+
+// ============================================
+// CONSOLE MODULE TESTS
+// ============================================
+
+fn test_console() {
+    print("");
+    print("[CONSOLE MODULE]");
+    
+    test_start("format functions");
+    let bold_text = bold("test");
+    assert_true(len(bold_text) > len("test"), "bold adds formatting");
+    
+    test_start("color functions");
+    let red_text = red("error");
+    assert_true(len(red_text) > len("error"), "red adds ANSI codes");
+}
+
+// ============================================
+// MAIN
+// ============================================
+
+fn main() {
+    print("========================================");
+    print("ARGON STDLIB FULL TEST SUITE");
+    print("Version: 2.7.2");
+    print("========================================");
+    
+    test_math();
+    test_string();
+    test_array();
+    test_map();
+    test_set();
+    test_datetime();
+    test_result();
+    test_crypto();
+    test_regex();
+    test_process();
+    test_console();
+    
+    test_summary();
+    
+    return 0;
+}

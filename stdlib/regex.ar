@@ -1,0 +1,409 @@
+// ============================================
+// ARGON STANDARD LIBRARY: REGEX (v2.7.2)
+// Pattern matching and validation utilities
+// Note: Basic string functions are in string.ar
+// ============================================
+
+// ============================================
+// MATCH RESULT STRUCT
+// ============================================
+
+struct Match {
+    found: bool,
+    start: int,
+    end_pos: int,
+    text: string
+}
+
+// Create a match result
+fn match_new(found, start, end_pos, text) {
+    return Match {
+        found: found,
+        start: start,
+        end_pos: end_pos,
+        text: text
+    };
+}
+
+// Empty match (no match found)
+fn match_none() {
+    return Match {
+        found: false,
+        start: 0 - 1,
+        end_pos: 0 - 1,
+        text: ""
+    };
+}
+
+// ============================================
+// PATTERN SEARCH (returns Match struct)
+// ============================================
+
+// Find first occurrence of pattern (returns Match with position info)
+fn find_first(s, pattern) {
+    let n = len(s);
+    let m = len(pattern);
+    
+    if (m > n) {
+        return match_none();
+    }
+    
+    if (m == 0) {
+        return match_new(true, 0, 0, "");
+    }
+    
+    let i = 0;
+    while (i <= n - m) {
+        let j = 0;
+        let found = true;
+        while (j < m) {
+            if (s[i + j] != pattern[j]) {
+                found = false;
+                j = m; // break
+            } else {
+                j = j + 1;
+            }
+        }
+        if (found) {
+            return match_new(true, i, i + m, pattern);
+        }
+        i = i + 1;
+    }
+    
+    return match_none();
+}
+
+// Count occurrences of pattern in string
+fn count_matches(s, pattern) {
+    let count = 0;
+    let n = len(s);
+    let m = len(pattern);
+    
+    if (m == 0) {
+        return 0;
+    }
+    
+    let i = 0;
+    while (i <= n - m) {
+        let j = 0;
+        let found = true;
+        while (j < m) {
+            if (s[i + j] != pattern[j]) {
+                found = false;
+                j = m;
+            } else {
+                j = j + 1;
+            }
+        }
+        if (found) {
+            count = count + 1;
+            i = i + m; // Skip past match (non-overlapping)
+        } else {
+            i = i + 1;
+        }
+    }
+    
+    return count;
+}
+
+// ============================================
+// GLOB PATTERN MATCHING
+// ============================================
+
+// Match with wildcards: * (any chars) and ? (single char)
+fn glob_match(s, pattern) {
+    return _glob_match_helper(s, 0, pattern, 0);
+}
+
+fn _glob_match_helper(s, si, pattern, pi) {
+    let slen = len(s);
+    let plen = len(pattern);
+    
+    // Both exhausted = match
+    if (si >= slen) {
+        if (pi >= plen) {
+            return true;
+        }
+        // Pattern has only * left
+        if (pattern[pi] == "*") {
+            return _glob_match_helper(s, si, pattern, pi + 1);
+        }
+        return false;
+    }
+    
+    // Pattern exhausted but string remains
+    if (pi >= plen) {
+        return false;
+    }
+    
+    let pc = pattern[pi];
+    let sc = s[si];
+    
+    // Wildcard *: match zero or more characters
+    if (pc == "*") {
+        // Try matching zero chars (advance pattern)
+        if (_glob_match_helper(s, si, pattern, pi + 1)) {
+            return true;
+        }
+        // Try matching one char (advance string)
+        return _glob_match_helper(s, si + 1, pattern, pi);
+    }
+    
+    // Single char wildcard ?
+    if (pc == "?") {
+        return _glob_match_helper(s, si + 1, pattern, pi + 1);
+    }
+    
+    // Exact character match
+    if (pc == sc) {
+        return _glob_match_helper(s, si + 1, pattern, pi + 1);
+    }
+    
+    return false;
+}
+
+// ============================================
+// CHARACTER CLASSES
+// ============================================
+
+// Check if char is digit (0-9)
+fn is_digit(c) {
+    let code = char_code_at(c, 0);
+    if (code >= 48) {
+        if (code <= 57) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Check if char is lowercase letter (a-z)
+fn is_lower(c) {
+    let code = char_code_at(c, 0);
+    if (code >= 97) {
+        if (code <= 122) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Check if char is uppercase letter (A-Z)
+fn is_upper(c) {
+    let code = char_code_at(c, 0);
+    if (code >= 65) {
+        if (code <= 90) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Check if char is letter (a-z, A-Z)
+fn is_alpha(c) {
+    if (is_lower(c)) {
+        return true;
+    }
+    if (is_upper(c)) {
+        return true;
+    }
+    return false;
+}
+
+// Check if char is alphanumeric
+fn is_alnum(c) {
+    if (is_alpha(c)) {
+        return true;
+    }
+    if (is_digit(c)) {
+        return true;
+    }
+    return false;
+}
+
+// Check if char is whitespace
+fn is_space(c) {
+    let code = char_code_at(c, 0);
+    // Space = 32, tab = 9, newline = 10, carriage return = 13
+    if (code == 32) {
+        return true;
+    }
+    if (code == 9) {
+        return true;
+    }
+    if (code == 10) {
+        return true;
+    }
+    if (code == 13) {
+        return true;
+    }
+    return false;
+}
+
+// ============================================
+// VALIDATION PATTERNS
+// ============================================
+
+// Validate email (simplified)
+fn is_email(s) {
+    // Must have exactly one @
+    let at_count = count_matches(s, "@");
+    if (at_count != 1) {
+        return false;
+    }
+    
+    // Find @ position
+    let at_pos = _find_char_pos(s, "@");
+    
+    // Must have chars before @
+    if (at_pos < 1) {
+        return false;
+    }
+    
+    // Must have chars after @
+    if (at_pos >= len(s) - 1) {
+        return false;
+    }
+    
+    // Must have a dot after @
+    let i = at_pos + 1;
+    let has_dot = false;
+    while (i < len(s)) {
+        if (s[i] == ".") {
+            has_dot = true;
+        }
+        i = i + 1;
+    }
+    
+    return has_dot;
+}
+
+// Helper: find position of single char
+fn _find_char_pos(s, c) {
+    let i = 0;
+    while (i < len(s)) {
+        if (s[i] == c) {
+            return i;
+        }
+        i = i + 1;
+    }
+    return 0 - 1;
+}
+
+// Validate URL (simplified)
+fn is_url(s) {
+    if (starts_with(s, "http://")) {
+        return true;
+    }
+    if (starts_with(s, "https://")) {
+        return true;
+    }
+    return false;
+}
+
+// Validate IP address (simplified IPv4)
+fn is_ipv4(s) {
+    // Count dots
+    if (count_matches(s, ".") != 3) {
+        return false;
+    }
+    // Should have only digits and dots
+    let i = 0;
+    while (i < len(s)) {
+        let c = s[i];
+        if (c != ".") {
+            if (!is_digit(c)) {
+                return false;
+            }
+        }
+        i = i + 1;
+    }
+    return true;
+}
+
+// ============================================
+// REGEX-SPECIFIC REPLACE
+// ============================================
+
+// Replace first occurrence using regex-style matching
+fn regex_replace_first(s, pattern, replacement) {
+    let pos = _find_pattern_pos(s, pattern);
+    if (pos < 0) {
+        return s;
+    }
+    
+    let before = substring(s, 0, pos);
+    let after = substring(s, pos + len(pattern), len(s));
+    return before + replacement + after;
+}
+
+// Helper: find pattern position
+fn _find_pattern_pos(s, pattern) {
+    let n = len(s);
+    let m = len(pattern);
+    
+    if (m > n) {
+        return 0 - 1;
+    }
+    
+    if (m == 0) {
+        return 0;
+    }
+    
+    let i = 0;
+    while (i <= n - m) {
+        let j = 0;
+        let found = true;
+        while (j < m) {
+            if (s[i + j] != pattern[j]) {
+                found = false;
+                j = m;
+            } else {
+                j = j + 1;
+            }
+        }
+        if (found) {
+            return i;
+        }
+        i = i + 1;
+    }
+    
+    return 0 - 1;
+}
+
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
+
+// Extract substring between two patterns
+fn extract_between(s, start_pat, end_pat) {
+    let start_match = find_first(s, start_pat);
+    if (!start_match.found) {
+        return "";
+    }
+    
+    let after_start = substring(s, start_match.end_pos, len(s));
+    let end_match = find_first(after_start, end_pat);
+    if (!end_match.found) {
+        return "";
+    }
+    
+    return substring(after_start, 0, end_match.start);
+}
+
+// Check if pattern matches at specific position
+fn match_at(s, pos, pattern) {
+    let m = len(pattern);
+    if (pos + m > len(s)) {
+        return false;
+    }
+    
+    let i = 0;
+    while (i < m) {
+        if (s[pos + i] != pattern[i]) {
+            return false;
+        }
+        i = i + 1;
+    }
+    return true;
+}

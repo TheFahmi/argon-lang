@@ -360,15 +360,35 @@ fn to_upper(s) {
     let i = 0;
     let n = len(s);
     while (i < n) {
-        let code = char_code_at(s, i);
-        // a-z: 97-122 -> A-Z: 65-90
-        if (code >= 97) {
-            if (code <= 122) {
-                code = code - 32;
-            }
-        }
-        // Convert code back to char - simplified, just append
-        result = result + s[i]; // TODO: proper char from code
+        let c = s[i];
+        // Check if lowercase a-z and convert to uppercase
+        if (c == "a") { result = result + "A"; }
+        else if (c == "b") { result = result + "B"; }
+        else if (c == "c") { result = result + "C"; }
+        else if (c == "d") { result = result + "D"; }
+        else if (c == "e") { result = result + "E"; }
+        else if (c == "f") { result = result + "F"; }
+        else if (c == "g") { result = result + "G"; }
+        else if (c == "h") { result = result + "H"; }
+        else if (c == "i") { result = result + "I"; }
+        else if (c == "j") { result = result + "J"; }
+        else if (c == "k") { result = result + "K"; }
+        else if (c == "l") { result = result + "L"; }
+        else if (c == "m") { result = result + "M"; }
+        else if (c == "n") { result = result + "N"; }
+        else if (c == "o") { result = result + "O"; }
+        else if (c == "p") { result = result + "P"; }
+        else if (c == "q") { result = result + "Q"; }
+        else if (c == "r") { result = result + "R"; }
+        else if (c == "s") { result = result + "S"; }
+        else if (c == "t") { result = result + "T"; }
+        else if (c == "u") { result = result + "U"; }
+        else if (c == "v") { result = result + "V"; }
+        else if (c == "w") { result = result + "W"; }
+        else if (c == "x") { result = result + "X"; }
+        else if (c == "y") { result = result + "Y"; }
+        else if (c == "z") { result = result + "Z"; }
+        else { result = result + c; }
         i = i + 1;
     }
     return result;
@@ -380,14 +400,35 @@ fn to_lower(s) {
     let i = 0;
     let n = len(s);
     while (i < n) {
-        let code = char_code_at(s, i);
-        // A-Z: 65-90 -> a-z: 97-122
-        if (code >= 65) {
-            if (code <= 90) {
-                code = code + 32;
-            }
-        }
-        result = result + s[i]; // TODO: proper char from code
+        let c = s[i];
+        // Check if uppercase A-Z and convert to lowercase
+        if (c == "A") { result = result + "a"; }
+        else if (c == "B") { result = result + "b"; }
+        else if (c == "C") { result = result + "c"; }
+        else if (c == "D") { result = result + "d"; }
+        else if (c == "E") { result = result + "e"; }
+        else if (c == "F") { result = result + "f"; }
+        else if (c == "G") { result = result + "g"; }
+        else if (c == "H") { result = result + "h"; }
+        else if (c == "I") { result = result + "i"; }
+        else if (c == "J") { result = result + "j"; }
+        else if (c == "K") { result = result + "k"; }
+        else if (c == "L") { result = result + "l"; }
+        else if (c == "M") { result = result + "m"; }
+        else if (c == "N") { result = result + "n"; }
+        else if (c == "O") { result = result + "o"; }
+        else if (c == "P") { result = result + "p"; }
+        else if (c == "Q") { result = result + "q"; }
+        else if (c == "R") { result = result + "r"; }
+        else if (c == "S") { result = result + "s"; }
+        else if (c == "T") { result = result + "t"; }
+        else if (c == "U") { result = result + "u"; }
+        else if (c == "V") { result = result + "v"; }
+        else if (c == "W") { result = result + "w"; }
+        else if (c == "X") { result = result + "x"; }
+        else if (c == "Y") { result = result + "y"; }
+        else if (c == "Z") { result = result + "z"; }
+        else { result = result + c; }
         i = i + 1;
     }
     return result;

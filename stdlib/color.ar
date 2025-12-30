@@ -110,23 +110,23 @@ fn bold_blue(text) {
 // Semantic colors
 // ============================================
 
-fn success(text) {
+fn color_success(text) {
     return "[SUCCESS] " + text;
 }
 
-fn error(text) {
+fn color_error(text) {
     return "[ERROR] " + text;
 }
 
-fn warning(text) {
+fn color_warning(text) {
     return "[WARNING] " + text;
 }
 
-fn info(text) {
+fn color_info(text) {
     return "[INFO] " + text;
 }
 
-fn debug(text) {
+fn color_debug(text) {
     return "[DEBUG] " + text;
 }
 

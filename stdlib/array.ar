@@ -358,3 +358,26 @@ fn array_all_equal(arr) {
     }
     return true;
 }
+
+// Sum all elements in array
+fn array_sum(arr) {
+    let sum = 0;
+    let i = 0;
+    let n = len(arr);
+    while (i < n) {
+        sum = sum + arr[i];
+        i = i + 1;
+    }
+    return sum;
+}
+
+// Note: array_min() and array_max() are provided by math.ar
+
+// Calculate average of array elements
+fn array_avg(arr) {
+    let n = len(arr);
+    if (n == 0) {
+        return 0;
+    }
+    return array_sum(arr) / n;
+}

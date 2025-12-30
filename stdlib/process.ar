@@ -1,0 +1,245 @@
+// ============================================
+// ARGON STANDARD LIBRARY: PROCESS (v2.7.2)
+// Process and command execution utilities
+// ============================================
+
+// ============================================
+// COMMAND EXECUTION RESULT
+// ============================================
+
+struct ProcessResult {
+    exit_code: int,
+    stdout: string,
+    stderr: string,
+    success: bool
+}
+
+// Create a successful result
+fn process_ok(code, out, err) {
+    return ProcessResult {
+        exit_code: code,
+        stdout: out,
+        stderr: err,
+        success: code == 0
+    };
+}
+
+// Create a failed result
+fn process_error(code, err_msg) {
+    return ProcessResult {
+        exit_code: code,
+        stdout: "",
+        stderr: err_msg,
+        success: false
+    };
+}
+
+// ============================================
+// COMMAND BUILDER
+// ============================================
+
+struct Command {
+    program: string,
+    args_str: string,
+    env_str: string,
+    work_dir: string,
+    timeout_ms: int,
+    arg_count: int
+}
+
+// Helper: create empty args representation
+fn _empty_args() {
+    return "";
+}
+
+// Create a new command
+fn command_new(program) {
+    return Command {
+        program: program,
+        args_str: "",
+        env_str: "",
+        work_dir: "",
+        timeout_ms: 0,
+        arg_count: 0
+    };
+}
+
+// Add argument to command (stores as delimited string)
+fn command_arg(cmd, arg) {
+    let new_args = cmd.args_str;
+    if (cmd.arg_count > 0) {
+        new_args = new_args + "\x00" + arg;
+    } else {
+        new_args = arg;
+    }
+    return Command {
+        program: cmd.program,
+        args_str: new_args,
+        env_str: cmd.env_str,
+        work_dir: cmd.work_dir,
+        timeout_ms: cmd.timeout_ms,
+        arg_count: cmd.arg_count + 1
+    };
+}
+
+// Set working directory
+fn command_cwd(cmd, dir) {
+    return Command {
+        program: cmd.program,
+        args_str: cmd.args_str,
+        env_str: cmd.env_str,
+        work_dir: dir,
+        timeout_ms: cmd.timeout_ms,
+        arg_count: cmd.arg_count
+    };
+}
+
+// Set environment variable
+fn command_env(cmd, key, value) {
+    let env_pair = key + "=" + value;
+    let new_envs = cmd.env_str;
+    if (len(cmd.env_str) > 0) {
+        new_envs = new_envs + "\x00" + env_pair;
+    } else {
+        new_envs = env_pair;
+    }
+    return Command {
+        program: cmd.program,
+        args_str: cmd.args_str,
+        env_str: new_envs,
+        work_dir: cmd.work_dir,
+        timeout_ms: cmd.timeout_ms,
+        arg_count: cmd.arg_count
+    };
+}
+
+// Set timeout in milliseconds
+fn command_timeout(cmd, ms) {
+    return Command {
+        program: cmd.program,
+        args_str: cmd.args_str,
+        env_str: cmd.env_str,
+        work_dir: cmd.work_dir,
+        timeout_ms: ms,
+        arg_count: cmd.arg_count
+    };
+}
+
+// Build command string for display
+fn command_to_string(cmd) {
+    let result = cmd.program;
+    if (cmd.arg_count > 0) {
+        // Replace null separators with spaces for display
+        let i = 0;
+        let args = cmd.args_str;
+        while (i < len(args)) {
+            let c = args[i];
+            if (c == "\x00") {
+                result = result + " ";
+            } else {
+                result = result + c;
+            }
+            i = i + 1;
+        }
+        if (len(cmd.args_str) > 0) {
+            result = result + " " + cmd.args_str;
+        }
+    }
+    return result;
+}
+
+// Execute command (placeholder - needs runtime support)
+fn command_run(cmd) {
+    // This would need runtime intrinsics like:
+    // argon_exec(program, args_str, cwd, env_str, timeout)
+    // For now, return a placeholder
+    let cmd_str = command_to_string(cmd);
+    
+    // Placeholder until runtime support is added
+    return process_error(0 - 1, "Process execution requires runtime support");
+}
+
+// ============================================
+// CONVENIENCE FUNCTIONS
+// ============================================
+
+// Run a shell command (simple version)
+fn shell(command_str) {
+    // Would use system shell
+    // Unix: sh -c "command"
+    let cmd = command_new("sh");
+    cmd = command_arg(cmd, "-c");
+    cmd = command_arg(cmd, command_str);
+    return command_run(cmd);
+}
+
+// ============================================
+// ENVIRONMENT
+// ============================================
+
+// Get all environment as string (placeholder)
+fn process_env_dump() {
+    // Would iterate through all env vars
+    return "ENV_DUMP_NOT_IMPLEMENTED";
+}
+
+// ============================================
+// PROCESS INFO
+// ============================================
+
+struct ProcessInfo {
+    pid: int,
+    parent_pid: int,
+    name: string
+}
+
+// Get current process info (placeholder)
+fn process_current() {
+    // Would need: argon_getpid(), argon_getppid()
+    return ProcessInfo {
+        pid: 0,
+        parent_pid: 0,
+        name: "argon"
+    };
+}
+
+// ============================================
+// EXIT
+// ============================================
+
+// Exit with code (placeholder - needs runtime)
+fn process_exit(code) {
+    // Would call: argon_exit(code)
+    print("EXIT: " + code);
+}
+
+// Exit successfully
+fn exit_ok() {
+    process_exit(0);
+}
+
+// Exit with error
+fn exit_error() {
+    process_exit(1);
+}
+
+// ============================================
+// SIGNAL HANDLING (placeholder)
+// ============================================
+
+// Signal constants
+let SIGINT = 2;
+let SIGTERM = 15;
+let SIGKILL = 9;
+
+// Register signal handler (placeholder)
+fn on_signal(signal, handler_fn) {
+    // Would need runtime support for signal handling
+    print("Signal handling not yet implemented");
+}
+
+// Send signal to process (placeholder)
+fn process_kill(pid, signal) {
+    // Would call: argon_kill(pid, signal)
+    return false;
+}

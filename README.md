@@ -153,6 +153,7 @@ fn main() {
 - **Docker**: The toolchain runs inside the `argon-toolchain` image.
 
 ## Version History
+- **v2.7.2**: Added process and regex modules (18 stdlib modules total)
 - **v2.7.1**: Standard Library (16 modules: math, string, array, json, http, fs, datetime, console, random, result, testing, map, set, env, color, crypto)
 - **v2.7.0**: Module system / imports (`import "module.ar";`)
 - **v2.6.0**: Enum types with pattern matching (`match expr { ... }`)

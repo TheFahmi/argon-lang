@@ -14,8 +14,8 @@ fn print_inline(msg) {
 }
 
 // Print formatted string (simple placeholder replacement)
-// Usage: printf("Hello, {}!", "World") -> "Hello, World!"
-fn printf(template, arg1) {
+// Usage: print_fmt("Hello, {}!", "World") -> "Hello, World!"
+fn print_fmt(template, arg1) {
     let result = "";
     let i = 0;
     let n = len(template);
@@ -49,7 +49,7 @@ fn printf(template, arg1) {
 }
 
 // Print with 2 arguments
-fn printf2(template, arg1, arg2) {
+fn print_fmt2(template, arg1, arg2) {
     let result = "";
     let i = 0;
     let n = len(template);
@@ -84,7 +84,7 @@ fn printf2(template, arg1, arg2) {
 }
 
 // Print with 3 arguments
-fn printf3(template, arg1, arg2, arg3) {
+fn print_fmt3(template, arg1, arg2, arg3) {
     let result = "";
     let i = 0;
     let n = len(template);
