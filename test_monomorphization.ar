@@ -1,0 +1,28 @@
+// Test Monomorphization
+// Expected behavior:
+// identity<int> -> identity_int
+// identity<string> -> identity_string
+
+fn identity<T>(x: T) {
+    return x;
+}
+
+fn wrapper<T>(val: T) {
+   let x = val;
+   return x;
+}
+
+fn main() {
+    print("Monomorphization Test");
+    
+    let n = identity<int>(123);
+    print(n);
+    
+    let s = identity<string>("hello generic");
+    print(s);
+    
+    let w = wrapper<int>(456);
+    print(w);
+    
+    return 0;
+}

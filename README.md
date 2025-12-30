@@ -1,4 +1,4 @@
-# Argon Programming Language (v2.15.0)
+# Argon Programming Language (v2.16.0)
 ![Argon Logo](logo.png)
 
 Argon is a high-performance, **self-hosted** systems programming language that compiles directly to LLVM IR and Native Machine Code.
@@ -7,7 +7,7 @@ Argon is a high-performance, **self-hosted** systems programming language that c
 - **Self-Hosted**: Compiler written in Argon itself (`self-host/compiler.ar`)
 - **Verified**: Stage 1 (self-compiled) produces identical output when compiling itself
 - **Native Backend**: Uses LLVM for optimized native binary generation
-- **Generic Types**: `struct Box<T>`, `fn map<T>(...)` syntax support (v2.15.0)
+- **Generic Types**: Full support for `struct Box<T>`, `fn map<T>(...)` with monomorphization (v2.16.0)
 - **REPL**: Interactive mode for quick experimentation (v2.14.0)
 - **IDE Support**: VS Code extension with full Language Server Protocol (v2.0.0)
 - **Package Manager**: APM with registry, git deps, and lock files (v2.10.0)
@@ -191,6 +191,7 @@ fn main() {
 - **Node.js** (optional): For LSP/VS Code extension
 
 ## Version History
+- **v2.16.0**: Generic types with full monomorphization support
 - **v2.15.0**: Generic type syntax support (`struct Box<T>`, `fn map<T>`)
 - **v2.14.1**: REPL interactive mode, system(), input() functions
 - **v2.14.0**: Full LSP implementation (Navigation, Editing, Autocomplete)
@@ -211,6 +212,7 @@ fn main() {
 - **v2.1.0**: Native Networking
 - **v1.0.0**: Self-Hosting Compiler
 
+
 ## Roadmap
 - [x] Self-Hosting Compiler ✅
 - [x] Networking & Multi-threading ✅
@@ -220,6 +222,5 @@ fn main() {
 - [x] Package Manager (APM) ✅
 - [x] LSP (Language Server Protocol) ✅
 - [x] REPL (interactive mode) ✅
-- [x] Generic types syntax (`Box<T>`, `fn<T>`) ✅
-- [ ] Generic types monomorphization (Phase 2)
+- [x] Generic types (`Box<T>`, `fn<T>`) ✅
 - [ ] Debugger support

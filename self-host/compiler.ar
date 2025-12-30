@@ -7,6 +7,18 @@
 
 let OPT_UNSAFE = 0; // Optimization flag
 
+// =================== GENERICS (Phase 2) ===================
+// Storage for generic function templates
+// Format: [[name, type_params, params, body], ...]
+let generic_funcs = [];
+
+// Storage for instantiation requests
+// Format: [[generic_name, type_args, mangled_name], ...]
+let instantiations = [];
+
+// Already generated specialized functions
+let generated_specs = [];
+
 // Stage detection: In Stage 0 (Rust), parseInt("1") = 1 (raw).
 // In Stage 1 (compiled), parseInt("1") = 3 (tagged: 1*2+1).
 // So if parseInt("1") > 2, we're in Stage 1.
@@ -571,11 +583,13 @@ fn parse_primary() {
         }
         
         // Check for generic type arguments: func<int, string>(...)
+        let call_type_args = [];
         if (p_current_type() == TOK_LT) {
             // Could be generic call OR comparison (a < b)
             // Heuristic: if followed by identifier/type and then > or ,, it's generic
             p_advance(); // skip <
             while (p_current_type() != TOK_GT) {
+                call_type_args = push(call_type_args, p_current_val());
                 p_advance(); // skip type arg
                 if (p_current_type() == TOK_COMMA) {
                     p_advance();
@@ -598,6 +612,28 @@ fn parse_primary() {
                 }
             }
             p_expect(TOK_RPAREN);
+            
+            // If we have type args, this is a generic call
+            if (len(call_type_args) > 0) {
+                // Create mangled name: func_int_string
+                let mangled = id_name;
+                let ti = 0;
+                while (ti < len(call_type_args)) {
+                    mangled = mangled + "_" + call_type_args[ti];
+                    ti = ti + 1;
+                }
+                
+                // Record instantiation request
+                let inst = [];
+                inst = push(inst, id_name);
+                inst = push(inst, call_type_args);
+                inst = push(inst, mangled);
+                instantiations = push(instantiations, inst);
+                
+                // Return call to mangled name
+                return make_call(mangled, call_args);
+            }
+            
             return make_call(id_name, call_args);
         }
         
@@ -986,9 +1022,11 @@ fn parse_function() {
     p_expect(TOK_ID);
     
     // Check for generic params: fn name<T, U>(...)
+    let fn_type_params = [];
     if (p_current_type() == TOK_LT) {
         p_advance(); // skip <
         while (p_current_type() != TOK_GT) {
+            fn_type_params = push(fn_type_params, p_current_val());
             p_advance(); // skip T
             if (p_current_type() == TOK_COMMA) {
                 p_advance();
@@ -1056,6 +1094,18 @@ fn parse_function() {
         fn_body = push(fn_body, parse_statement());
     }
     p_expect(TOK_RBRACE);
+    
+    // If this is a generic function, store it for later instantiation
+    if (len(fn_type_params) > 0) {
+        let gen_entry = [];
+        gen_entry = push(gen_entry, fn_name);
+        gen_entry = push(gen_entry, fn_type_params);
+        gen_entry = push(gen_entry, fn_params);
+        gen_entry = push(gen_entry, make_block(fn_body));
+        generic_funcs = push(generic_funcs, gen_entry);
+        // Return a placeholder - generic functions are not emitted directly
+        return [130, fn_name, fn_type_params]; // AST_GENERIC_FUNC = 130
+    }
     
     return make_func(fn_name, fn_params, make_block(fn_body));
 }
@@ -1151,6 +1201,52 @@ fn parse_enum_def() {
     p_expect(TOK_RBRACE);
     
     return [110, enum_name, enum_variants]; // AST_ENUM_DEF = 110
+}
+
+// Generate specialized functions from generic templates
+fn generate_specialized_funcs() {
+    let result = [];
+    let i = 0;
+    
+    while (i < len(instantiations)) {
+        let inst = instantiations[i];
+        let gen_name = inst[0];
+        let type_args = inst[1];
+        let mangled = inst[2];
+        
+        // Check if already generated
+        let already = 0;
+        let gi = 0;
+        while (gi < len(generated_specs)) {
+            if (generated_specs[gi] == mangled) {
+                already = 1;
+            }
+            gi = gi + 1;
+        }
+        
+        if (already == 0) {
+            // Find the generic template
+            let ti = 0;
+            while (ti < len(generic_funcs)) {
+                let tmpl = generic_funcs[ti];
+                if (tmpl[0] == gen_name) {
+                    // Found! Generate specialized version
+                    let tmpl_params = tmpl[2]; // fn params
+                    let tmpl_body = tmpl[3];   // fn body
+                    
+                    // Create specialized function node
+                    let spec_func = [AST_FUNC, mangled, tmpl_params, tmpl_body];
+                    result = push(result, spec_func);
+                    generated_specs = push(generated_specs, mangled);
+                }
+                ti = ti + 1;
+            }
+        }
+        
+        i = i + 1;
+    }
+    
+    return result;
 }
 
 fn parse_program(tokens: any) {
@@ -2179,9 +2275,80 @@ fn escape_llvm(s: string) {
     return res;
 }
 
-fn cg_generate(cg_input_nodes: any) {
-    // DEBUG 
+// =================== MONOMORPHIZATION ===================
+// Generate specialized versions of generic functions
+// For each instantiation request (e.g., identity<int>),
+// find the generic template and create a concrete version
+// with mangled name (e.g., identity_int)
+
+fn generate_specialized_funcs() {
+    let result = [];
     
+    // Iterate through all instantiation requests
+    let i = 0;
+    while (i < len(instantiations)) {
+        let inst = instantiations[i];
+        let generic_name = inst[0];    // e.g., "identity"
+        let type_args = inst[1];        // e.g., ["int"]
+        let mangled_name = inst[2];     // e.g., "identity_int"
+        
+        // Check if already generated
+        let already_done = false;
+        let j = 0;
+        while (j < len(generated_specs)) {
+            if (generated_specs[j] == mangled_name) {
+                already_done = true;
+                j = len(generated_specs); // break
+            }
+            j = j + 1;
+        }
+        
+        if (already_done == false) {
+            // Find the generic function template
+            let k = 0;
+            while (k < len(generic_funcs)) {
+                let gen_func = generic_funcs[k];
+                let gen_name = gen_func[0];
+                
+                if (gen_name == generic_name) {
+                    // Found the template!
+                    // gen_func = [name, type_params, params, body]
+                    let gen_type_params = gen_func[1]; // ["T"]
+                    let gen_params = gen_func[2];      // ["x"]
+                    let gen_body = gen_func[3];        // AST_BLOCK
+                    
+                    // Create specialized function with mangled name
+                    // AST_FUNC = [20, name, params, body]
+                    let spec_func = [];
+                    spec_func = push(spec_func, 20);           // AST_FUNC
+                    spec_func = push(spec_func, mangled_name); // Mangled name
+                    spec_func = push(spec_func, gen_params);   // Same params
+                    spec_func = push(spec_func, gen_body);     // Same body
+                    
+                    result = push(result, spec_func);
+                    generated_specs = push(generated_specs, mangled_name);
+                    
+                    k = len(generic_funcs); // break
+                }
+                k = k + 1;
+            }
+        }
+        
+        i = i + 1;
+    }
+    
+    return result;
+}
+
+fn cg_generate(cg_input_nodes: any) {
+    // GENERICS: Generate specialized functions
+    let spec_funcs = generate_specialized_funcs();
+    let si = 0;
+    while (si < len(spec_funcs)) {
+        cg_input_nodes = push(cg_input_nodes, spec_funcs[si]);
+        si = si + 1;
+    }
+
     cg_output = "";
     cg_strings = [];
     cg_str_id_counter = 0;
@@ -2195,6 +2362,13 @@ fn cg_generate(cg_input_nodes: any) {
     let i = 0;
     while (i < len(cg_input_nodes)) {
         let glob_node = cg_input_nodes[i];
+        
+        // Skip Generic Templates
+        if (glob_node[0] == 130) { // AST_GENERIC_FUNC
+            i = i + 1;
+            continue;
+        }
+        
         if (glob_node[0] == 10) { // AST_LET
             let glob_name = glob_node[1];
             cg_global_vars = push(cg_global_vars, glob_name);
