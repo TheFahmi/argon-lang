@@ -684,3 +684,51 @@ pub extern "C" fn argon_get_env(name: i64) -> i64 {
     let cstr = std::ffi::CString::new("").unwrap();
     argon_str_new(cstr.as_ptr())
 }
+
+#[no_mangle]
+pub extern "C" fn argon_system(cmd: i64) -> i64 {
+    if is_ptr(cmd) {
+        unsafe {
+            let header = cmd as *mut ObjHeader;
+            if (*header).type_tag == OBJ_STRING {
+                let obj = cmd as *mut ObjString;
+                let cmd_str = &(*obj).data;
+                
+                // Use sh -c to execute command string
+                let status = std::process::Command::new("sh")
+                    .arg("-c")
+                    .arg(cmd_str)
+                    .status();
+                    
+                match status {
+                    Ok(exit_status) => {
+                        if let Some(code) = exit_status.code() {
+                            return from_int(code as i64);
+                        }
+                        return from_int(0);
+                    },
+                    Err(_) => return from_int(-1)
+                }
+            }
+        }
+    }
+    from_int(-1)
+}
+
+#[no_mangle]
+pub extern "C" fn argon_stdin_read() -> i64 {
+    let mut buffer = String::new();
+    if let Ok(_) = std::io::stdin().read_line(&mut buffer) {
+        // Remove trailing newline if present
+        if buffer.ends_with('\n') {
+            buffer.pop();
+            if buffer.ends_with('\r') {
+                buffer.pop();
+            }
+        }
+        let cstr = std::ffi::CString::new(buffer).unwrap();
+        return argon_str_new(cstr.as_ptr());
+    }
+    let cstr = std::ffi::CString::new("").unwrap();
+    argon_str_new(cstr.as_ptr())
+}

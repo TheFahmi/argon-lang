@@ -1,0 +1,3 @@
+@echo off
+echo Starting Argon REPL...
+docker run -it --rm -v "%cd%":/src -w //src argon-toolchain bash -c "argonc tools/repl.ar && clang++ -O0 -Wno-override-module tools/repl.ar.ll /usr/lib/libruntime_argon.a -o tools/repl -lpthread -ldl && ./tools/repl"

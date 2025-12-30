@@ -1458,6 +1458,10 @@ fn cg_gen_expr(cge_input: any) {
         else if (call_name == "charCodeAt") { call_target = "argon_char_code_at"; }
         else if (call_name == "parseInt") { call_target = "argon_parse_int"; }
         else if (call_name == "readFile") { call_target = "argon_read_file"; }
+        else if (call_name == "system") { call_target = "argon_system"; }
+        else if (call_name == "exit") { call_target = "argon_exit"; }
+        else if (call_name == "getEnv") { call_target = "argon_get_env"; }
+        else if (call_name == "input") { call_target = "argon_stdin_read"; }
         else if (call_name == "writeFile") { call_target = "argon_write_file"; }
         else if (call_name == "fileExists") { call_target = "argon_file_exists"; }
         else if (call_name == "getArgs") { call_target = "argon_get_args"; }
@@ -2300,6 +2304,8 @@ fn cg_generate(cg_input_nodes: any) {
     cg_emit_raw("declare i64 @argon_char_from_code(i64)");
     cg_emit_raw("declare i64 @argon_exit(i64)");
     cg_emit_raw("declare i64 @argon_get_env(i64)");
+    cg_emit_raw("declare i64 @argon_system(i64)");
+    cg_emit_raw("declare i64 @argon_stdin_read()");
     cg_emit_raw("@.str.int = private constant [5 x i8] c\"%ld\\0A\\00\"");
     cg_emit_raw("@.str.str = private constant [4 x i8] c\"%s\\0A\\00\"");
     

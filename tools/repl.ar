@@ -1,0 +1,120 @@
+// ============================================
+// ARGON REPL v1.0
+// Interactive Read-Eval-Print Loop
+// ============================================
+
+import "stdlib/string.ar";
+
+fn repl_main() {
+    print("Argon REPL v1.0");
+    print("Type 'exit' to quit, 'clear' to clear screen.");
+    
+    // Create temporary directory
+    system("mkdir -p .repl_tmp");
+    
+    let history = "";
+    
+    // Add stdlib imports to history by default for convenience
+    history = "import \"stdlib/math.ar\";\nimport \"stdlib/string.ar\";\nimport \"stdlib/array.ar\";\nimport \"stdlib/collections.ar\";";
+    
+    while (true) {
+        print("\n>> "); 
+        let line = input();
+        
+        // Handle EOF/empty (input returns empty string on EOF/error?)
+        // trimmed check
+        if (is_empty(line)) {
+            continue;
+        }
+        
+        let trimmed = line; 
+        // We don't have generic trim() yet likely, but let's assume raw line is ok.
+        // Actually input() from read_line includes \n usually?
+        // My implementation in runtime.rs removes trailing \n. Good.
+        
+        if (trimmed == "exit") { break; }
+        if (trimmed == "quit") { break; }
+        if (trimmed == "clear") { 
+            system("clear"); 
+            continue;
+        }
+        
+        // Determine execution mode
+        let code_to_run = "";
+        let is_statement = false;
+        
+        // Check for definitions (fn, struct, enum, import, let)
+        // Simple prefix check
+        if (starts_with(trimmed, "fn ")) { is_statement = true; }
+        if (starts_with(trimmed, "struct ")) { is_statement = true; }
+        if (starts_with(trimmed, "enum ")) { is_statement = true; }
+        if (starts_with(trimmed, "import ")) { is_statement = true; }
+        if (starts_with(trimmed, "let ")) { is_statement = true; }
+        
+        if (is_statement) {
+            // Append to history and verify compilation
+            let test_history = history + "\n" + trimmed;
+            let temp_code = test_history + "\nfn main() { return 0; }";
+            
+            writeFile(".repl_tmp/repl.ar", temp_code);
+            
+            // Build
+            let status = system("argonc .repl_tmp/repl.ar > .repl_tmp/build.log 2>&1");
+            if (status == 0) {
+                // Success, commit to history
+                history = test_history;
+                print("[Defined]");
+            } else {
+                print("Error:");
+                system("cat .repl_tmp/build.log");
+            }
+        } else {
+            // Expression or Void Statement
+            // Try to treat as void statement first? Or expression to print?
+            
+            // Heuristic: try compiling as print(expr) first. If fails, try as statement.
+            let try_print = history + "\nfn main() { print(" + trimmed + "); return 0; }";
+            writeFile(".repl_tmp/repl.ar", try_print);
+            
+            let status = system("argonc .repl_tmp/repl.ar > /dev/null 2>&1"); // Quiet build
+            
+            if (status == 0) {
+                // It works as an expression! Run it.
+                // Compile & Link
+                let link = system("clang++ -O0 -Wno-override-module .repl_tmp/repl.ar.ll /usr/lib/libruntime_argon.a -o .repl_tmp/repl_bin -lpthread -ldl > /dev/null 2>&1");
+                if (link == 0) {
+                    system("./.repl_tmp/repl_bin");
+                } else {
+                    print("Link error");
+                }
+            } else {
+                // Failed as expression, try as statement (e.g. while loop, if block (wait, single line block?))
+                let try_stmt = history + "\nfn main() { " + trimmed + " return 0; }";
+                writeFile(".repl_tmp/repl.ar", try_stmt);
+                
+                let status2 = system("argonc .repl_tmp/repl.ar > .repl_tmp/build.log 2>&1");
+                
+                if (status2 == 0) {
+                     // It works as statement
+                     let link2 = system("clang++ -O0 -Wno-override-module .repl_tmp/repl.ar.ll /usr/lib/libruntime_argon.a -o .repl_tmp/repl_bin -lpthread -ldl > /dev/null 2>&1");
+                     if (link2 == 0) {
+                         system("./.repl_tmp/repl_bin");
+                     }
+                } else {
+                    // Both failed, show error from first attempt (expression) or second?
+                    // Usually second (statement) error is more relevant if it wasn't an expr.
+                    print("Error:");
+                    system("cat .repl_tmp/build.log");
+                }
+            }
+        }
+    }
+    
+    // Cleanup
+    system("rm -rf .repl_tmp");
+}
+
+fn main() {
+    repl_main();
+    return 0;
+}

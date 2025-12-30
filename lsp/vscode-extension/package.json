@@ -2,10 +2,10 @@
     "name": "argon-lang",
     "displayName": "Argon Language",
     "description": "Full language support for Argon programming language - autocomplete, go to definition, formatting",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "publisher": "argon-lang",
     "engines": {
-        "vscode": "^1.75.0"
+        "vscode": "^1.60.0"
     },
     "categories": [
         "Programming Languages",

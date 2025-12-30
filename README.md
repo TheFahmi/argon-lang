@@ -215,6 +215,6 @@ fn main() {
 - [x] Standard library (19 modules) ✅
 - [x] Package Manager (APM) ✅
 - [x] LSP (Language Server Protocol) ✅
-- [ ] REPL (interactive mode)
+- [x] REPL (interactive mode) ✅
 - [ ] Generic types (`Array<T>`)
 - [ ] Debugger support

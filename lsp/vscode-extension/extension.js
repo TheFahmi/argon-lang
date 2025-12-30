@@ -8,8 +8,9 @@ function activate(context) {
     console.log('Argon Language extension activated');
 
     // Path to the language server
+    // Path to the language server
     const serverModule = context.asAbsolutePath(
-        path.join('..', 'argon-lsp.js')
+        path.join('argon-lsp.js')
     );
 
     const serverOptions = {
