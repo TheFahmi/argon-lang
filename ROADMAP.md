@@ -25,16 +25,14 @@ The core infrastructure is now stable and performant.
 ## 🚧 Phase 2: Language Features (v2.26 - v3.0) [CURRENT FOCUS]
 Focus on advanced language features to make Argon viable for complex production software.
 
-### 1. Traits & Interfaces (Next Milestone)
+### ✅ 1. Traits & Interfaces [COMPLETED v2.26.0]
 Enable polymorphism and better code reuse.
-- **Goal**: Allow defining contracts (`trait`) that structs can implement.
-- **Current Status**: Parser supports `trait` keyword, but Runtime ignores it.
-- **Tasks**:
-    - [ ] Add `TraitDef` to valid runtime types.
-    - [ ] Implement V-Table / Dispatch mechanism in Interpreter.
-    - [ ] Add `impl Trait for Struct` logic.
+- [x] Add `TraitDef` to valid runtime types.
+- [x] Register trait implementations in `impl Trait for Type`.
+- [x] Method dispatch works with trait-based polymorphism.
+- [x] Example: `examples/traits_test.ar`
 
-### 2. Garbage Collection (GC)
+### 2. Garbage Collection (GC) [NEXT]
 Move beyond Reference Counting to handle complex memory graphs safely.
 - **Goal**: Replace `Rc<RefCell<T>>` with a Mark-and-Sweep Garbage Collector.
 - **Current Status**: Design doc exists. Using standard Rust `Rc` (leaks on cycles).
@@ -69,7 +67,8 @@ Focus on developer experience and enterprise readiness.
 ---
 
 ## Release Schedule
-- **v2.25.0**: Performance & Stdlib (Current)
-- **v2.26.0**: Traits & Interfaces Implementation
+- **v2.25.0**: Performance & Stdlib ✅
+- **v2.26.0**: Traits & Interfaces ✅ (Current)
 - **v2.27.0**: FFI Support
-- **v2.30.0**: Garbage Collector Integration
+- **v2.28.0**: Garbage Collector Integration
+
