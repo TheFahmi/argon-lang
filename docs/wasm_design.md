@@ -433,14 +433,30 @@ let AST_ATTRIBUTE = 153;
 
 | Phase | Status | Description |
 |-------|--------|-------------|
-| 1 | 🔄 | Design document |
-| 2 | ⬜ | WAT text output |
-| 3 | ⬜ | Basic arithmetic & functions |
-| 4 | ⬜ | Control flow (if/while) |
-| 5 | ⬜ | WASI print support |
-| 6 | ⬜ | JS interop (@wasm_export) |
-| 7 | ⬜ | Browser demo |
-| 8 | ⬜ | String/array support |
+| 1 | ✅ | Design document (`docs/wasm_design.md`) |
+| 2 | ✅ | WAT text output (`self-host/wasm_codegen.ar`) |
+| 3 | ✅ | Basic arithmetic & functions (codegen done) |
+| 4 | ✅ | Control flow (if/while) (codegen done) |
+| 5 | ✅ | WASI print support (template done) |
+| 6 | 🔄 | JS interop (@wasm_export) - syntax defined |
+| 7 | ✅ | Browser demo (`examples/wasm_demo.html`) |
+| 8 | ✅ | String/array support (`stdlib/wasm.ar`) |
+| 9 | ⬜ | Integrate to main compiler CLI |
+| 10 | ⬜ | Bootstrap new binary with WASM support |
+
+### Completed Files
+- ✅ `docs/wasm_design.md` - Design document
+- ✅ `self-host/wasm_codegen.ar` - WAT code generator
+- ✅ `stdlib/wasm.ar` - WASM standard library  
+- ✅ `examples/wasm_example.ar` - Example program
+- ✅ `examples/wasm_demo.html` - Browser demo
+- ✅ `examples/argon_loader.js` - JavaScript loader
+
+### Remaining Work
+- ⬜ Add `--target wasm32` CLI parsing to `compiler.ar`
+- ⬜ Add `@` attribute token and parser
+- ⬜ Call `generate_wasm()` when target is WASM
+- ⬜ Bootstrap new compiler binary
 
 ## Example Program
 
