@@ -3,7 +3,7 @@
 // Demonstrates Argon's channel-based concurrency
 // ============================================
 
-import "stdlib/channel.ar";
+import "channel"
 
 fn main() {
     print("=== Argon Channel Example ===\n");

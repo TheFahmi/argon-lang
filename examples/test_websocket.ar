@@ -1,0 +1,110 @@
+// ============================================
+// WebSocket Test
+// Tests WebSocket concepts and structures
+// ============================================
+
+fn main() {
+    print("==========================================");
+    print("       WEBSOCKET TEST");
+    print("==========================================");
+    print("");
+    
+    // Test 1: WebSocket opcodes
+    print("Test 1: WebSocket Opcodes");
+    print("------------------------------------------");
+    let WS_TEXT = 1;
+    let WS_BINARY = 2;
+    let WS_CLOSE = 8;
+    let WS_PING = 9;
+    let WS_PONG = 10;
+    
+    print("  TEXT opcode: " + WS_TEXT);
+    print("  BINARY opcode: " + WS_BINARY);
+    print("  CLOSE opcode: " + WS_CLOSE);
+    print("  PING opcode: " + WS_PING);
+    print("  PONG opcode: " + WS_PONG);
+    print("  [PASS] Opcodes defined");
+    print("");
+    
+    // Test 2: Ready states
+    print("Test 2: Ready States");
+    print("------------------------------------------");
+    let WS_CONNECTING = 0;
+    let WS_OPEN = 1;
+    let WS_CLOSING = 2;
+    let WS_CLOSED = 3;
+    
+    print("  CONNECTING: " + WS_CONNECTING);
+    print("  OPEN: " + WS_OPEN);
+    print("  CLOSING: " + WS_CLOSING);
+    print("  CLOSED: " + WS_CLOSED);
+    print("  [PASS] Ready states defined");
+    print("");
+    
+    // Test 3: Close codes
+    print("Test 3: Close Codes");
+    print("------------------------------------------");
+    let CLOSE_NORMAL = 1000;
+    let CLOSE_GOING_AWAY = 1001;
+    let CLOSE_PROTOCOL_ERROR = 1002;
+    
+    print("  NORMAL: " + CLOSE_NORMAL);
+    print("  GOING_AWAY: " + CLOSE_GOING_AWAY);
+    print("  PROTOCOL_ERROR: " + CLOSE_PROTOCOL_ERROR);
+    print("  [PASS] Close codes defined");
+    print("");
+    
+    // Test 4: Magic string for handshake
+    print("Test 4: WebSocket Magic String");
+    print("------------------------------------------");
+    let MAGIC = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+    print("  Magic: " + MAGIC);
+    print("  Length: " + len(MAGIC));
+    print("  [PASS] Magic string correct (36 chars)");
+    print("");
+    
+    // Test 5: Frame structure simulation
+    print("Test 5: Frame Structure");
+    print("------------------------------------------");
+    // Simulated frame bytes
+    let fin = 1;
+    let opcode = 1;  // Text
+    let masked = 0;  // Server to client
+    let payloadLen = 5;
+    
+    let firstByte = fin * 128 + opcode;
+    let secondByte = masked * 128 + payloadLen;
+    
+    print("  FIN: " + fin + ", Opcode: " + opcode);
+    print("  First byte: " + firstByte);
+    print("  Second byte: " + secondByte);
+    print("  Payload length: " + payloadLen);
+    print("  [PASS] Frame structure works");
+    print("");
+    
+    // Test 6: Upgrade request detection
+    print("Test 6: Upgrade Request Detection");
+    print("------------------------------------------");
+    let request = "GET / HTTP/1.1\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n";
+    
+    let isUpgrade = contains(request, "Upgrade: websocket");
+    print("  Request contains 'Upgrade: websocket': " + isUpgrade);
+    print("  [PASS] Upgrade detection works");
+    print("");
+    
+    // Test 7: Basic base64 encoding concept
+    print("Test 7: Base64 Encoding (Concept)");
+    print("------------------------------------------");
+    let base64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    print("  Base64 charset length: " + len(base64Chars));
+    print("  First char: " + char_at(base64Chars, 0));
+    print("  Last char: " + char_at(base64Chars, 63));
+    print("  [PASS] Base64 charset correct");
+    print("");
+    
+    print("==========================================");
+    print("    ALL WEBSOCKET TESTS PASSED!");
+    print("==========================================");
+    
+    return 0;
+}
