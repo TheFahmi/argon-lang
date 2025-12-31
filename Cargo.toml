@@ -1,6 +1,6 @@
 [package]
 name = "argon"
-version = "2.23.0"
+version = "2.24.0"
 edition = "2021"
 description = "Argon Language Interpreter - Compiles Argon to LLVM IR"
 authors = ["TheFahmi"]

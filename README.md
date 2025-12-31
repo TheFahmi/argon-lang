@@ -90,6 +90,7 @@ impl Circle {
 ```
 
 ## Version History
+- **v2.24.0**: Macro system (`macro`) for AST-based code generation. 
 - **v2.23.0**: Defer statement (`defer`) for resource management and block scoping logic.
 - **v2.22.0**: Optimization Pass (Constant Folding, Dead Code Elimination).
 - **v2.21.0**: Garbage Collection (Reference Counting), Reference Semantics for Arrays/Objects.
@@ -122,6 +123,6 @@ impl Circle {
 - [x] Garbage Collection (RC) ✅ (v2.21.0)
 - [x] Optimization (Constant Folding) ✅ (v2.22.0)
 - [x] Destructors / RAII (defer keyword) ✅ (v2.23.0)
-- [ ] Macros / Metaprogramming
+- [x] Macros / Metaprogramming ✅ (v2.24.0)
 - [ ] Ecosystem Demo (Web Framework / Game)
 

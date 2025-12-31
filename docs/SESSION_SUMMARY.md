@@ -1,47 +1,43 @@
-# Session Summary - Argon Language v2.23.0
+# Session Summary - Argon Language v2.24.0
 
 ## Date: 31 December 2025
 
 ---
 
-## ✅ COMPLETED: Defer Statement (v2.23.0)
+## ✅ COMPLETED: Macros (v2.24.0)
 
 ### Status
-- **Interpreter**: Implemented `defer` keyword execution logic (ScopeFrame LIFO).
-- **Parsers**: Added `defer` and Block Statement parsing.
-- **Version**: Bumped to v2.23.0.
-- **Previous**: v2.22.0 (Optimization).
+- **Macro System**: Implemented hygienic-ish AST macros.
+- **Expander Pass**: Added `src/expander.rs` to AST transformation pipeline.
+- **Version**: Bumped to v2.24.0.
+- **Previous**: v2.23.0 (Defer).
 
 ---
 
 ## What Was Done Today
 
-### 1. Defer Statement (RAII Support)
-- Implemented Go-style `defer` statement.
-- Execution happens at **Scope Exit** (Scope Pop) in reverse order.
-- Supports Block Scoping (`defer` inside `{}` runs at `}`).
+### 1. Macro System (`src/expander.rs`)
+- Added `macro name(args...) { ... }` syntax.
+- Implemented AST expansion before optimization.
+- Supports `$variable` interpolation.
+- Supports recursive expansion.
 
-### 2. Interpreter Architecture
-- Refactored `Interpreter::stack` to `Vec<ScopeFrame>`.
-- `ScopeFrame` holds variables and deferred statements.
-- Updated `pop_scope` to execute deferred logic robustly.
+### 2. Lexer/Parser Support
+- Added `macro` keyword.
+- Updated identifiers to allow `$`.
+- Added `TopLevel::Macro`.
 
-### 3. Parser Support
-- Added `Token::Defer`.
-- Added parsing for `defer <stmt>;`.
-- **Added Parse Support for Block Statements `{ ... }`**.
+### 3. Defer Statement (v2.23.0)
+- Implemented `defer` keyword for RAII-style cleanup.
 
 ### 4. Optimization (v2.22.0)
-- Constant Folding and Dead Code Elimination implemented.
+- Implemented Constant Folding.
 
-### 5. Garbage Collection (v2.21.0)
-- Reference Semantics for Arrays/Structs.
-
-### 6. Demos
-- `examples/defer_test.ar`: Verifies defer order (PASS).
-- `examples/optimize_test.ar`: Verifies optimizations (PASS).
-- `examples/gc_test.ar`: Verifies GC (PASS).
-- `examples/traits_example.ar`: Verifies Traits (PASS).
+### 5. Demos (Verified)
+- `examples/macros_test.ar`
+- `examples/defer_test.ar`
+- `examples/optimize_test.ar`
+- `examples/gc_test.ar`
 
 ---
 
@@ -50,18 +46,18 @@
 ### New Files
 | File | Description |
 |------|-------------|
-| `examples/defer_test.ar` | Test for Defer |
-| `docs/defer_design.md` | Design Doc |
-| `src/optimizer.rs` | AST Optimizer |
+| `examples/macros_test.ar` | Test for Macros |
+| `docs/macros_design.md` | Design Doc |
+| `src/expander.rs` | Macro Expander |
 
 ### Modified Files
 | File | Changes |
 |------|---------|
-| `src/interpreter.rs` | Defer logic, ScopeFrame |
-| `src/parser.rs` | Parsing defer/block |
-| `src/lexer.rs` | Defer token |
-| `src/main.rs` | Optimization integration, Defer version |
-| `README.md` | v2.23.0 |
+| `src/interpreter.rs` | Defer impl |
+| `src/parser.rs` | Macro parsing |
+| `src/lexer.rs` | Macro token |
+| `src/main.rs` | Pipeline integration |
+| `README.md` | v2.24.0 |
 
 ---
 
@@ -81,6 +77,6 @@
 | Traits | ✅ (v2.20.0) |
 | Garbage Collection | ✅ (v2.21.0) |
 | Optimization | ✅ (v2.22.0) |
-| **Defer / RAII** | ✅ (v2.23.0) |
-| Macros | ⬜ Next |
-| Ecosystem Demo | ⬜ Planned |
+| Defer / RAII | ✅ (v2.23.0) |
+| **Macros** | ✅ (v2.24.0) |
+| Ecosystem Demo | ⬜ Next |

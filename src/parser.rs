@@ -87,6 +87,13 @@ pub struct ExternBlock {
 }
 
 #[derive(Debug, Clone)]
+pub struct MacroDef {
+    pub name: String,
+    pub params: Vec<String>,
+    pub body: Vec<Stmt>,
+}
+
+#[derive(Debug, Clone)]
 pub enum TopLevel {
     Function(Function),
     Struct(StructDef),
@@ -96,6 +103,7 @@ pub enum TopLevel {
     Trait(TraitDef),
     Impl(ImplDef),
     Extern(ExternBlock),
+    Macro(MacroDef),
 }
 
 pub struct Parser {
@@ -180,6 +188,9 @@ impl Parser {
                 Token::Impl => {
                     items.push(TopLevel::Impl(self.parse_impl()?));
                 }
+                Token::Macro => {
+                    items.push(TopLevel::Macro(self.parse_macro()?));
+                }
                 Token::Eof => break,
                 _ => {
                     self.advance();
@@ -188,6 +199,35 @@ impl Parser {
         }
         
         Ok(items)
+    }
+
+    fn parse_macro(&mut self) -> Result<MacroDef, String> {
+        self.expect(Token::Macro)?;
+        let name = match self.advance() {
+            Token::Identifier(s) => s,
+            t => return Err(format!("Expected macro name, got {:?}", t)),
+        };
+        
+        self.expect(Token::LParen)?;
+        let mut params = Vec::new();
+        if self.peek() != &Token::RParen {
+            loop {
+                match self.advance() {
+                    Token::Identifier(s) => params.push(s),
+                    t => return Err(format!("Expected parameter name, got {:?}", t)),
+                }
+                if !self.match_token(&Token::Comma) {
+                    break;
+                }
+            }
+        }
+        self.expect(Token::RParen)?;
+        
+        if self.peek() != &Token::LBrace {
+             return Err("Expected block for macro body".to_string());
+        }
+        let body = self.parse_block()?;
+        Ok(MacroDef { name, params, body })
     }
     
     fn parse_function(&mut self) -> Result<Function, String> {

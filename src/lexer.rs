@@ -6,7 +6,7 @@ pub enum Token {
     // Keywords
     Fn, Let, Return, If, Else, While, Print, True, False,
     Break, Continue, Struct, Enum, Match, Import, From,
-    Async, Await, Extern, Defer,
+    Async, Await, Extern, Defer, Macro,
     // FFI & Traits keywords
     Trait, Impl, For, SelfType,
     
@@ -124,7 +124,7 @@ impl Lexer {
     fn read_identifier(&mut self) -> String {
         let mut id = String::new();
         while let Some(c) = self.peek() {
-            if c.is_alphanumeric() || c == '_' {
+            if c.is_alphanumeric() || c == '_' || c == '$' {
                 id.push(c);
                 self.advance();
             } else {
@@ -240,10 +240,11 @@ impl Lexer {
                 
                 _ if c.is_ascii_digit() => Token::Number(self.read_number()),
                 
-                _ if c.is_alphabetic() || c == '_' => {
+                _ if c.is_alphabetic() || c == '_' || c == '$' => {
                     let id = self.read_identifier();
                     match id.as_str() {
                         "fn" => Token::Fn,
+                        "macro" => Token::Macro,
                         "let" => Token::Let,
                         "return" => Token::Return,
                         "if" => Token::If,

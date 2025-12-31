@@ -1,4 +1,4 @@
-// Argon Interpreter v2.21.0
+// Argon Interpreter v2.23.0
 // Rust implementation that can run Argon source files
 
 mod lexer;
@@ -6,6 +6,7 @@ mod parser;
 mod interpreter;
 mod codegen;
 mod optimizer;
+mod expander;
 
 use std::env;
 use std::fs;
@@ -37,11 +38,11 @@ fn main() {
         } else {
             match args[i].as_str() {
                 "-h" | "--help" => {
-                    println!("Argon Interpreter v2.23.0");
+                    println!("Argon Interpreter v2.24.0");
                     return;
                 }
                 "-v" | "--version" => {
-                    println!("Argon Interpreter v2.23.0");
+                    println!("Argon Interpreter v2.24.0");
                     return;
                 }
                 "--emit-llvm" => {
@@ -76,6 +77,7 @@ fn main() {
 
     let tokens = lexer::tokenize(&source);
     let mut parser = parser::Parser::new(tokens);
+    
     let ast = match parser.parse() {
         Ok(ast) => ast,
         Err(e) => {
@@ -83,17 +85,21 @@ fn main() {
             process::exit(1);
         }
     };
-    
+
+    // Macro Expansion Pass
+    let mut expander = expander::Expander::new();
+    let expanded_ast = expander.expand(ast);
+
     // Optimization Pass
     let optimizer = optimizer::Optimizer::new();
-    let final_ast = optimizer.optimize(ast);
+    let final_ast = optimizer.optimize(expanded_ast);
 
     let mut interp = interpreter::Interpreter::new();
     if emit_llvm {
         interp.set_emit_llvm(true, &llvm_output);
     }
     interp.set_args(program_args);
-    
+
     match interp.run(&final_ast) {
         Ok(_) => {},
         Err(e) => {
