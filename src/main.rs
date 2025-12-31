@@ -1,4 +1,4 @@
-// Argon Interpreter v2.27.0
+// Argon Interpreter v2.28.0
 // Rust implementation that can run Argon source files
 
 mod lexer;
@@ -10,6 +10,7 @@ mod expander;
 mod bytecode_vm;
 mod fast_vm;
 mod ffi;
+mod gc;
 
 use std::env;
 use std::fs;

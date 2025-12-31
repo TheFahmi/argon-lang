@@ -1,5 +1,5 @@
 // Argon Lexer - Tokenizes Argon source code
-// Compatible with compiler.ar v2.27.0
+// Compatible with compiler.ar v2.28.0
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {

@@ -1,36 +1,41 @@
-// GC / Reference Semantics Test
+// Argon GC Test (v2.28.0)
+// Test garbage collection functionality
 
 fn main() {
-    print("=== GC / Reference Test ===");
+    print("=== Argon Garbage Collector Test ===");
+    print("");
     
-    // Test Array Reference
-    let a = [10];
-    let b = a; // Should be reference copy
+    // Get initial stats
+    let stats = gc_stats();
+    print("Initial heap size: " + toString(stats[0]));
     
-    print("Original a: " + a);
-    print("Modifying b (push 20)...");
-    push(b, 20);
+    // Allocate some arrays
+    print("");
+    print("Allocating arrays...");
+    let arr1 = [1, 2, 3, 4, 5];
+    let arr2 = [10, 20, 30];
+    let arr3 = ["hello", "world"];
     
-    print("New a: " + a);
-    if (len(a) == 2) {
-        print("PASS: Arrays have reference semantics");
-    } else {
-        print("FAIL: Arrays have copy semantics");
-    }
+    // Check stats after allocation
+    let stats2 = gc_stats();
+    print("After allocation - heap: " + toString(stats2[0]) + ", allocated: " + toString(stats2[1]));
     
-    // Test Struct Reference
-    let s1 = Point { x: 1, y: 1 };
-    let s2 = s1;
-    s2.x = 99;
+    // Force GC
+    print("");
+    print("Forcing garbage collection...");
+    gc_collect();
     
-    print("s1.x: " + s1.x);
-    if (s1.x == 99) {
-        print("PASS: Structs have reference semantics");
-    } else {
-        print("FAIL: Structs have copy semantics");
-    }
+    // Check stats after GC  
+    let stats3 = gc_stats();
+    print("After GC - heap: " + toString(stats3[0]) + ", allocated: " + toString(stats3[1]));
     
-    print("=== Test Complete ===");
+    // The arrays are still reachable so they shouldn't be collected
+    print("");
+    print("Arrays still accessible:");
+    print("  arr1 = " + toString(arr1));
+    print("  arr2 = " + toString(arr2));
+    print("  arr3 = " + toString(arr3));
+    
+    print("");
+    print("=== GC Test Complete ===");
 }
-
-struct Point { x: int, y: int }

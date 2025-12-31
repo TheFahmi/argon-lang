@@ -1,10 +1,11 @@
 // Argon Interpreter - Executes AST
-// Compatible with compiler.ar v2.27.0 (FFI Support)
+// Compatible with compiler.ar v2.28.0 (GC + FFI)
 
 #![allow(dead_code)]
 
 use crate::parser::{Expr, Stmt, TopLevel, Function, Param, TraitDef};
 use crate::ffi::FfiManager;
+use crate::gc::GarbageCollector;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{Read, Write};
@@ -95,6 +96,8 @@ pub struct Interpreter {
     next_sock_id: i64,
     // FFI
     ffi: FfiManager,
+    // GC
+    gc: GarbageCollector,
 }
 
 #[derive(Debug)]
@@ -123,6 +126,7 @@ impl Interpreter {
             sockets: HashMap::new(),
             next_sock_id: 1000,
             ffi: FfiManager::new(),
+            gc: GarbageCollector::new(),
         }
     }
     
@@ -920,6 +924,23 @@ impl Interpreter {
                     }
                 }
                 return Ok(Value::Null);
+            }
+            // ============================================
+            // GC Built-ins
+            // ============================================
+            "gc_collect" => {
+                // Force garbage collection
+                self.gc.collect();
+                return Ok(Value::Null);
+            }
+            "gc_stats" => {
+                // Return heap statistics [heap_size, allocated_since_last_gc]
+                let (heap_size, allocated) = self.gc.stats();
+                let stats = vec![
+                    Value::Int(heap_size as i64),
+                    Value::Int(allocated as i64),
+                ];
+                return Ok(Value::Array(Rc::new(RefCell::new(stats))));
             }
             _ => {}
         }
