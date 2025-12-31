@@ -107,7 +107,53 @@ Output:
 ArgonWeb Server running on port 8080
 ```
 Then visit `http://localhost:8080/` or `http://localhost:8080/todos`.
-- **v2.23.0**: Defer statement (`defer`) for resource management and block scoping logic.
+
+## ArgonWeb CLI
+
+Generate NestJS-style project structure:
+
+```bash
+# Create new project
+./argonweb-cli.sh new my-api
+
+# Run the server
+cargo run --release my-api/src/main.ar
+```
+
+**Generated Structure:**
+```
+my-api/
+├── src/
+│   ├── main.ar              # Entry point
+│   ├── app.module.ar        # Route registration
+│   ├── config/
+│   │   └── app.config.ar
+│   ├── common/
+│   │   ├── middleware/
+│   │   ├── guards/
+│   │   └── utils/
+│   └── modules/
+│       ├── users/           # (entity, service, controller)
+│       └── auth/            # (service, controller)
+└── README.md
+```
+
+## Built-in Functions
+
+| Function | Description |
+|----------|-------------|
+| `bcrypt_hash(password)` | Hash password |
+| `bcrypt_verify(password, hash)` | Verify password |
+| `jwt_sign(payload, secret)` | Generate JWT token |
+| `jwt_verify(token, secret)` | Verify & decode JWT |
+| `now()` / `timestamp()` | Unix timestamp (seconds) |
+| `timestamp_ms()` | Unix timestamp (milliseconds) |
+| `date_now()` | ISO date string |
+| `uuid()` / `generate_id()` | Generate unique ID |
+| `random()` | Pseudo-random number |
+| `sleep(ms)` | Sleep for milliseconds |
+
+## Version History (Continued)
 - **v2.22.0**: Optimization Pass (Constant Folding, Dead Code Elimination).
 - **v2.21.0**: Garbage Collection (Reference Counting), Reference Semantics for Arrays/Objects.
 - **v2.20.0**: FFI (extern, pointers) and Traits (trait, impl, dynamic dispatch) support. New Rust Interpreter.
