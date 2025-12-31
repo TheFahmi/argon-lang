@@ -1,5 +1,8 @@
 # Argon Programming Language (v2.24.0)
 
+<img src="logo.png" alt="Argon Logo" width="150" height="auto">
+
+
 Argon is a high-performance, **self-hosted** systems programming language designed for modern development. It features a custom Rust-based interpreter, robust type system, and built-in tooling for building scalable applications.
 
 ---
