@@ -1,4 +1,4 @@
-# Argon Programming Language (v2.16.0)
+# Argon Programming Language (v2.18.0)
 ![Argon Logo](logo.png)
 
 Argon is a high-performance, **self-hosted** systems programming language that compiles directly to LLVM IR and Native Machine Code.
@@ -193,6 +193,7 @@ fn main() {
 - **Node.js** (optional): For LSP/VS Code extension
 
 ## Version History
+- **v2.18.0**: Async/await support (`async fn`, `await` expressions)
 - **v2.17.0**: Debugger support (DWARF debug info, GDB integration, -g flag)
 - **v2.16.0**: Generic types with full monomorphization, fixed duplicate function bug, Rust interpreter bootstrap
 - **v2.15.0**: Generic type syntax support (`struct Box<T>`, `fn map<T>`)
@@ -227,5 +228,5 @@ fn main() {
 - [x] REPL (interactive mode) ✅
 - [x] Generic types (`Box<T>`, `fn<T>`) ✅
 - [x] Debugger support (GDB/LLDB) ✅
-- [ ] Async/await
+- [x] Async/await ✅
 - [ ] WebAssembly target

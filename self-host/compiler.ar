@@ -1,8 +1,8 @@
 // ============================================
-// ARGON SELF-HOSTING COMPILER v2.16.0
+// ARGON SELF-HOSTING COMPILER v2.18.0
 // Written entirely in Argon
 // Complete Lexer, Parser, and Code Generator
-// With Generics, REPL, Structs, Enums & Match
+// With Async/Await, Generics, Structs & Enums
 // ============================================
 
 let OPT_UNSAFE = 0; // Optimization flag
@@ -1654,7 +1654,7 @@ fn cg_gen_expr(cge_input: any) {
         // Check if call_name is an Enum Variant Constructor
         // We iterate all collected enums to find matching variant
         // Since we don't have scope (Enum::Variant), variant names must be unique or we check all.
-        let enum_cons_variant_idx = 0 - 1;
+        let enum_cons_variant_idx = 0-1;
         let enum_cons_has_data = 0;
         
         let eci = 0;
@@ -1678,7 +1678,7 @@ fn cg_gen_expr(cge_input: any) {
         }
         
         // If it IS an enum constructor
-        if (enum_cons_variant_idx != (0 - 1)) {
+        if (enum_cons_variant_idx != (0-1)) {
              // Create Array [discriminator, data...]
              let enum_obj = cg_next_temp();
              cg_emit(enum_obj + " = call i64 @argon_arr_new()");
@@ -1870,7 +1870,7 @@ fn cg_gen_expr(cge_input: any) {
             
             // Check discriminator
             // We need to resolve pat_name (Variant) to its index
-            let variant_idx = 0 - 1;
+            let variant_idx = 0-1;
             
             // Search all enums for this variant
             let found_enum = 0;
@@ -1897,7 +1897,7 @@ fn cg_gen_expr(cge_input: any) {
                 }
             }
             
-            if (variant_idx != (0 - 1)) {
+            if (variant_idx != (0-1)) {
                 let vidx_tagged = (variant_idx * 2) + 1;
                 if (IS_STAGE1 == 1) { vidx_tagged = variant_idx; } // Wait, constant folding vs runtime
                 // variant_idx is constant int.

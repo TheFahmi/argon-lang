@@ -1,5 +1,5 @@
 // ============================================
-// ARGON STANDARD LIBRARY: RANDOM (v2.7.1)
+// ARGON STANDARD LIBRARY: RANDOM (v2.18.0)
 // Random number generation
 // Uses Linear Congruential Generator (LCG)
 // ============================================
