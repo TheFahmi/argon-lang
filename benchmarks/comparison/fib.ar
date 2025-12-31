@@ -1,0 +1,13 @@
+fn fib(n) {
+    if (n < 2) { return n; }
+    return fib(n - 1) + fib(n - 2);
+}
+
+fn main() {
+    print("Argon: Starting Fib(35)...");
+    let start = timestamp_ms();
+    let res = fib(35);
+    let end = timestamp_ms();
+    print("Argon: Result = " + res);
+    print("Argon: Time = " + (end - start) + "ms");
+}

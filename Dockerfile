@@ -1,23 +1,31 @@
-# Argon Toolchain v2.19.0
-# Using pre-built compiler binary (v2.18 binary with v2.19 source)
 FROM rust:slim
 
-# Install dependencies
+# Install C++ compiler (g++) and clang
 RUN apt-get update && apt-get install -y \
-    clang llvm gdb wabt \
+    g++ clang llvm \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy runtime library
-COPY self-host/libruntime_new.a /usr/lib/libruntime_argon.a
+# Copy Source
+COPY Cargo.toml .
+COPY src/ ./src/
 
-# Use argonc_v218 as the compiler (this works for most programs)
-# v2.19.0 source is available but needs updated Rust interpreter for bootstrap
-COPY self-host/argonc_v218 /usr/bin/argonc
-RUN chmod +x /usr/bin/argonc
+# Build Argon (Release mode for max speed)
+# This produces a Linux binary inside the container
+RUN cargo build --release
 
-# Copy stdlib for reference
-COPY stdlib/ /app/stdlib/
+# Copies binary to path
+RUN cp target/release/argon /usr/bin/argon
 
-CMD ["bash"]
+# Copy Benchmarks
+COPY benchmarks/comparison/ ./benchmarks/
+
+# Work in benchmark dir
+WORKDIR /app/benchmarks
+
+# Make script executable
+RUN chmod +x run.sh
+
+# Run benchmarks
+CMD ["./run.sh"]
