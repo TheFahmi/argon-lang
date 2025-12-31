@@ -42,14 +42,12 @@ Move beyond Reference Counting to handle complex memory graphs safely.
     - [ ] Implement Sweeping.
     - [ ] Integrate into Bytecode VM.
 
-### 3. FFI (Foreign Function Interface)
-Unlock the ecosystem of C dynamic libraries.
-- **Goal**: Load `.dll` / `.so` files and call C functions directly.
-- **Current Status**: Parser supports `extern`, Runtime unimplemented.
-- **Tasks**:
-    - [ ] Integrate `libloading` crate.
-    - [ ] Implement dynamic symbol lookup.
-    - [ ] Map Argon types <-> C ABI.
+### ✅ 3. FFI (Foreign Function Interface) [COMPLETED v2.27.0]
+Load and call C dynamic libraries directly from Argon.
+- [x] Integrate `libloading` crate.
+- [x] `ffi_load(libname)` - Load .dll/.so files.
+- [x] `ffi_call(lib, func, args)` - Call C functions.
+- [x] Example: `examples/ffi_test.ar`
 
 ---
 
@@ -68,7 +66,7 @@ Focus on developer experience and enterprise readiness.
 
 ## Release Schedule
 - **v2.25.0**: Performance & Stdlib ✅
-- **v2.26.0**: Traits & Interfaces ✅ (Current)
-- **v2.27.0**: FFI Support
+- **v2.26.0**: Traits & Interfaces ✅
+- **v2.27.0**: FFI Support ✅ (Current)
 - **v2.28.0**: Garbage Collector Integration
 
