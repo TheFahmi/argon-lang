@@ -90,6 +90,7 @@ impl Circle {
 ```
 
 ## Version History
+- **v2.23.0**: Defer statement (`defer`) for resource management and block scoping logic.
 - **v2.22.0**: Optimization Pass (Constant Folding, Dead Code Elimination).
 - **v2.21.0**: Garbage Collection (Reference Counting), Reference Semantics for Arrays/Objects.
 - **v2.20.0**: FFI (extern, pointers) and Traits (trait, impl, dynamic dispatch) support. New Rust Interpreter.
@@ -120,7 +121,7 @@ impl Circle {
 - [x] Traits/Interfaces ✅ (v2.20.0)
 - [x] Garbage Collection (RC) ✅ (v2.21.0)
 - [x] Optimization (Constant Folding) ✅ (v2.22.0)
-- [ ] Destructors / RAII (Auto-cleanup for FFI/Files)
+- [x] Destructors / RAII (defer keyword) ✅ (v2.23.0)
 - [ ] Macros / Metaprogramming
 - [ ] Ecosystem Demo (Web Framework / Game)
 

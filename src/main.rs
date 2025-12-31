@@ -37,11 +37,11 @@ fn main() {
         } else {
             match args[i].as_str() {
                 "-h" | "--help" => {
-                    println!("Argon Interpreter v2.22.0");
+                    println!("Argon Interpreter v2.23.0");
                     return;
                 }
                 "-v" | "--version" => {
-                    println!("Argon Interpreter v2.22.0");
+                    println!("Argon Interpreter v2.23.0");
                     return;
                 }
                 "--emit-llvm" => {

@@ -37,6 +37,7 @@ pub enum Stmt {
     Continue,
     Expr(Expr),
     Block(Vec<Stmt>),
+    Defer(Box<Stmt>),
 }
 
 #[derive(Debug, Clone)]
@@ -519,6 +520,15 @@ impl Parser {
                 self.advance();
                 self.match_token(&Token::Semi);
                 Ok(Stmt::Continue)
+            }
+            Token::LBrace => {
+                let stmts = self.parse_block()?;
+                Ok(Stmt::Block(stmts))
+            }
+            Token::Defer => {
+                self.advance();
+                let stmt = self.parse_stmt()?;
+                Ok(Stmt::Defer(Box::new(stmt)))
             }
             Token::Identifier(name) => {
                 self.advance();

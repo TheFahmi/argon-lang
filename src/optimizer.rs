@@ -75,6 +75,9 @@ impl Optimizer {
                 }
             }
             Stmt::Block(stmts) => Stmt::Block(self.optimize_stmts(stmts)),
+            Stmt::Defer(stmt) => Stmt::Defer(Box::new(self.optimize_stmt(*stmt))),
+            Stmt::FieldAssign(obj, f, val) => Stmt::FieldAssign(self.optimize_expr(obj), f, self.optimize_expr(val)),
+            Stmt::IndexAssign(arr, idx, val) => Stmt::IndexAssign(self.optimize_expr(arr), self.optimize_expr(idx), self.optimize_expr(val)),
             _ => stmt,
         }
     }

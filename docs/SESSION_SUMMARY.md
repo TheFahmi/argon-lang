@@ -1,37 +1,47 @@
-# Session Summary - Argon Language v2.22.0
+# Session Summary - Argon Language v2.23.0
 
 ## Date: 31 December 2025
 
 ---
 
-## ✅ COMPLETED: Optimizations (v2.22.0)
+## ✅ COMPLETED: Defer Statement (v2.23.0)
 
 ### Status
-- **Interpreter**: Added Optimization Pass (Constant Folding, Dead Code Elimination).
-- **Architecture**: `Parser -> Optimizer -> Interpreter`.
-- **Version**: Bumped to v2.22.0.
-- **Previous**: v2.21.0 (Garbage Collection).
+- **Interpreter**: Implemented `defer` keyword execution logic (ScopeFrame LIFO).
+- **Parsers**: Added `defer` and Block Statement parsing.
+- **Version**: Bumped to v2.23.0.
+- **Previous**: v2.22.0 (Optimization).
 
 ---
 
 ## What Was Done Today
 
-### 1. AST Optimizer (`src/optimizer.rs`)
-- Implemented a tree-walking optimizer that pre-calculates constant expressions.
-- **Constant Folding**: `10 * 20 + 5` -> `205` at compile time.
-- **Dead Code Elimination**: `if (false) { ... }` blocks are removed entirely.
-- **Optimization Strategy**: Primitive recursive constant propagation.
+### 1. Defer Statement (RAII Support)
+- Implemented Go-style `defer` statement.
+- Execution happens at **Scope Exit** (Scope Pop) in reverse order.
+- Supports Block Scoping (`defer` inside `{}` runs at `}`).
 
-### 2. Integration
-- `src/main.rs` now runs the optimizer on the AST before execution.
-- Performance improvement for math-heavy or config-heavy scripts.
+### 2. Interpreter Architecture
+- Refactored `Interpreter::stack` to `Vec<ScopeFrame>`.
+- `ScopeFrame` holds variables and deferred statements.
+- Updated `pop_scope` to execute deferred logic robustly.
 
-### 3. Garbage Collection (v2.21.0)
-- Implemented Reference Counting (RC) for Arrays and Structs.
-- Fixed assignment parser for complex lvalues (`obj.field = val`).
+### 3. Parser Support
+- Added `Token::Defer`.
+- Added parsing for `defer <stmt>;`.
+- **Added Parse Support for Block Statements `{ ... }`**.
 
-### 4. Demo
-- `examples/optimize_test.ar`: Verifies constant folding and dead branch removal.
+### 4. Optimization (v2.22.0)
+- Constant Folding and Dead Code Elimination implemented.
+
+### 5. Garbage Collection (v2.21.0)
+- Reference Semantics for Arrays/Structs.
+
+### 6. Demos
+- `examples/defer_test.ar`: Verifies defer order (PASS).
+- `examples/optimize_test.ar`: Verifies optimizations (PASS).
+- `examples/gc_test.ar`: Verifies GC (PASS).
+- `examples/traits_example.ar`: Verifies Traits (PASS).
 
 ---
 
@@ -40,16 +50,18 @@
 ### New Files
 | File | Description |
 |------|-------------|
-| `src/optimizer.rs` | AST Optimizer implementation |
-| `examples/optimize_test.ar` | Verify optimizations |
-| `docs/optimization_design.md` | Design doc for Optimizations |
+| `examples/defer_test.ar` | Test for Defer |
+| `docs/defer_design.md` | Design Doc |
+| `src/optimizer.rs` | AST Optimizer |
 
 ### Modified Files
 | File | Changes |
 |------|---------|
-| `src/main.rs` | Integrate optimizer module |
-| `Cargo.toml` | v2.22.0 |
-| `README.md` | v2.22.0 |
+| `src/interpreter.rs` | Defer logic, ScopeFrame |
+| `src/parser.rs` | Parsing defer/block |
+| `src/lexer.rs` | Defer token |
+| `src/main.rs` | Optimization integration, Defer version |
+| `README.md` | v2.23.0 |
 
 ---
 
@@ -68,7 +80,7 @@
 | FFI | ✅ (v2.20.0) |
 | Traits | ✅ (v2.20.0) |
 | Garbage Collection | ✅ (v2.21.0) |
-| **Optimization** | ✅ (v2.22.0) |
-| Destructors / RAII | ⬜ Next |
-| Macros | ⬜ Planned |
+| Optimization | ✅ (v2.22.0) |
+| **Defer / RAII** | ✅ (v2.23.0) |
+| Macros | ⬜ Next |
 | Ecosystem Demo | ⬜ Planned |

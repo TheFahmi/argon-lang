@@ -1,0 +1,15 @@
+fn main() {
+    print("Defer Test Start");
+    
+    defer print("Defer 1 (Last)");
+    defer print("Defer 2 (Second)");
+    
+    print("Inside main");
+    
+    {
+        defer print("Inner Defer");
+        print("Inside Block");
+    }
+    
+    print("After Block");
+}
