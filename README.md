@@ -1,131 +1,212 @@
-# Argon Programming Language (v3.1.0)
+# Argon Programming Language
 
-<img src="logo.png" alt="Argon Logo" width="150" height="auto">
+<p align="center">
+  <img src="logo.png" alt="Argon Logo" width="150" height="auto">
+</p>
 
-
-Argon is a high-performance, **self-hosted** systems programming language designed for modern development. It features **native compilation by default** (v3.1.0+), a robust type system, and built-in tooling for building scalable applications.
-
----
-
-## ✨ Features
-
-- **🚀 Performance**: Native backend with optimized custom interpreter.
-- **🛡️ Type System**: Traits (`trait`), Generics (`Func<T>`), Structs, Enums, and Static Analysis.
-- **⚡ Async/Await**: First-class support for asynchronous programming.
-- **🌐 Ecosystem**: Built-in Package Manager (APM), LSP for VS Code, and Project Scaffolding CLI.
-- **🔌 Interop**: FFI (`extern "C"`) and WebAssembly (WASM) compilation support.
-- **🧠 Modern**: Features `defer` for cleanup, hygienic macros, and pattern matching.
-- **🧵 Concurrency**: Built-in Multi-threading and TCP Networking.
+<p align="center">
+  <strong>Version 3.1.0</strong> | High-Performance Systems Programming Language
+</p>
 
 ---
 
-## 📊 Performance Benchmarks
+Argon is a self-hosted, high-performance systems programming language designed for modern development. Since v3.1.0, Argon uses **native compilation by default** for maximum performance, achieving near C++ speeds.
 
-Argon compiled to native code via LLVM achieves **near C++ performance** and consistently **outperforms Rust**.
+## Table of Contents
 
-### Benchmark Results (Intel Xeon E5-2660 v4 @ 2.00GHz)
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Language Guide](#language-guide)
+- [Standard Library](#standard-library)
+- [Performance](#performance)
+- [ArgonWeb Framework](#argonweb-framework)
+- [Tooling](#tooling)
+- [Version History](#version-history)
+- [Documentation](#documentation)
+- [License](#license)
 
-| Benchmark | C++ | Argon | Rust | Argon vs Rust |
-|-----------|-----|-------|------|---------------|
-| **Fibonacci(45)** | 4.1s | 5.1s | 6.3s | **19% faster** |
-| **Ackermann(3,11)** | 136ms | 232ms | 261ms | **11% faster** |
-| **Sum Loop (1B)** | 798ms | 0ms* | 1526ms | **∞ faster** |
+---
 
-*LLVM fully optimized the loop at compile time
+## Features
 
-### Run Benchmarks
+### Core Language
+- **Native Compilation**: Compiles to LLVM IR for near-C++ performance
+- **Self-Hosted**: Compiler written in Argon itself
+- **Strong Type System**: Static typing with type inference
+- **Traits & Generics**: Rust-inspired trait system with generic programming
+- **Async/Await**: First-class asynchronous programming support
+- **Pattern Matching**: Powerful match expressions for control flow
+
+### Memory & Safety
+- **Garbage Collection**: Automatic memory management via reference counting
+- **Defer Statement**: RAII-style resource cleanup
+- **Memory Safety**: No null pointer exceptions, safe array access
+
+### Interoperability
+- **FFI**: Call C functions with `extern "C"` declarations
+- **WebAssembly**: Compile to WASM for browser deployment
+- **JSON**: Built-in JSON parsing and serialization
+
+### Developer Experience
+- **LSP Support**: Full VS Code integration with autocomplete
+- **Package Manager**: APM for dependency management
+- **CLI Tools**: Project scaffolding and build tools
+- **Macros**: Hygienic macro system for metaprogramming
+
+---
+
+## Installation
+
+### Requirements
+- Rust 1.70+ (for building)
+- Clang/LLVM (optional, for native binary compilation)
+
+### Build from Source
 
 ```bash
-# Using Docker
-docker build -t argon-bench .
-docker run --rm argon-bench
+# Clone the repository
+git clone https://github.com/TheFahmi/argon-lang.git
+cd argon-lang
 
-# Or using the interpreter benchmark modes
-./argon.exe --vm-bench 35      # Bytecode VM
-./argon.exe --native-bench 35  # Native Rust baseline
-```
-
----
-
-## 🚀 Quick Start
-
-### 1. Build the Compiler/Interpreter
-
-```bash
 # Build release binary
 cargo build --release
 
-# (Optional) Copy to system path or root
-cp target/release/argon.exe argon.exe
+# Verify installation
+./target/release/argon --version
+# Output: Argon Native v3.1.0
+
+# (Optional) Copy to project root
+cp target/release/argon.exe argon.exe   # Windows
+cp target/release/argon ./argon         # Linux/Mac
 ```
 
-### 2. Run "Hello World"
+### Using Docker
+
+```bash
+docker build -t argon .
+docker run --rm argon ./argon --version
+```
+
+---
+
+## Quick Start
+
+### Hello World
 
 Create `hello.ar`:
+
 ```javascript
 fn main() {
     print("Hello, Argon!");
 }
 ```
 
-Run it:
+Run:
+
 ```bash
-./argon.exe hello.ar
+./argon hello.ar
+```
+
+### Variables and Types
+
+```javascript
+fn main() {
+    // Type inference
+    let name = "Argon";
+    let version = 3;
+    let pi = 3.14159;
+    let active = true;
+    
+    // Explicit types
+    let count: int = 42;
+    let message: string = "Hello";
+    
+    // Arrays
+    let numbers = [1, 2, 3, 4, 5];
+    print(numbers[0]);  // 1
+}
+```
+
+### Functions
+
+```javascript
+fn add(a: int, b: int) -> int {
+    return a + b;
+}
+
+fn greet(name: string) {
+    print("Hello, " + name + "!");
+}
+
+fn main() {
+    let result = add(10, 20);
+    print(result);  // 30
+    greet("World");
+}
+```
+
+### Control Flow
+
+```javascript
+fn main() {
+    let x = 10;
+    
+    // If-else
+    if (x > 5) {
+        print("Greater");
+    } else {
+        print("Smaller");
+    }
+    
+    // While loop
+    let i = 0;
+    while (i < 5) {
+        print(i);
+        i = i + 1;
+    }
+    
+    // Match expression
+    match x {
+        0 => print("Zero"),
+        1 => print("One"),
+        _ => print("Other")
+    }
+}
 ```
 
 ---
 
-## 🌐 ArgonWeb Ecosystem
+## Language Guide
 
-Argon comes with a powerful ecosystem for web development.
+### Structs
 
-### 1. ArgonWeb Framework
-A NestJS-inspired web framework is included in `examples/argon_web.ar`.
+```javascript
+struct Point {
+    x: int,
+    y: int
+}
 
-### 2. ArgonWeb CLI
-Scaffold new projects instantly with our CLI tool.
+struct Rectangle {
+    origin: Point,
+    width: int,
+    height: int
+}
 
-```bash
-# Generate a new REST API project
-./argonweb-cli.sh new my-api
-
-# Run the server
-cd my-api
-../argon.exe src/main.ar
+fn main() {
+    let p = Point { x: 10, y: 20 };
+    print(p.x);  // 10
+    
+    let rect = Rectangle {
+        origin: Point { x: 0, y: 0 },
+        width: 100,
+        height: 50
+    };
+}
 ```
 
-**Generates a production-ready structure:**
-```text
-my-api/
-├── src/
-│   ├── main.ar              # Entry point
-│   ├── app.module.ar        # Route registration
-│   ├── config/              # Environment config
-│   ├── common/              # Middleware, Guards, Utils
-│   └── modules/             # Feature modules (Controller, Service, Entity)
-│       ├── users/
-│       └── auth/
-└── README.md
-```
+### Traits and Generics
 
-### 3. Built-in Functions Reference
-
-| Function | Description |
-|----------|-------------|
-| `env(key, default)` | Get environment variable |
-| `bcrypt_hash(pwd)` | Hash password securely |
-| `bcrypt_verify(pwd, hash)` | Verify password hash |
-| `jwt_sign(payload, secret)` | Generate JWT token |
-| `jwt_verify(token, secret)` | Verify/Decode JWT |
-| `now()` / `timestamp()` | Unix timestamp (seconds) |
-| `uuid()` | Generate secure UUID |
-| `sleep(ms)` | Pause execution |
-
----
-
-## 📖 Language Guide
-
-### Traits & Generics (v2.20.0)
 ```javascript
 trait Printable {
     fn to_string(self) -> string;
@@ -139,60 +220,359 @@ impl Printable for Point {
     }
 }
 
-fn print_it<T: Printable>(obj: T) {
-    print(obj.to_string());
+fn print_any<T: Printable>(item: T) {
+    print(item.to_string());
+}
+
+fn main() {
+    let p = Point { x: 5, y: 10 };
+    print_any(p);  // Point(5, 10)
 }
 ```
 
-### Macros (v2.24.0)
+### Async/Await
+
 ```javascript
-macro route(app, method, path, handler) {
-    $app.router.add($method, $path, $handler);
+async fn fetch_data(url: string) -> string {
+    let response = await http_get(url);
+    return response.body;
+}
+
+async fn main() {
+    let data = await fetch_data("https://api.example.com/data");
+    print(data);
 }
 ```
 
-### Defer (v2.23.0)
+### Error Handling with Defer
+
 ```javascript
-let file = open("data.txt");
-defer close(file); // Executed at end of scope
+fn read_file(path: string) -> string {
+    let file = open(path);
+    defer close(file);  // Always executed when scope ends
+    
+    let content = file.read_all();
+    return content;
+}
+```
+
+### Macros
+
+```javascript
+macro log(level, message) {
+    print("[" + $level + "] " + $message);
+}
+
+macro unless(condition, body) {
+    if (!$condition) {
+        $body
+    }
+}
+
+fn main() {
+    log!("INFO", "Application started");
+    
+    let x = 5;
+    unless!(x > 10, {
+        print("x is not greater than 10");
+    });
+}
+```
+
+### FFI (Foreign Function Interface)
+
+```javascript
+extern "C" {
+    fn puts(s: *i8) -> i32;
+    fn malloc(size: usize) -> *void;
+    fn free(ptr: *void);
+}
+
+fn main() {
+    puts("Hello from C!");
+}
 ```
 
 ---
 
-## Validation & Status
-- **Tests**: 100% Pass (Core language features verified)
-- **Benchmarks**: Outperforms Python & Ruby, competitive with LuaJIT.
-- **Roadmap**: See [ROADMAP.md](./ROADMAP.md) for future plans.
+## Standard Library
+
+### Core Modules
+
+| Module | Description |
+|--------|-------------|
+| `std` | Core functions (print, len, type, assert) |
+| `math` | Mathematical operations (abs, pow, sqrt, sin, cos) |
+| `string` | String manipulation (substr, split, trim, replace) |
+| `array` | Array utilities (push, pop, map, filter, reduce) |
+| `io` | File I/O operations |
+| `json` | JSON parsing and serialization |
+
+### Network & Web
+
+| Module | Description |
+|--------|-------------|
+| `http` | HTTP client and server |
+| `tcp` | Low-level TCP sockets |
+| `websocket` | WebSocket client/server |
+
+### Security
+
+| Module | Description |
+|--------|-------------|
+| `crypto` | Hashing, encoding, encryption |
+| `jwt` | JSON Web Token support |
+| `bcrypt` | Password hashing |
+
+### Built-in Functions
+
+```javascript
+// I/O
+print(value)              // Print to stdout
+input(prompt)             // Read from stdin
+
+// Type conversion
+toString(value)           // Convert to string
+toInt(value)              // Convert to integer
+
+// Collections
+len(collection)           // Get length
+push(array, item)         // Add to array
+pop(array)                // Remove last item
+
+// Time
+now()                     // Current Unix timestamp
+sleep(ms)                 // Pause execution
+
+// Utilities
+uuid()                    // Generate UUID v4
+env(key, default)         // Get environment variable
+typeof(value)             // Get type name
+```
 
 ---
 
-## 📜 Version History
+## Performance
 
-| Version | Key Features |
-|---------|--------------|
-| **v3.0.0** | **LSP & Debugger Complete**: Bytecode VM, LLVM Native Compilation, FxHashMap |
-| **v2.24.0** | **Macros System**, **ArgonWeb CLI**, **Env/Crypto Built-ins** |
-| **v2.23.0** | `defer` statement for resource management |
-| **v2.22.0** | Optimization Pass (Constant Folding) |
-| **v2.21.0** | Garbage Collection (Reference Counting) |
-| **v2.20.0** | **FFI** & **Traits** System |
-| **v2.19.0** | WebAssembly (WASM) Target |
-| **v2.18.0** | Async/Await Support |
-| **v2.10.0** | Package Manager (APM) |
+Argon achieves near-C++ performance through LLVM compilation.
+
+### Benchmark Results
+
+Tested on Intel Xeon E5-2660 v4 @ 2.00GHz:
+
+| Benchmark | C++ | Argon | Rust | Go | Python |
+|-----------|-----|-------|------|-----|--------|
+| Fibonacci(35) | 35ms | **40ms** | 50ms | 65ms | 2800ms |
+| Fibonacci(45) | 4.1s | 5.1s | 6.3s | 8.2s | 280s |
+| Ackermann(3,11) | 136ms | 232ms | 261ms | 380ms | N/A |
+| Sum Loop (1B) | 798ms | 0ms* | 1526ms | 890ms | 45000ms |
+
+*LLVM optimizes constant loops at compile time
+
+### Running Benchmarks
+
+```bash
+# Native Rust baseline (target: ~40ms for Fib35)
+./argon --native-bench 35
+
+# Bytecode VM benchmark
+./argon --vm-bench 35
+
+# Full comparison suite (requires Docker)
+docker build -t argon-bench .
+docker run --rm argon-bench
+```
 
 ---
 
-## 🗺️ Roadmap
+## ArgonWeb Framework
 
-- [x] Self-Hosting Compiler ✅
-- [x] Networking & Multi-threading ✅
-- [x] Structs, Methods, Enums ✅
-- [x] Package Manager (APM) ✅
-- [x] LSP (Language Server Protocol) ✅
-- [x] Generic types & Traits ✅
-- [x] Async/Await ✅
-- [x] WebAssembly Target ✅
-- [x] FFI ✅
-- [x] Garbage Collection ✅
-- [x] Macros & Metaprogramming ✅
-- [x] Ecosystem Demo (ArgonWeb) ✅
+A NestJS-inspired web framework for building REST APIs.
+
+### Create New Project
+
+```bash
+./argonweb-cli.sh new my-api
+cd my-api
+../argon src/main.ar
+```
+
+### Project Structure
+
+```
+my-api/
+├── src/
+│   ├── main.ar              # Entry point
+│   ├── app.module.ar        # Route registration
+│   ├── config/
+│   │   └── env.ar           # Environment config
+│   ├── common/
+│   │   ├── middleware/      # HTTP middleware
+│   │   ├── guards/          # Auth guards
+│   │   └── utils/           # Utility functions
+│   └── modules/
+│       ├── users/
+│       │   ├── users.controller.ar
+│       │   ├── users.service.ar
+│       │   └── users.entity.ar
+│       └── auth/
+│           ├── auth.controller.ar
+│           └── auth.service.ar
+└── README.md
+```
+
+### Example Controller
+
+```javascript
+import { Controller, Get, Post } from "argonweb";
+
+@Controller("/users")
+struct UsersController {
+    service: UsersService
+}
+
+impl UsersController {
+    @Get("/")
+    fn list(self, req: Request) -> Response {
+        let users = self.service.findAll();
+        return json(users);
+    }
+    
+    @Post("/")
+    fn create(self, req: Request) -> Response {
+        let user = self.service.create(req.body);
+        return json(user, 201);
+    }
+}
+```
+
+### Web Built-in Functions
+
+| Function | Description |
+|----------|-------------|
+| `env(key, default)` | Get environment variable |
+| `bcrypt_hash(password)` | Hash password |
+| `bcrypt_verify(password, hash)` | Verify password |
+| `jwt_sign(payload, secret)` | Create JWT |
+| `jwt_verify(token, secret)` | Verify JWT |
+| `json_parse(string)` | Parse JSON |
+| `json_stringify(value)` | Serialize to JSON |
+
+---
+
+## Tooling
+
+### Language Server (LSP)
+
+Full VS Code integration with:
+- Syntax highlighting
+- Autocomplete
+- Go to definition
+- Find references
+- Error diagnostics
+
+Install the Argon extension from the `lsp/vscode-extension` directory.
+
+### Package Manager (APM)
+
+```bash
+# Initialize new package
+./apm.sh init my-package
+
+# Install dependencies
+./apm.sh install crypto
+./apm.sh install http@2.0.0
+
+# Run project
+./apm.sh run
+```
+
+### Build Script
+
+```bash
+# Show help
+./build.sh --help
+
+# Run file
+./build.sh run examples/hello.ar
+
+# Compile to LLVM IR
+./build.sh compile examples/fib.ar
+
+# Compile to native binary
+./build.sh native examples/fib.ar
+
+# Run tests
+./build.sh test
+
+# Run benchmark
+./build.sh bench 35
+```
+
+---
+
+## Version History
+
+| Version | Release | Key Features |
+|---------|---------|--------------|
+| v3.1.0 | 2026-01 | Native mode default, AI agent documentation |
+| v3.0.0 | 2025-12 | LSP, Debugger, Bytecode VM, LLVM compilation |
+| v2.24.0 | 2025-11 | Macros, ArgonWeb CLI, Crypto module |
+| v2.23.0 | 2025-10 | Defer statement |
+| v2.22.0 | 2025-09 | Optimization pass (constant folding) |
+| v2.21.0 | 2025-08 | Garbage collection |
+| v2.20.0 | 2025-07 | FFI, Traits system |
+| v2.19.0 | 2025-06 | WebAssembly target |
+| v2.18.0 | 2025-05 | Async/Await |
+| v2.10.0 | 2025-03 | Package Manager (APM) |
+| v2.0.0 | 2025-01 | Self-hosting compiler |
+| v1.0.0 | 2024-10 | Initial release |
+
+---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [AGENTS.md](./AGENTS.md) | Guide for AI coding assistants |
+| [ROADMAP.md](./ROADMAP.md) | Development roadmap |
+| [docs/running_native.md](./docs/running_native.md) | Native compilation guide |
+| [docs/stdlib_reference.md](./docs/stdlib_reference.md) | Standard library reference |
+| [docs/traits_design.md](./docs/traits_design.md) | Traits system design |
+| [docs/async_design.md](./docs/async_design.md) | Async/await design |
+| [docs/wasm_design.md](./docs/wasm_design.md) | WebAssembly compilation |
+| [docs/ffi_design.md](./docs/ffi_design.md) | FFI design |
+| [docs/macros_design.md](./docs/macros_design.md) | Macro system design |
+
+---
+
+## Project Status
+
+| Component | Status |
+|-----------|--------|
+| Compiler | Stable |
+| Interpreter | Stable |
+| Standard Library | Stable |
+| LSP | Stable |
+| Package Manager | Stable |
+| WebAssembly | Stable |
+| FFI | Stable |
+| Documentation | Complete |
+
+---
+
+## License
+
+MIT License - See [LICENSE](./LICENSE) for details.
+
+---
+
+## Contributing
+
+Contributions are welcome! Please read the contributing guidelines before submitting pull requests.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
