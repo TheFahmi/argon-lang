@@ -3,7 +3,7 @@
 
 #![allow(dead_code)]
 
-use crate::parser::{Expr, Stmt, TopLevel, Function, Param};
+use crate::parser::{Expr, Stmt, TopLevel, Function, Param, TraitDef};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{Read, Write};
@@ -84,6 +84,8 @@ pub struct Interpreter {
     llvm_buffer: String,
     program_args: Vec<String>,
     methods: HashMap<(String, String), Function>,
+    traits: HashMap<String, TraitDef>,  // Trait definitions
+    trait_impls: HashMap<(String, String), bool>,  // (TypeName, TraitName) -> implemented
     loaded_modules: HashSet<String>,
     base_path: String, // Base directory for relative imports
     // Networking
@@ -110,6 +112,8 @@ impl Interpreter {
             llvm_buffer: String::new(),
             program_args: Vec::new(),
             methods: HashMap::new(),
+            traits: HashMap::new(),
+            trait_impls: HashMap::new(),
             loaded_modules: HashSet::new(),
             base_path: String::new(),
             listeners: HashMap::new(),
@@ -268,12 +272,19 @@ impl Interpreter {
                     for method in &impl_def.methods {
                         self.methods.insert((impl_def.type_name.clone(), method.name.clone()), method.clone());
                     }
+                    // Register trait implementation
+                    if !impl_def.trait_name.is_empty() {
+                        self.trait_impls.insert((impl_def.type_name.clone(), impl_def.trait_name.clone()), true);
+                    }
                 }
                 TopLevel::Import(path, _) => {
                     self.load_module(path)?;
                 }
                 TopLevel::Macro(_) => {} // Macros already expanded
-                TopLevel::Struct(_) | TopLevel::Enum(_) | TopLevel::Trait(_) | TopLevel::Extern(_) => {}
+                TopLevel::Struct(_) | TopLevel::Enum(_) | TopLevel::Extern(_) => {}
+                TopLevel::Trait(trait_def) => {
+                    self.traits.insert(trait_def.name.clone(), trait_def.clone());
+                }
             }
         }
         
