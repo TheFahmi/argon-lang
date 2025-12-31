@@ -1,5 +1,5 @@
 // Argon Parser - Parses tokens into AST
-// Compatible with compiler.ar v2.20.0
+// Compatible with compiler.ar v2.21.0
 
 #![allow(dead_code)]
 
@@ -530,8 +530,19 @@ impl Parser {
                     // Could be function call or other expression
                     self.pos -= 1; // Go back
                     let expr = self.parse_expr()?;
-                    self.expect(Token::Semi)?;
-                    Ok(Stmt::Expr(expr))
+                    
+                    if self.match_token(&Token::Eq) {
+                         let val = self.parse_expr()?;
+                         self.expect(Token::Semi)?;
+                         match expr {
+                             Expr::Field(obj, field) => Ok(Stmt::FieldAssign(*obj, field, val)),
+                             Expr::Index(arr, idx) => Ok(Stmt::IndexAssign(*arr, *idx, val)),
+                             _ => Err(format!("Invalid assignment target: {:?}", expr)),
+                         }
+                    } else {
+                        self.expect(Token::Semi)?;
+                        Ok(Stmt::Expr(expr))
+                    }
                 }
             }
             _ => {

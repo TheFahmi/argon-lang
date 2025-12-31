@@ -1,0 +1,36 @@
+// GC / Reference Semantics Test
+
+fn main() {
+    print("=== GC / Reference Test ===");
+    
+    // Test Array Reference
+    let a = [10];
+    let b = a; // Should be reference copy
+    
+    print("Original a: " + a);
+    print("Modifying b (push 20)...");
+    push(b, 20);
+    
+    print("New a: " + a);
+    if (len(a) == 2) {
+        print("PASS: Arrays have reference semantics");
+    } else {
+        print("FAIL: Arrays have copy semantics");
+    }
+    
+    // Test Struct Reference
+    let s1 = Point { x: 1, y: 1 };
+    let s2 = s1;
+    s2.x = 99;
+    
+    print("s1.x: " + s1.x);
+    if (s1.x == 99) {
+        print("PASS: Structs have reference semantics");
+    } else {
+        print("FAIL: Structs have copy semantics");
+    }
+    
+    print("=== Test Complete ===");
+}
+
+struct Point { x: int, y: int }

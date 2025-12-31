@@ -1,40 +1,36 @@
-# Session Summary - Argon Language v2.20.0
+# Session Summary - Argon Language v2.21.0
 
 ## Date: 31 December 2025
 
 ---
 
-## ✅ COMPLETED: FFI & Traits (v2.20.0)
+## ✅ COMPLETED: Garbage Collection (v2.21.0)
 
 ### Status
-- **Source Code**: v2.20.0 with FFI & Traits support ✅
-- **Binary**: v2.20.0 (Rust Interpreter) ✅
-- **Bootstrap**: Fully resolved using new Rust interpreter ✅
+- **Interpreter**: Updated to support Reference Counting (RC).
+- **Semantics**: Moving from Copy Semantics to **Reference Semantics** (like Python/JS).
+- **Memory Management**: Automatic cleanup of Arrays/Structs via `Rc<RefCell<T>>`.
+- **Version**: Bumped to v2.21.0.
 
 ---
 
 ## What Was Done Today
 
-### 1. Rust Interpreter Rewrite
-Created a brand new interpreter in `src/` (Rust):
-- Full Argon v2.20.0 syntax support.
-- Replaces outdated `argon` binary.
-- Capable of running the self-hosting compiler.
+### 1. Garbage Collection (RC)
+- Rewrote `interpreter.rs` to use `Rc<RefCell<...>>` for Arrays and Structs.
+- This creates **shared state**: `a = [1]; b = a;` now makes `b` reflect changes to `a`.
+- Previous version (v2.20.0) made copies, which was inefficient and confusing for system programming.
 
-### 2. FFI Support
-- Added `extern "C"` syntax for function declarations.
-- Pointer types (`*i32`, `*void`).
-- Updated Parser and AST.
+### 2. Parser Improvements
+- Fixed assignment parser (`Expr::Index` and `Expr::Field` handling) to support `obj.field = val` and `arr[i] = val` proper statements.
+- This was critical for the GC test suite.
 
-### 3. Traits System
-- Added `trait` definitions.
-- Added `impl Trait for Type`.
-- Implemented **dynamic method dispatch** in the interpreter.
-- Example `examples/traits_example.ar` demonstrates polymorphism.
+### 3. FFI & Traits (v2.20.0)
+- Implemented `extern "C"` and `*T` pointers.
+- Implemented `trait` and `impl`.
 
-### 4. Version Updates
-- All components updated to **v2.20.0**.
-- `docs/bootstrap_fix.md` updated to reflect success.
+### 4. Demo
+- `examples/gc_test.ar`: Verifies that reference semantics works (PASS).
 
 ---
 
@@ -43,19 +39,16 @@ Created a brand new interpreter in `src/` (Rust):
 ### New Files
 | File | Description |
 |------|-------------|
-| `examples/traits_example.ar` | Demo of Traits system |
-| `examples/ffi_example.ar` | Demo of FFI syntax |
-| `docs/traits_design.md` | Design doc for Traits |
-| `docs/ffi_design.md` | Design doc for FFI |
-| `src/*` | New Rust interpreter source |
+| `examples/gc_test.ar` | Test suite for Reference Semantics |
+| `docs/gc_design.md` | Design document for Memory Model |
 
-### Modified Files for v2.20.0
+### Modified Files
 | File | Changes |
 |------|---------|
-| `self-host/compiler.ar` | Updated version banner |
-| `Cargo.toml` | v2.20.0 |
-| `Dockerfile` | v2.20.0 text |
-| `docs/bootstrap_fix.md` | Marked as Fixed |
+| `src/interpreter.rs` | Massive rewrite for GC support |
+| `src/parser.rs` | Fix assignment logic |
+| `Cargo.toml` | v2.21.0 |
+| `README.md` | v2.21.0 |
 
 ---
 
@@ -71,17 +64,10 @@ Created a brand new interpreter in `src/` (Rust):
 | Debugger | ✅ |
 | Async/Await | ✅ |
 | WebAssembly | ✅ |
-| **FFI** | ✅ (v2.20.0) |
-| **Traits/Interfaces** | ✅ (v2.20.0) |
-| Optimization | ⬜ Next (Performance) |
+| FFI | ✅ (v2.20.0) |
+| Traits | ✅ (v2.20.0) |
+| **Garbage Collection** | ✅ (v2.21.0) |
+| Optimization | ⬜ Next |
+| Destructors / RAII | ⬜ Planned |
 | Macros | ⬜ Planned |
-| Destructors/RAII | ⬜ Planned (Safety) |
 | Ecosystem Demo | ⬜ Planned |
-
----
-
-## Next Steps (Proposed)
-1. **Destructors (RAII)**: Implement `drop` trait or similar mechanism to handle resource cleanup automatically, especially important for FFI pointer management.
-2. **Optimization**: Implement basic optimizations in the interpreter or LLVM codegen (e.g., constant folding) to improve runtime performance.
-3. **Macro System**: Design a macro system to reduce boilerplate code usage.
-4. **Real-world App**: Build a small web framework or game to test the language's capabilities and finding ergonomic issues.

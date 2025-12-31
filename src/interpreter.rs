@@ -1,5 +1,5 @@
 // Argon Interpreter - Executes AST
-// Compatible with compiler.ar v2.20.0
+// Compatible with compiler.ar v2.21.0 (GC Enabled)
 
 #![allow(dead_code)]
 
@@ -7,6 +7,8 @@ use crate::parser::{Expr, Stmt, TopLevel, Function, Param};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -14,8 +16,8 @@ pub enum Value {
     Bool(bool),
     Int(i64),
     String(String),
-    Array(Vec<Value>),
-    Struct(String, HashMap<String, Value>),
+    Array(Rc<RefCell<Vec<Value>>>),
+    Struct(String, Rc<RefCell<HashMap<String, Value>>>),
     Function(String, Vec<Param>, Option<Vec<Stmt>>),
 }
 
@@ -27,11 +29,11 @@ impl Value {
             Value::Int(n) => n.to_string(),
             Value::String(s) => s.clone(),
             Value::Array(arr) => {
-                let items: Vec<String> = arr.iter().map(|v| v.to_string_val()).collect();
+                let items: Vec<String> = arr.borrow().iter().map(|v| v.to_string_val()).collect();
                 format!("[{}]", items.join(", "))
             }
             Value::Struct(name, fields) => {
-                let items: Vec<String> = fields.iter()
+                let items: Vec<String> = fields.borrow().iter()
                     .map(|(k, v)| format!("{}: {}", k, v.to_string_val()))
                     .collect();
                 format!("{} {{ {} }}", name, items.join(", "))
@@ -46,7 +48,7 @@ impl Value {
             Value::Bool(b) => *b,
             Value::Int(n) => *n != 0,
             Value::String(s) => !s.is_empty(),
-            Value::Array(arr) => !arr.is_empty(),
+            Value::Array(arr) => !arr.borrow().is_empty(),
             _ => true,
         }
     }
@@ -167,7 +169,7 @@ impl Interpreter {
                     }
                 }
                 TopLevel::Trait(_) | TopLevel::Extern(_) => {
-                    // Ignore for now in interpreter
+                    // Ignore for now
                 }
                 _ => {}
             }
@@ -199,7 +201,7 @@ impl Interpreter {
                 if let Some(val) = args.first() {
                     match val {
                         Value::String(s) => return Ok(Value::Int(s.len() as i64)),
-                        Value::Array(arr) => return Ok(Value::Int(arr.len() as i64)),
+                        Value::Array(arr) => return Ok(Value::Int(arr.borrow().len() as i64)),
                         _ => return Ok(Value::Int(0)),
                     }
                 }
@@ -207,9 +209,9 @@ impl Interpreter {
             }
             "push" => {
                 if args.len() >= 2 {
-                    if let Value::Array(mut arr) = args[0].clone() {
-                        arr.push(args[1].clone());
-                        return Ok(Value::Array(arr));
+                    if let Value::Array(arr) = &args[0] {
+                        arr.borrow_mut().push(args[1].clone());
+                        return Ok(args[0].clone());
                     }
                 }
                 return Ok(args.first().cloned().unwrap_or(Value::Null));
@@ -268,7 +270,7 @@ impl Interpreter {
                 let arg_vals: Vec<Value> = self.program_args.iter()
                     .map(|s| Value::String(s.clone()))
                     .collect();
-                return Ok(Value::Array(arg_vals));
+                return Ok(Value::Array(Rc::new(RefCell::new(arg_vals))));
             }
             "make_token" | "make_binop" | "make_unary" | "make_call" | 
             "make_if" | "make_while" | "make_func" | "make_return" | "make_let" | 
@@ -276,7 +278,7 @@ impl Interpreter {
             "make_ast_str" | "make_ast_id" | "make_ast_array" | "make_struct_def" |
             "make_struct_init" | "make_enum_def" | "make_match" | "make_index" => {
                 // AST construction functions - return array
-                return Ok(Value::Array(args));
+                return Ok(Value::Array(Rc::new(RefCell::new(args))));
             }
             _ => {}
         }
@@ -330,25 +332,24 @@ impl Interpreter {
                 Ok(())
             }
             Stmt::IndexAssign(arr_expr, idx_expr, val_expr) => {
+                let arr_val = self.eval_expr(arr_expr).map_err(|_| ControlFlow::Return(Value::Null))?;
                 let idx = self.eval_expr(idx_expr).map_err(|_| ControlFlow::Return(Value::Null))?.as_int() as usize;
                 let val = self.eval_expr(val_expr).map_err(|_| ControlFlow::Return(Value::Null))?;
-                if let Expr::Identifier(name) = arr_expr {
-                    if let Value::Array(mut arr) = self.get_var(name) {
-                        if idx < arr.len() {
-                            arr[idx] = val;
-                            self.set_var(name, Value::Array(arr));
-                        }
+                
+                if let Value::Array(arr) = arr_val {
+                    let mut vec = arr.borrow_mut();
+                    if idx < vec.len() {
+                        vec[idx] = val;
                     }
                 }
                 Ok(())
             }
             Stmt::FieldAssign(obj_expr, field, val_expr) => {
+                let obj_val = self.eval_expr(obj_expr).map_err(|_| ControlFlow::Return(Value::Null))?;
                 let val = self.eval_expr(val_expr).map_err(|_| ControlFlow::Return(Value::Null))?;
-                if let Expr::Identifier(name) = obj_expr {
-                    if let Value::Struct(sname, mut fields) = self.get_var(name) {
-                        fields.insert(field.clone(), val);
-                        self.set_var(name, Value::Struct(sname, fields));
-                    }
+                
+                if let Value::Struct(_, fields) = obj_val {
+                    fields.borrow_mut().insert(field.clone(), val);
                 }
                 Ok(())
             }
@@ -464,6 +465,7 @@ impl Interpreter {
                     Value::Struct(name, _) => name.clone(),
                     Value::Int(_) => "i32".to_string(), 
                     Value::String(_) => "string".to_string(),
+                    Value::Array(_) => "Array".to_string(),
                     _ => "".to_string(),
                 };
                 
@@ -479,7 +481,7 @@ impl Interpreter {
                 let arr_val = self.eval_expr(arr)?;
                 let idx_val = self.eval_expr(idx)?.as_int() as usize;
                 match arr_val {
-                    Value::Array(arr) => Ok(arr.get(idx_val).cloned().unwrap_or(Value::Null)),
+                    Value::Array(arr) => Ok(arr.borrow().get(idx_val).cloned().unwrap_or(Value::Null)),
                     Value::String(s) => {
                         let c = s.chars().nth(idx_val).map(|c| c.to_string()).unwrap_or_default();
                         Ok(Value::String(c))
@@ -490,11 +492,11 @@ impl Interpreter {
             Expr::Field(obj, field) => {
                 let obj_val = self.eval_expr(obj)?;
                 if let Value::Struct(_, fields) = obj_val {
-                    Ok(fields.get(field).cloned().unwrap_or(Value::Null))
+                    Ok(fields.borrow().get(field).cloned().unwrap_or(Value::Null))
                 } else if let Value::Array(arr) = obj_val {
                     // Array treated as tuple - field as index
                     let idx: usize = field.parse().unwrap_or(0);
-                    Ok(arr.get(idx).cloned().unwrap_or(Value::Null))
+                    Ok(arr.borrow().get(idx).cloned().unwrap_or(Value::Null))
                 } else {
                     Ok(Value::Null)
                 }
@@ -503,7 +505,7 @@ impl Interpreter {
                 let vals: Vec<Value> = elements.iter()
                     .map(|e| self.eval_expr(e))
                     .collect::<Result<Vec<_>, _>>()?;
-                Ok(Value::Array(vals))
+                Ok(Value::Array(Rc::new(RefCell::new(vals))))
             }
             Expr::StructInit(name, fields) => {
                 let mut field_map = HashMap::new();
@@ -511,7 +513,7 @@ impl Interpreter {
                     let val = self.eval_expr(fexpr)?;
                     field_map.insert(fname.clone(), val);
                 }
-                Ok(Value::Struct(name.clone(), field_map))
+                Ok(Value::Struct(name.clone(), Rc::new(RefCell::new(field_map))))
             }
             Expr::Await(inner) => {
                 // For now, just evaluate the inner expression
@@ -526,8 +528,9 @@ impl Interpreter {
                 match (&left, &right) {
                     (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a + b)),
                     (Value::String(a), Value::String(b)) => Ok(Value::String(format!("{}{}", a, b))),
-                    (Value::String(a), Value::Int(b)) => Ok(Value::String(format!("{}{}", a, b))),
-                    (Value::Int(a), Value::String(b)) => Ok(Value::String(format!("{}{}", a, b))),
+                    // Improved string concatenation for mixed types
+                    (Value::String(a), _) => Ok(Value::String(format!("{}{}", a, right.to_string_val()))),
+                    (_, Value::String(b)) => Ok(Value::String(format!("{}{}", left.to_string_val(), b))),
                     _ => Ok(Value::Int(left.as_int() + right.as_int())),
                 }
             }
@@ -546,10 +549,16 @@ impl Interpreter {
                     (Value::Int(a), Value::Int(b)) => Ok(Value::Bool(a == b)),
                     (Value::String(a), Value::String(b)) => Ok(Value::Bool(a == b)),
                     (Value::Bool(a), Value::Bool(b)) => Ok(Value::Bool(a == b)),
+                    // For reference types, PartialEq on Rc checks pointer equality automatically if derived
+                    // But we don't derive PartialEq on Value. 
+                    // So we fallthrough to false or check Rc ptr equality explicitly?
+                    // Currently falls to false.
                     _ => Ok(Value::Bool(false)),
                 }
             }
             "!=" => {
+                 // Inverse of ==
+                 // For now stick to strict types
                 match (&left, &right) {
                     (Value::Int(a), Value::Int(b)) => Ok(Value::Bool(a != b)),
                     (Value::String(a), Value::String(b)) => Ok(Value::Bool(a != b)),
