@@ -5,7 +5,8 @@
 | Versi | Binary | Status |
 |-------|--------|--------|
 | v2.16.0 | `argonc_v216` | ✅ Stable |
-| v2.18.0 | `argonc_v218` | ✅ Latest (async/await) |
+| v2.18.0 | `argonc_v218` | ✅ Async/await |
+| v2.19.0 | `argonc_v219` | 🔄 WebAssembly (pending) |
 
 ---
 
@@ -136,7 +137,8 @@ grep -n "fn generate_specialized_funcs" self-host/compiler.ar
 
 | File | Description |
 |------|-------------|
-| `self-host/compiler.ar` | Source code compiler |
+| `self-host/compiler.ar` | Source code compiler v2.19.0 |
+| `self-host/argonc_v219` | Compiled binary v2.19.0 (pending) |
 | `self-host/argonc_v218` | Compiled binary v2.18.0 |
 | `self-host/argonc_v216` | Compiled binary v2.16.0 |
 | `Dockerfile` | Build script dengan bootstrap |
@@ -146,6 +148,7 @@ grep -n "fn generate_specialized_funcs" self-host/compiler.ar
 
 ## Version History
 
+- **v2.19.0**: WebAssembly target, WASM codegen
 - **v2.18.0**: Async/await support
 - **v2.17.0**: Debugger support  
 - **v2.16.0**: Fixed duplicate function, generic types

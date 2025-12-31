@@ -1,4 +1,4 @@
-// ARGON STANDARD LIBRARY: ASYNC (v2.18.0)
+// ARGON STANDARD LIBRARY: ASYNC (v2.19.0)
 // Async/await support utilities
 
 // Sleep for ms milliseconds (async-friendly)

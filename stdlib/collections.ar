@@ -1,4 +1,4 @@
-// ARGON STANDARD LIBRARY: COLLECTIONS (v2.18.0)
+// ARGON STANDARD LIBRARY: COLLECTIONS (v2.19.0)
 // Stack, Queue, Optional, Pair, Range
 fn _empty_arr() { let arr = []; return arr; }
 

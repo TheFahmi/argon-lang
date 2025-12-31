@@ -1,5 +1,5 @@
 // ============================================
-// ARGON STANDARD LIBRARY: MAP (v2.18.0)
+// ARGON STANDARD LIBRARY: MAP (v2.19.0)
 // HashMap/Dictionary implementation
 // Uses simple linear search (for small maps)
 // ============================================

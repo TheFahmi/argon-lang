@@ -2668,7 +2668,7 @@ fn cg_generate(cg_input_nodes: any) {
         cg_emit_raw("; Debug Metadata");
         cg_emit_raw("!llvm.dbg.cu = !{!0}");
         cg_emit_raw("!llvm.module.flags = !{!1, !2}");
-        cg_emit_raw("!0 = distinct !DICompileUnit(language: DW_LANG_C99, file: !3, producer: \"argonc v2.17.0\", isOptimized: false, emissionKind: FullDebug)");
+        cg_emit_raw("!0 = distinct !DICompileUnit(language: DW_LANG_C99, file: !3, producer: \"argonc v2.19.0\", isOptimized: false, emissionKind: FullDebug)");
         cg_emit_raw("!1 = !{i32 2, !\"Dwarf Version\", i32 4}");
         cg_emit_raw("!2 = !{i32 2, !\"Debug Info Version\", i32 3}");
         cg_emit_raw("!3 = !DIFile(filename: \"" + DBG_FILENAME + "\", directory: \".\")");
