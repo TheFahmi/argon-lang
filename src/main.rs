@@ -94,6 +94,7 @@ fn main() {
     let final_ast = optimizer.optimize(expanded_ast);
 
     let mut interp = interpreter::Interpreter::new();
+    interp.set_base_path(&source_file); // Set base path for relative imports
     if emit_llvm {
         interp.set_emit_llvm(true, &llvm_output);
     }

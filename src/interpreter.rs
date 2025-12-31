@@ -85,6 +85,7 @@ pub struct Interpreter {
     program_args: Vec<String>,
     methods: HashMap<(String, String), Function>,
     loaded_modules: HashSet<String>,
+    base_path: String, // Base directory for relative imports
     // Networking
     listeners: HashMap<i64, TcpListener>,
     sockets: HashMap<i64, TcpStream>,
@@ -110,9 +111,17 @@ impl Interpreter {
             program_args: Vec::new(),
             methods: HashMap::new(),
             loaded_modules: HashSet::new(),
+            base_path: String::new(),
             listeners: HashMap::new(),
             sockets: HashMap::new(),
             next_sock_id: 1000,
+        }
+    }
+    
+    pub fn set_base_path(&mut self, path: &str) {
+        // Extract directory from file path
+        if let Some(parent) = std::path::Path::new(path).parent() {
+            self.base_path = parent.to_string_lossy().to_string();
         }
     }
     
@@ -195,14 +204,20 @@ impl Interpreter {
         if self.loaded_modules.contains(path) { return Ok(()); }
         self.loaded_modules.insert(path.to_string());
         
-        // Search paths: stdlib/, current dir, examples/
-        let possible_paths = vec![
-            format!("d:/rust/stdlib/{}.ar", path), // Absolute path for safety in this env
-            format!("stdlib/{}.ar", path),
-            format!("{}.ar", path),
-            format!("examples/{}.ar", path),
-             format!("libs/{}.ar", path),
-        ];
+        // Build search paths - include base_path for relative imports
+        let mut possible_paths = vec![];
+        
+        // First priority: relative to main file's directory
+        if !self.base_path.is_empty() {
+            possible_paths.push(format!("{}/{}.ar", self.base_path, path));
+        }
+        
+        // Standard paths
+        possible_paths.push(format!("d:/rust/stdlib/{}.ar", path));
+        possible_paths.push(format!("stdlib/{}.ar", path));
+        possible_paths.push(format!("{}.ar", path));
+        possible_paths.push(format!("examples/{}.ar", path));
+        possible_paths.push(format!("libs/{}.ar", path));
         
         let mut source = String::new();
         let mut found = false;
@@ -414,6 +429,91 @@ impl Interpreter {
                     std::thread::sleep(std::time::Duration::from_millis(*ms as u64));
                 }
                 return Ok(Value::Null);
+            }
+            // ============================================
+            // Crypto Built-ins (simplified for demo)
+            // ============================================
+            "bcrypt_hash" => {
+                if let Some(Value::String(password)) = args.first() {
+                    // Simplified hash: in production use actual bcrypt
+                    let hash = format!("$2b$12${}", base64_simple(password));
+                    return Ok(Value::String(hash));
+                }
+                return Ok(Value::Null);
+            }
+            "bcrypt_verify" => {
+                if args.len() >= 2 {
+                    if let (Value::String(password), Value::String(hash)) = (&args[0], &args[1]) {
+                        // Simplified verify
+                        let expected = format!("$2b$12${}", base64_simple(password));
+                        return Ok(Value::Bool(&expected == hash));
+                    }
+                }
+                return Ok(Value::Bool(false));
+            }
+            "jwt_sign" => {
+                // jwt_sign(payload_json, secret) -> token string
+                if args.len() >= 2 {
+                    if let (Value::String(payload), Value::String(secret)) = (&args[0], &args[1]) {
+                        let header = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"; // fixed header
+                        let payload_b64 = base64_simple(payload);
+                        let signature = base64_simple(&format!("{}.{}.{}", header, payload_b64, secret));
+                        let token = format!("{}.{}.{}", header, payload_b64, signature);
+                        return Ok(Value::String(token));
+                    }
+                }
+                return Ok(Value::Null);
+            }
+            "jwt_verify" => {
+                // jwt_verify(token, secret) -> payload string or null
+                if args.len() >= 2 {
+                    if let (Value::String(token), Value::String(_secret)) = (&args[0], &args[1]) {
+                        let parts: Vec<&str> = token.split('.').collect();
+                        if parts.len() == 3 {
+                            // Simplified: just return payload without actual verification
+                            if let Some(payload) = base64_decode_simple(parts[1]) {
+                                return Ok(Value::String(payload));
+                            }
+                        }
+                    }
+                }
+                return Ok(Value::Null);
+            }
+            "timestamp" | "now" => {
+                use std::time::{SystemTime, UNIX_EPOCH};
+                let duration = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default();
+                return Ok(Value::Int(duration.as_secs() as i64));
+            }
+            "timestamp_ms" => {
+                use std::time::{SystemTime, UNIX_EPOCH};
+                let duration = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default();
+                return Ok(Value::Int(duration.as_millis() as i64));
+            }
+            "date_now" => {
+                // Returns ISO date string
+                use std::time::{SystemTime, UNIX_EPOCH};
+                let secs = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs();
+                // Simple date formatting (approximate)
+                let days = secs / 86400;
+                let years = 1970 + (days / 365);
+                let day_of_year = days % 365;
+                let month = (day_of_year / 30) + 1;
+                let day = (day_of_year % 30) + 1;
+                let date = format!("{:04}-{:02}-{:02}", years, month.min(12), day.min(31));
+                return Ok(Value::String(date));
+            }
+            "uuid" | "generate_id" => {
+                // Simple pseudo-random ID
+                use std::time::{SystemTime, UNIX_EPOCH};
+                let ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_nanos();
+                let id = format!("{:x}-{:x}-{:x}", ts as u32, (ts >> 32) as u32, (ts >> 64) as u32);
+                return Ok(Value::String(id));
+            }
+            "rand" | "random" => {
+                // Simple pseudo-random number
+                use std::time::{SystemTime, UNIX_EPOCH};
+                let ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_nanos();
+                return Ok(Value::Int((ts % 1000000) as i64));
             }
             "make_token" | "make_binop" | "make_unary" | "make_call" | 
             "make_if" | "make_while" | "make_func" | "make_return" | "make_let" | 
@@ -734,4 +834,48 @@ impl Interpreter {
             _ => Err(format!("Unknown operator: {}", op))
         }
     }
+}
+
+// Helper functions for crypto
+fn base64_simple(s: &str) -> String {
+    const CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let bytes = s.as_bytes();
+    let mut result = String::new();
+    for chunk in bytes.chunks(3) {
+        let mut buf = [0u8; 3];
+        for (i, &b) in chunk.iter().enumerate() {
+            buf[i] = b;
+        }
+        result.push(CHARS[(buf[0] >> 2) as usize] as char);
+        result.push(CHARS[(((buf[0] & 0x03) << 4) | (buf[1] >> 4)) as usize] as char);
+        if chunk.len() > 1 {
+            result.push(CHARS[(((buf[1] & 0x0f) << 2) | (buf[2] >> 6)) as usize] as char);
+        }
+        if chunk.len() > 2 {
+            result.push(CHARS[(buf[2] & 0x3f) as usize] as char);
+        }
+    }
+    result
+}
+
+fn base64_decode_simple(s: &str) -> Option<String> {
+    const CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut result = Vec::new();
+    let bytes: Vec<u8> = s.bytes().filter_map(|b| {
+        CHARS.iter().position(|&c| c == b).map(|p| p as u8)
+    }).collect();
+    
+    for chunk in bytes.chunks(4) {
+        if chunk.len() >= 2 {
+            result.push((chunk[0] << 2) | (chunk[1] >> 4));
+        }
+        if chunk.len() >= 3 {
+            result.push((chunk[1] << 4) | (chunk[2] >> 2));
+        }
+        if chunk.len() >= 4 {
+            result.push((chunk[2] << 6) | chunk[3]);
+        }
+    }
+    
+    String::from_utf8(result).ok()
 }

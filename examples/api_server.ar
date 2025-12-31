@@ -1,0 +1,472 @@
+// ============================================
+// ArgonWeb REST API - NestJS-style Backend
+// ============================================
+// 
+// A complete REST API demo with:
+// - User authentication (login/register)
+// - CRUD operations (Users, Todos)
+// - JWT tokens (simplified)
+// - bcrypt hashing (simplified)
+// - Structured responses
+//
+// Run: cargo run --release examples/api_server.ar
+// Test: curl http://localhost:3000/api
+//
+// ============================================
+
+import "argon_web"
+import "json"
+
+// ============================================
+// Configuration
+// ============================================
+
+let APP_PORT = 3000;
+let JWT_SECRET = "argon-secret-2024";
+
+// ============================================
+// Database (In-Memory)
+// ============================================
+
+// Users DB
+let users = [];
+let next_user_id = 1;
+
+// Todos DB  
+let todos = [];
+let next_todo_id = 1;
+
+// Sessions
+let sessions = [];
+
+// ============================================
+// Response Helpers
+// ============================================
+
+fn response_ok(data) {
+    return json_object([
+        ["success", json_bool(true)],
+        ["data", data]
+    ]);
+}
+
+fn response_created(data) {
+    return json_object([
+        ["success", json_bool(true)],
+        ["message", json_string("Created successfully")],
+        ["data", data]
+    ]);
+}
+
+fn response_error(message, code) {
+    return json_object([
+        ["success", json_bool(false)],
+        ["error", json_object([
+            ["message", json_string(message)],
+            ["code", json_number(code)]
+        ])]
+    ]);
+}
+
+// ============================================
+// Entity Serializers
+// ============================================
+
+fn user_to_json(id, email, name, role) {
+    return json_object([
+        ["id", json_number(id)],
+        ["email", json_string(email)],
+        ["name", json_string(name)],
+        ["role", json_string(role)]
+    ]);
+}
+
+fn todo_to_json(id, title, description, completed, user_id) {
+    return json_object([
+        ["id", json_number(id)],
+        ["title", json_string(title)],
+        ["description", json_string(description)],
+        ["completed", json_bool(completed)],
+        ["userId", json_number(user_id)]
+    ]);
+}
+
+// ============================================
+// Database Seed
+// ============================================
+
+fn seed_database() {
+    print("[DB] Seeding database...");
+    
+    // Users
+    users = push(users, [1, "admin@example.com", "Admin User", bcrypt_hash("admin123"), "admin"]);
+    users = push(users, [2, "john@example.com", "John Doe", bcrypt_hash("john123"), "user"]);
+    users = push(users, [3, "jane@example.com", "Jane Smith", bcrypt_hash("jane123"), "user"]);
+    next_user_id = 4;
+    
+    // Todos
+    todos = push(todos, [1, "Setup ArgonWeb", "Initialize project", true, 1]);
+    todos = push(todos, [2, "Build REST API", "Create endpoints", true, 1]);
+    todos = push(todos, [3, "Add authentication", "JWT tokens", false, 2]);
+    todos = push(todos, [4, "Write tests", "Unit and integration", false, 2]);
+    todos = push(todos, [5, "Deploy to production", "CI/CD pipeline", false, 1]);
+    next_todo_id = 6;
+    
+    print("[DB] Seeded " + len(users) + " users, " + len(todos) + " todos");
+}
+
+// ============================================
+// Auth Service
+// ============================================
+
+fn find_user_by_email(email) {
+    let i = 0;
+    while (i < len(users)) {
+        if (users[i][1] == email) {
+            return users[i];
+        }
+        i = i + 1;
+    }
+    return null;
+}
+
+fn find_user_by_id(id) {
+    let i = 0;
+    while (i < len(users)) {
+        if (users[i][0] == id) {
+            return users[i];
+        }
+        i = i + 1;
+    }
+    return null;
+}
+
+fn auth_login(email, password) {
+    let user = find_user_by_email(email);
+    if (user == null) {
+        return null;
+    }
+    
+    // Verify password
+    if (!bcrypt_verify(password, user[3])) {
+        return null;
+    }
+    
+    // Generate JWT
+    let payload = "{\"userId\":" + user[0] + ",\"email\":\"" + user[1] + "\"}";
+    let token = jwt_sign(payload, JWT_SECRET);
+    
+    return json_object([
+        ["token", json_string(token)],
+        ["user", user_to_json(user[0], user[1], user[2], user[4])],
+        ["expiresIn", json_number(3600)]
+    ]);
+}
+
+fn auth_register(email, name, password) {
+    // Check if exists
+    if (find_user_by_email(email) != null) {
+        return null;
+    }
+    
+    let id = next_user_id;
+    next_user_id = next_user_id + 1;
+    
+    let hashed = bcrypt_hash(password);
+    users = push(users, [id, email, name, hashed, "user"]);
+    
+    let payload = "{\"userId\":" + id + ",\"email\":\"" + email + "\"}";
+    let token = jwt_sign(payload, JWT_SECRET);
+    
+    return json_object([
+        ["token", json_string(token)],
+        ["user", user_to_json(id, email, name, "user")]
+    ]);
+}
+
+// ============================================
+// Users Service
+// ============================================
+
+fn get_all_users() {
+    let result = [];
+    let i = 0;
+    while (i < len(users)) {
+        let u = users[i];
+        result = push(result, user_to_json(u[0], u[1], u[2], u[4]));
+        i = i + 1;
+    }
+    return json_array(result);
+}
+
+fn get_user(id) {
+    let user = find_user_by_id(id);
+    if (user == null) {
+        return null;
+    }
+    return user_to_json(user[0], user[1], user[2], user[4]);
+}
+
+// ============================================
+// Todos Service
+// ============================================
+
+fn get_all_todos() {
+    let result = [];
+    let i = 0;
+    while (i < len(todos)) {
+        let t = todos[i];
+        result = push(result, todo_to_json(t[0], t[1], t[2], t[3], t[4]));
+        i = i + 1;
+    }
+    return json_array(result);
+}
+
+fn get_todo(id) {
+    let i = 0;
+    while (i < len(todos)) {
+        if (todos[i][0] == id) {
+            let t = todos[i];
+            return todo_to_json(t[0], t[1], t[2], t[3], t[4]);
+        }
+        i = i + 1;
+    }
+    return null;
+}
+
+fn get_todos_by_user(user_id) {
+    let result = [];
+    let i = 0;
+    while (i < len(todos)) {
+        if (todos[i][4] == user_id) {
+            let t = todos[i];
+            result = push(result, todo_to_json(t[0], t[1], t[2], t[3], t[4]));
+        }
+        i = i + 1;
+    }
+    return json_array(result);
+}
+
+fn create_todo(title, description, user_id) {
+    let id = next_todo_id;
+    next_todo_id = next_todo_id + 1;
+    todos = push(todos, [id, title, description, false, user_id]);
+    return todo_to_json(id, title, description, false, user_id);
+}
+
+fn toggle_todo_status(id) {
+    let i = 0;
+    while (i < len(todos)) {
+        if (todos[i][0] == id) {
+            todos[i][3] = !todos[i][3];
+            let t = todos[i];
+            return todo_to_json(t[0], t[1], t[2], t[3], t[4]);
+        }
+        i = i + 1;
+    }
+    return null;
+}
+
+fn get_todo_stats() {
+    let total = len(todos);
+    let completed = 0;
+    let i = 0;
+    while (i < len(todos)) {
+        if (todos[i][3]) {
+            completed = completed + 1;
+        }
+        i = i + 1;
+    }
+    return json_object([
+        ["total", json_number(total)],
+        ["completed", json_number(completed)],
+        ["pending", json_number(total - completed)]
+    ]);
+}
+
+// ============================================
+// Route Handlers
+// ============================================
+
+// Root
+fn handle_root(ctx) {
+    ctx.html("<h1>ArgonWeb REST API</h1><p>Visit <a href='/api'>/api</a> for endpoints</p>");
+}
+
+fn handle_health(ctx) {
+    ctx.json(json_object([
+        ["status", json_string("healthy")],
+        ["timestamp", json_number(now())]
+    ]));
+}
+
+fn handle_api_info(ctx) {
+    ctx.json(json_object([
+        ["name", json_string("ArgonWeb REST API")],
+        ["version", json_string("1.0.0")],
+        ["endpoints", json_array([
+            json_string("POST /api/auth/login"),
+            json_string("POST /api/auth/register"),
+            json_string("GET  /api/users"),
+            json_string("GET  /api/users/:id"),
+            json_string("GET  /api/todos"),
+            json_string("GET  /api/todos/stats"),
+            json_string("GET  /api/todos/:id"),
+            json_string("POST /api/todos")
+        ])]
+    ]));
+}
+
+// Auth handlers
+fn handle_login(ctx) {
+    // Demo: use fixed credentials for demo
+    let result = auth_login("admin@example.com", "admin123");
+    if (result == null) {
+        ctx.json(response_error("Invalid credentials", 401));
+        return;
+    }
+    ctx.json(response_ok(result));
+}
+
+fn handle_register(ctx) {
+    // Demo: use generated credentials
+    let email = "user" + random() + "@example.com";
+    let result = auth_register(email, "New User", "password123");
+    if (result == null) {
+        ctx.json(response_error("Email already exists", 400));
+        return;
+    }
+    ctx.json(response_created(result));
+}
+
+// User handlers
+fn handle_get_users(ctx) {
+    ctx.json(response_ok(get_all_users()));
+}
+
+fn handle_get_user_1(ctx) {
+    let user = get_user(1);
+    if (user == null) {
+        ctx.json(response_error("User not found", 404));
+        return;
+    }
+    ctx.json(response_ok(user));
+}
+
+fn handle_get_user_2(ctx) {
+    let user = get_user(2);
+    if (user == null) {
+        ctx.json(response_error("User not found", 404));
+        return;
+    }
+    ctx.json(response_ok(user));
+}
+
+// Todo handlers
+fn handle_get_todos(ctx) {
+    ctx.json(response_ok(get_all_todos()));
+}
+
+fn handle_get_todo_stats(ctx) {
+    ctx.json(response_ok(get_todo_stats()));
+}
+
+fn handle_get_todo_1(ctx) {
+    let todo = get_todo(1);
+    if (todo == null) {
+        ctx.json(response_error("Todo not found", 404));
+        return;
+    }
+    ctx.json(response_ok(todo));
+}
+
+fn handle_get_todo_2(ctx) {
+    let todo = get_todo(2);
+    if (todo == null) {
+        ctx.json(response_error("Todo not found", 404));
+        return;
+    }
+    ctx.json(response_ok(todo));
+}
+
+fn handle_get_todos_user_1(ctx) {
+    ctx.json(response_ok(get_todos_by_user(1)));
+}
+
+fn handle_create_todo(ctx) {
+    let todo = create_todo("New Task " + random(), "Created via API", 1);
+    ctx.json(response_created(todo));
+}
+
+fn handle_toggle_todo_1(ctx) {
+    let todo = toggle_todo_status(1);
+    if (todo == null) {
+        ctx.json(response_error("Todo not found", 404));
+        return;
+    }
+    ctx.json(response_ok(todo));
+}
+
+// ============================================
+// Route Registration Macro
+// ============================================
+
+macro route(app, method, path, handler) {
+    $app.router.add($method, $path, $handler);
+}
+
+// ============================================
+// Main Application
+// ============================================
+
+fn main() {
+    print("================================================");
+    print("   ArgonWeb REST API Server");
+    print("   Version 1.0.0");
+    print("================================================");
+    print("");
+    
+    // Seed database
+    seed_database();
+    
+    // Create server
+    let app = Server::new(APP_PORT);
+    
+    print("");
+    print("[Routes] Registering endpoints...");
+    
+    // Root routes
+    route(app, "GET", "/", handle_root);
+    route(app, "GET", "/health", handle_health);
+    route(app, "GET", "/api", handle_api_info);
+    
+    // Auth routes
+    route(app, "POST", "/api/auth/login", handle_login);
+    route(app, "POST", "/api/auth/register", handle_register);
+    route(app, "GET", "/api/auth/login", handle_login);  // GET for easy testing
+    route(app, "GET", "/api/auth/register", handle_register);
+    
+    // User routes
+    route(app, "GET", "/api/users", handle_get_users);
+    route(app, "GET", "/api/users/1", handle_get_user_1);
+    route(app, "GET", "/api/users/2", handle_get_user_2);
+    
+    // Todo routes
+    route(app, "GET", "/api/todos", handle_get_todos);
+    route(app, "GET", "/api/todos/stats", handle_get_todo_stats);
+    route(app, "GET", "/api/todos/1", handle_get_todo_1);
+    route(app, "GET", "/api/todos/2", handle_get_todo_2);
+    route(app, "GET", "/api/todos/user/1", handle_get_todos_user_1);
+    route(app, "POST", "/api/todos", handle_create_todo);
+    route(app, "GET", "/api/todos/create", handle_create_todo);  // GET for easy testing
+    route(app, "GET", "/api/todos/1/toggle", handle_toggle_todo_1);
+    
+    print("[Routes] Registered 16 endpoints");
+    print("");
+    print("Server running on http://localhost:" + APP_PORT);
+    print("Press Ctrl+C to stop");
+    print("");
+    
+    // Start
+    app.start();
+}
