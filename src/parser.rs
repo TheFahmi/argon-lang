@@ -21,6 +21,7 @@ pub enum Expr {
     Array(Vec<Expr>),
     StructInit(String, Vec<(String, Expr)>),
     Await(Box<Expr>),
+    StaticMethodCall(String, String, Vec<Expr>),
 }
 
 #[derive(Debug, Clone)]
@@ -336,16 +337,21 @@ impl Parser {
     
     fn parse_impl(&mut self) -> Result<ImplDef, String> {
         self.expect(Token::Impl)?;
-        let trait_name = match self.advance() {
+        let name = match self.advance() {
             Token::Identifier(s) => s,
-            _ => return Err("Expected trait name".to_string()),
+            _ => return Err("Expected identifier".to_string()),
         };
         
-        self.expect(Token::For)?;
-        let type_name = match self.advance() {
-            Token::Identifier(s) => s,
-            _ => return Err("Expected type name".to_string()),
-        };
+        let mut trait_name = String::new();
+        let mut type_name = name; 
+        
+        if self.match_token(&Token::For) {
+            trait_name = type_name;
+            type_name = match self.advance() {
+                Token::Identifier(s) => s,
+                _ => return Err("Expected type name".to_string()),
+            };
+        }
         
         self.expect(Token::LBrace)?;
         let mut methods = Vec::new();
@@ -750,6 +756,24 @@ impl Parser {
                         expr = Expr::Field(Box::new(expr), field);
                     }
                 }
+                Token::ColonColon => {
+                     // Static method call: Type::Method()
+                     if let Expr::Identifier(type_name) = expr {
+                         self.advance(); // ::
+                         let method_name = match self.advance() {
+                             Token::Identifier(s) => s,
+                             _ => return Err("Expected static method name".to_string()),
+                         };
+                         
+                         self.expect(Token::LParen)?;
+                         let args = self.parse_args()?;
+                         self.expect(Token::RParen)?;
+                         
+                         expr = Expr::StaticMethodCall(type_name, method_name, args);
+                     } else {
+                         return Err("Expected identifier before ::".to_string());
+                     }
+                }
                 _ => break,
             }
         }
@@ -797,6 +821,12 @@ impl Parser {
                     // Could be struct init - peek ahead
                     let saved_pos = self.pos;
                     self.advance();
+                    
+                    if self.peek() == &Token::RBrace {
+                        self.advance(); // Consume RBrace
+                        return Ok(Expr::StructInit(name, Vec::new()));
+                    }
+                    
                     if let Token::Identifier(_) = self.peek() {
                         let next_pos = self.pos + 1;
                         if self.tokens.get(next_pos) == Some(&Token::Colon) {

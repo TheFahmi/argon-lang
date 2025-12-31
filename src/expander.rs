@@ -129,8 +129,14 @@ impl Expander {
                      Expr::Identifier(name.clone())
                  }
             }
+            Expr::UnaryOp(op, e) => Expr::UnaryOp(op.clone(), Box::new(self.instantiate_expr(e, bindings))),
             Expr::BinOp(l, op, r) => Expr::BinOp(Box::new(self.instantiate_expr(l, bindings)), op.clone(), Box::new(self.instantiate_expr(r, bindings))),
-            // ... recurse
+            Expr::Call(n, args) => Expr::Call(n.clone(), args.iter().map(|a| self.instantiate_expr(a, bindings)).collect()),
+            Expr::MethodCall(obj, m, args) => Expr::MethodCall(Box::new(self.instantiate_expr(obj, bindings)), m.clone(), args.iter().map(|a| self.instantiate_expr(a, bindings)).collect()),
+            Expr::Field(obj, f) => Expr::Field(Box::new(self.instantiate_expr(obj, bindings)), f.clone()),
+            Expr::Index(arr, idx) => Expr::Index(Box::new(self.instantiate_expr(arr, bindings)), Box::new(self.instantiate_expr(idx, bindings))),
+            Expr::Array(items) => Expr::Array(items.iter().map(|e| self.instantiate_expr(e, bindings)).collect()),
+            Expr::StructInit(name, fields) => Expr::StructInit(name.clone(), fields.iter().map(|(k,v)| (k.clone(), self.instantiate_expr(v, bindings))).collect()),
             _ => expr.clone()
         }
     }

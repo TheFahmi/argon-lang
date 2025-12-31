@@ -87,10 +87,26 @@ struct Circle { radius: int }
 impl Circle {
     fn area(self) { return 3 * self.radius * self.radius; }
 }
-```
 
 ## Version History
-- **v2.24.0**: Macro system (`macro`) for AST-based code generation. 
+- **v2.24.0**: Macros System, Module Imports, Networking Built-ins, Web Framework Demo.
+- **v2.23.0**: Defer statement (`defer`) for resource management and block scoping logic.
+
+## Ecosystem Demo
+A full-featured **Web Framework** (`ArgonWeb`) and **Todo API** are available in `examples/`.
+- **Networking**: Built-in TCP Listener/Stream.
+- **Framework**: `examples/argon_web.ar` (Router, Context).
+- **App**: `examples/todo_server.ar` (Handlers, Macros, JSON).
+
+Run the demo:
+```bash
+cargo run --release examples/todo_server.ar
+```
+Output:
+```
+ArgonWeb Server running on port 8080
+```
+Then visit `http://localhost:8080/` or `http://localhost:8080/todos`.
 - **v2.23.0**: Defer statement (`defer`) for resource management and block scoping logic.
 - **v2.22.0**: Optimization Pass (Constant Folding, Dead Code Elimination).
 - **v2.21.0**: Garbage Collection (Reference Counting), Reference Semantics for Arrays/Objects.

@@ -28,6 +28,17 @@
 - Added `TopLevel::Macro`.
 
 ### 3. Defer Statement (v2.23.0)
+- **Modules**: Implemented `import` statement support in `interpreter.rs` (recursive loading).
+- **Networking**: Added blocking TCP built-ins (`argon_listen`, `accept`, `read`, `write`, `close`).
+- **Parser Enhancements**: 
+    - Fixed empty struct initialization (`Str {}`).
+    - Implemented `impl Type { ... }` support.
+    - Added `::` static method call syntax.
+- **Critical Fixes**: 
+    - Fixed `expander.rs` macro substitution bug (missing recursion for `Field`, `MethodCall`).
+    - Fixed `interpreter.rs` error swallowing (now prints Runtime Errors).
+- **Framework**: Created `examples/argon_web.ar` (ArgonWeb) with Router, Context, and Middleware-like macros.
+- **Demo**: Developed `examples/todo_server.ar` showcasing the full stack.
 - Implemented `defer` keyword for RAII-style cleanup.
 
 ### 4. Optimization (v2.22.0)

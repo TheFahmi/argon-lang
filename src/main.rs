@@ -90,8 +90,7 @@ fn main() {
     let mut expander = expander::Expander::new();
     let expanded_ast = expander.expand(ast);
 
-    // Optimization Pass
-    let optimizer = optimizer::Optimizer::new();
+    let optimizer = crate::optimizer::Optimizer::new();
     let final_ast = optimizer.optimize(expanded_ast);
 
     let mut interp = interpreter::Interpreter::new();

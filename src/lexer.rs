@@ -22,7 +22,7 @@ pub enum Token {
     
     // Delimiters
     LParen, RParen, LBrace, RBrace, LBracket, RBracket,
-    Semi, Comma, Colon, Dot, Arrow,
+    Semi, Comma, Colon, ColonColon, Dot, Arrow,
     
     // Attributes
     At, WasmExport, WasmImport,
@@ -174,7 +174,15 @@ impl Lexer {
                 
                 ';' => { self.advance(); Token::Semi }
                 ',' => { self.advance(); Token::Comma }
-                ':' => { self.advance(); Token::Colon }
+                ':' => {
+                    self.advance();
+                    if self.peek() == Some(':') {
+                        self.advance();
+                        Token::ColonColon
+                    } else {
+                        Token::Colon
+                    }
+                }
                 '.' => { self.advance(); Token::Dot }
                 
                 '=' => {

@@ -1,0 +1,54 @@
+import "argon_web"
+import "json" 
+
+// --- Handlers ---
+
+fn home_handler(ctx) {
+    ctx.html("<h1>Argon Todo App</h1><p>Powered by Argon v2.24.0</p>");
+}
+
+fn api_status(ctx) {
+    // Use proper JSON constructors
+    let data = json_object([
+        ["status", json_string("ok")],
+        ["version", json_string("2.24.0")]
+    ]);
+    ctx.json(data);
+}
+
+fn todo_list(ctx) {
+    let t1 = json_object([
+        ["id", json_number(1)], 
+        ["task", json_string("Implement Macros")], 
+        ["done", json_bool(true)]
+    ]);
+    let t2 = json_object([
+        ["id", json_number(2)], 
+        ["task", json_string("Build Web Framework")], 
+        ["done", json_bool(true)]
+    ]);
+    
+    let todos = [t1, t2];
+    ctx.json(json_array(todos));
+}
+
+// --- Macros ---
+
+macro route(server, method, path, handler) {
+    let r = $server.router;
+    r.add($method, $path, $handler);
+}
+
+// --- Main ---
+
+fn main() {
+    print("Starting Todo Server...");
+    let app = Server::new(8080);
+    
+    print("Registering routes...");
+    route(app, "GET", "/", home_handler);
+    route(app, "GET", "/status", api_status);
+    route(app, "GET", "/todos", todo_list);
+    
+    app.start();
+}

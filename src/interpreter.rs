@@ -4,11 +4,12 @@
 #![allow(dead_code)]
 
 use crate::parser::{Expr, Stmt, TopLevel, Function, Param};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::net::{TcpListener, TcpStream};
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -83,6 +84,11 @@ pub struct Interpreter {
     llvm_buffer: String,
     program_args: Vec<String>,
     methods: HashMap<(String, String), Function>,
+    loaded_modules: HashSet<String>,
+    // Networking
+    listeners: HashMap<i64, TcpListener>,
+    sockets: HashMap<i64, TcpStream>,
+    next_sock_id: i64,
 }
 
 #[derive(Debug)]
@@ -103,6 +109,10 @@ impl Interpreter {
             llvm_buffer: String::new(),
             program_args: Vec::new(),
             methods: HashMap::new(),
+            loaded_modules: HashSet::new(),
+            listeners: HashMap::new(),
+            sockets: HashMap::new(),
+            next_sock_id: 1000,
         }
     }
     
@@ -123,6 +133,9 @@ impl Interpreter {
         }
         if let Some(val) = self.globals.get(name) {
             return val.clone();
+        }
+        if let Some(func) = self.functions.get(name) {
+            return Value::Function(func.name.clone(), func.params.clone(), func.body.clone());
         }
         Value::Null
     }
@@ -178,6 +191,54 @@ impl Interpreter {
         final_result
     }
     
+    fn load_module(&mut self, path: &str) -> Result<(), String> {
+        if self.loaded_modules.contains(path) { return Ok(()); }
+        self.loaded_modules.insert(path.to_string());
+        
+        // Search paths: stdlib/, current dir, examples/
+        let possible_paths = vec![
+            format!("d:/rust/stdlib/{}.ar", path), // Absolute path for safety in this env
+            format!("stdlib/{}.ar", path),
+            format!("{}.ar", path),
+            format!("examples/{}.ar", path),
+             format!("libs/{}.ar", path),
+        ];
+        
+        let mut source = String::new();
+        let mut found = false;
+        let mut used_path = String::new();
+        
+        for p in possible_paths {
+            if std::path::Path::new(&p).exists() {
+                source = std::fs::read_to_string(&p).map_err(|e| e.to_string())?;
+                found = true;
+                used_path = p;
+                break;
+            }
+        }
+        
+        if !found { return Err(format!("Module not found: {}", path)); }
+        
+        if self.loaded_modules.contains(&used_path) {
+             return Ok(());
+        }
+        self.loaded_modules.insert(used_path.clone());
+        
+        // Run Pipeline: Lexer -> Parser -> Expander -> Optimizer -> Interpreter
+        let tokens = crate::lexer::tokenize(&source);
+        let mut parser = crate::parser::Parser::new(tokens);
+        let ast = parser.parse()?;
+        
+        let mut expander = crate::expander::Expander::new();
+        let expanded = expander.expand(ast);
+        
+        let optimizer = crate::optimizer::Optimizer::new();
+        let final_ast = optimizer.optimize(expanded);
+        
+        self.run(&final_ast)?;
+        Ok(())
+    }
+
     pub fn run(&mut self, ast: &[TopLevel]) -> Result<Value, String> {
         for item in ast {
             match item {
@@ -193,14 +254,19 @@ impl Interpreter {
                         self.methods.insert((impl_def.type_name.clone(), method.name.clone()), method.clone());
                     }
                 }
-                _ => {}
+                TopLevel::Import(path, _) => {
+                    self.load_module(path)?;
+                }
+                TopLevel::Macro(_) => {} // Macros already expanded
+                TopLevel::Struct(_) | TopLevel::Enum(_) | TopLevel::Trait(_) | TopLevel::Extern(_) => {}
             }
         }
         
         if self.functions.contains_key("main") {
+            // Heuristic to prevent running main recursively? 
+            // For now, assume modules don't have main.
             return self.call_function("main", vec![]);
         }
-        
         Ok(Value::Null)
     }
     
@@ -290,6 +356,65 @@ impl Interpreter {
                 let arg_vals: Vec<Value> = self.program_args.iter().map(|s| Value::String(s.clone())).collect();
                 return Ok(Value::Array(Rc::new(RefCell::new(arg_vals))));
             }
+            "argon_listen" => {
+                if let Some(Value::Int(port)) = args.first() {
+                     if let Ok(listener) = TcpListener::bind(format!("0.0.0.0:{}", port)) {
+                         let id = self.next_sock_id;
+                         self.next_sock_id += 1;
+                         self.listeners.insert(id, listener);
+                         return Ok(Value::Int(id));
+                     }
+                }
+                return Ok(Value::Int(-1));
+            }
+            "argon_accept" => {
+                if let Some(Value::Int(id)) = args.first() {
+                    if let Some(listener) = self.listeners.get(id) {
+                         if let Ok((stream, _)) = listener.accept() {
+                             let client_id = self.next_sock_id;
+                             self.next_sock_id += 1;
+                             self.sockets.insert(client_id, stream);
+                             return Ok(Value::Int(client_id));
+                         }
+                    }
+                }
+                return Ok(Value::Int(-1));
+            }
+            "argon_socket_read" => {
+                if let Some(Value::Int(id)) = args.first() {
+                    if let Some(stream) = self.sockets.get_mut(id) {
+                        let mut buf = [0; 2048];
+                        if let Ok(n) = stream.read(&mut buf) {
+                            let s = String::from_utf8_lossy(&buf[..n]).to_string();
+                            return Ok(Value::String(s));
+                        }
+                    }
+                }
+                return Ok(Value::String("".to_string()));
+            }
+            "argon_socket_write" => {
+                 if args.len() >= 2 {
+                     if let (Value::Int(id), Value::String(s)) = (&args[0], &args[1]) {
+                         if let Some(stream) = self.sockets.get_mut(id) {
+                             let _ = stream.write_all(s.as_bytes());
+                         }
+                     }
+                 }
+                 return Ok(Value::Null);
+            }
+            "argon_socket_close" => {
+                if let Some(Value::Int(id)) = args.first() {
+                    self.sockets.remove(id);
+                    self.listeners.remove(id); 
+                }
+                return Ok(Value::Null);
+            }
+            "sleep" => {
+                if let Some(Value::Int(ms)) = args.first() {
+                    std::thread::sleep(std::time::Duration::from_millis(*ms as u64));
+                }
+                return Ok(Value::Null);
+            }
             "make_token" | "make_binop" | "make_unary" | "make_call" | 
             "make_if" | "make_while" | "make_func" | "make_return" | "make_let" | 
             "make_assign" | "make_block" | "make_print" | "make_ast_num" | 
@@ -300,9 +425,14 @@ impl Interpreter {
             _ => {}
         }
         
-        let func = match self.functions.get(name) {
-            Some(f) => f.clone(),
-            None => return Err(format!("Undefined function: {}", name)),
+        let func = if let Some(f) = self.functions.get(name) {
+            f.clone()
+        } else {
+            // Check if variable is a function
+            match self.get_var(name) {
+                Value::Function(n, p, b) => Function { name: n, params: p, body: b, is_async: false, return_type: None },
+                _ => return Err(format!("Undefined function: {}", name)),
+            }
         };
         
         self.execute_function(func, args)
@@ -326,7 +456,7 @@ impl Interpreter {
         match (result, pop_res) {
              (Err(ControlFlow::Return(val)), _) => Ok(val), 
              (Ok(_), Err(ControlFlow::Return(val))) => Ok(val), 
-             (Err(e), _) => Ok(Value::Null), // Other control flows invalid in function
+             (Err(_e), _) => Ok(Value::Null), // Other control flows invalid in function
              _ => Ok(Value::Null)
         }
     }
@@ -341,7 +471,7 @@ impl Interpreter {
     fn exec_stmt(&mut self, stmt: &Stmt) -> Result<(), ControlFlow> {
         match stmt {
             Stmt::Let(name, _, expr) => {
-                let val = self.eval_expr(expr).map_err(|_| ControlFlow::Return(Value::Null))?;
+                let val = self.eval_expr(expr).map_err(|e| { println!("Runtime Error: {}", e); ControlFlow::Return(Value::Null) })?;
                 self.declare_var(name, val);
                 Ok(())
             }
@@ -352,24 +482,40 @@ impl Interpreter {
                  Ok(())
             }
             Stmt::Assign(name, expr) => {
-                let val = self.eval_expr(expr).map_err(|_| ControlFlow::Return(Value::Null))?;
+                let val = self.eval_expr(expr).map_err(|e| { println!("Runtime Error: {}", e); ControlFlow::Return(Value::Null) })?;
                 self.set_var(name, val);
                 Ok(())
             }
             Stmt::IndexAssign(arr_expr, idx_expr, val_expr) => {
-                let arr_val = self.eval_expr(arr_expr).map_err(|_| ControlFlow::Return(Value::Null))?;
-                let idx = self.eval_expr(idx_expr).map_err(|_| ControlFlow::Return(Value::Null))?.as_int() as usize;
-                let val = self.eval_expr(val_expr).map_err(|_| ControlFlow::Return(Value::Null))?;
+                let arr_val = self.eval_expr(arr_expr).map_err(|e| { println!("Runtime Error: {}", e); ControlFlow::Return(Value::Null) })?;
+                let idx_val = self.eval_expr(idx_expr).map_err(|e| { println!("Runtime Error: {}", e); ControlFlow::Return(Value::Null) })?;
+                let val = self.eval_expr(val_expr).map_err(|e| { println!("Runtime Error: {}", e); ControlFlow::Return(Value::Null) })?;
                 
-                if let Value::Array(arr) = arr_val {
-                    let mut vec = arr.borrow_mut();
-                    if idx < vec.len() { vec[idx] = val; }
+                match arr_val {
+                    Value::Array(arr) => {
+                        let idx = idx_val.as_int() as usize;
+                        let mut vec = arr.borrow_mut();
+                        if idx < vec.len() { 
+                            vec[idx] = val; 
+                        } else {
+                            // Extend array if needed
+                            while vec.len() <= idx {
+                                vec.push(Value::Null);
+                            }
+                            vec[idx] = val;
+                        }
+                    }
+                    Value::Struct(_, fields) => {
+                        let key = idx_val.to_string_val();
+                        fields.borrow_mut().insert(key, val);
+                    }
+                    _ => {}
                 }
                 Ok(())
             }
             Stmt::FieldAssign(obj_expr, field, val_expr) => {
-                let obj_val = self.eval_expr(obj_expr).map_err(|_| ControlFlow::Return(Value::Null))?;
-                let val = self.eval_expr(val_expr).map_err(|_| ControlFlow::Return(Value::Null))?;
+                let obj_val = self.eval_expr(obj_expr).map_err(|e| { println!("Runtime Error: {}", e); ControlFlow::Return(Value::Null) })?;
+                let val = self.eval_expr(val_expr).map_err(|e| { println!("Runtime Error: {}", e); ControlFlow::Return(Value::Null) })?;
                 if let Value::Struct(_, fields) = obj_val {
                     fields.borrow_mut().insert(field.clone(), val);
                 }
@@ -377,12 +523,12 @@ impl Interpreter {
             }
             Stmt::Return(expr) => {
                 let val = if let Some(e) = expr {
-                    self.eval_expr(e).map_err(|_| ControlFlow::Return(Value::Null))?
+                    self.eval_expr(e).map_err(|e| { println!("Runtime Error: {}", e); ControlFlow::Return(Value::Null) })?
                 } else { Value::Null };
                 Err(ControlFlow::Return(val))
             }
             Stmt::Print(expr) => {
-                let val = self.eval_expr(expr).map_err(|_| ControlFlow::Return(Value::Null))?;
+                let val = self.eval_expr(expr).map_err(|e| { println!("Runtime Error: {}", e); ControlFlow::Return(Value::Null) })?;
                 if self.emit_llvm {
                     self.llvm_buffer.push_str(&val.to_string_val());
                      self.llvm_buffer.push('\n');
@@ -392,7 +538,7 @@ impl Interpreter {
                 Ok(())
             }
             Stmt::If(cond, then_block, else_block) => {
-                let cond_val = self.eval_expr(cond).map_err(|_| ControlFlow::Return(Value::Null))?;
+                let cond_val = self.eval_expr(cond).map_err(|e| { println!("Runtime Error: {}", e); ControlFlow::Return(Value::Null) })?;
                 if cond_val.is_truthy() {
                     self.push_scope();
                     let res = self.exec_stmts(then_block);
@@ -411,7 +557,7 @@ impl Interpreter {
             }
             Stmt::While(cond, body) => {
                 loop {
-                    let cond_val = self.eval_expr(cond).map_err(|_| ControlFlow::Return(Value::Null))?;
+                    let cond_val = self.eval_expr(cond).map_err(|e| { println!("Runtime Error: {}", e); ControlFlow::Return(Value::Null) })?;
                     if !cond_val.is_truthy() { break; }
                     
                     self.push_scope();
@@ -431,7 +577,7 @@ impl Interpreter {
             Stmt::Break => Err(ControlFlow::Break),
             Stmt::Continue => Err(ControlFlow::Continue),
             Stmt::Expr(expr) => {
-                self.eval_expr(expr).map_err(|_| ControlFlow::Return(Value::Null))?;
+                self.eval_expr(expr).map_err(|e| { println!("Runtime Error: {}", e); ControlFlow::Return(Value::Null) })?;
                 Ok(())
             }
             Stmt::Block(stmts) => {
@@ -477,44 +623,68 @@ impl Interpreter {
                     _ => "".to_string(),
                 };
                 if !type_name.is_empty() {
-                    if let Some(func) = self.methods.get(&(type_name, method.clone())) {
+                     if let Some(func) = self.methods.get(&(type_name.clone(), method.clone())) {
                         return self.execute_function(func.clone(), arg_vals);
                     }
                 }
-                self.call_function(method, arg_vals)
-            }
-             Expr::Index(arr, idx) => {
-                let arr_val = self.eval_expr(arr)?;
-                let idx_val = self.eval_expr(idx)?.as_int() as usize;
-                match arr_val {
-                    Value::Array(arr) => Ok(arr.borrow().get(idx_val).cloned().unwrap_or(Value::Null)),
-                    Value::String(s) => {
-                        let c = s.chars().nth(idx_val).map(|c| c.to_string()).unwrap_or_default();
-                        Ok(Value::String(c))
-                    }
-                     _ => Ok(Value::Null)
-                }
-            }
-            Expr::Field(obj, field) => {
-                let obj_val = self.eval_expr(obj)?;
-                if let Value::Struct(_, fields) = obj_val {
-                    Ok(fields.borrow().get(field).cloned().unwrap_or(Value::Null))
-                } else if let Value::Array(arr) = obj_val {
-                    // Array treated as tuple
-                    let idx: usize = field.parse().unwrap_or(0);
-                    Ok(arr.borrow().get(idx).cloned().unwrap_or(Value::Null))
-                } else { Ok(Value::Null) }
-            }
-             Expr::Array(elements) => {
-                let vals: Vec<Value> = elements.iter().map(|e| self.eval_expr(e)).collect::<Result<_, _>>()?;
-                Ok(Value::Array(Rc::new(RefCell::new(vals))))
-            }
-            Expr::StructInit(name, fields) => {
-                let mut map = HashMap::new();
-                for (k, v) in fields { map.insert(k.clone(), self.eval_expr(v)?); }
-                Ok(Value::Struct(name.clone(), Rc::new(RefCell::new(map))))
-            }
+                // Try global function? No, methods are specific.
+                Err(format!("Undefined method: '{}' on type '{}'", method, type_name))
+            },
+            Expr::StaticMethodCall(type_name, method, args) => {
+                 let arg_vals: Vec<Value> = args.iter().map(|a| self.eval_expr(a)).collect::<Result<_,_>>()?;
+                 if let Some(func) = self.methods.get(&(type_name.clone(), method.clone())) {
+                      return self.execute_function(func.clone(), arg_vals);
+                 }
+                 Err(format!("Undefined static method: '{}' on type '{}'", method, type_name))
+            },
             Expr::Await(inner) => self.eval_expr(inner),
+            Expr::StructInit(name, fields) => {
+                let mut field_map = HashMap::new();
+                for (fname, fexpr) in fields {
+                    let val = self.eval_expr(fexpr)?;
+                    field_map.insert(fname.clone(), val);
+                }
+                Ok(Value::Struct(name.clone(), Rc::new(RefCell::new(field_map))))
+            },
+            Expr::Array(elems) => {
+                let vals: Vec<Value> = elems.iter().map(|e| self.eval_expr(e)).collect::<Result<_,_>>()?;
+                Ok(Value::Array(Rc::new(RefCell::new(vals))))
+            },
+            Expr::Index(arr_expr, idx_expr) => {
+                let arr_val = self.eval_expr(arr_expr)?;
+                let idx_val = self.eval_expr(idx_expr)?;
+                match arr_val {
+                    Value::Array(arr) => {
+                        let idx = idx_val.as_int() as usize;
+                        Ok(arr.borrow().get(idx).cloned().unwrap_or(Value::Null))
+                    },
+                    Value::Struct(_, fields) => {
+                        let key = idx_val.to_string_val();
+                        Ok(fields.borrow().get(&key).cloned().unwrap_or(Value::Null))
+                    },
+                    Value::String(s) => {
+                         let idx = idx_val.as_int() as usize;
+                         Ok(Value::String(s.chars().nth(idx).map(|c| c.to_string()).unwrap_or_default()))
+                    },
+                    _ => Ok(Value::Null),
+                }
+            },
+            Expr::Field(obj_expr, field) => {
+                let obj_val = self.eval_expr(obj_expr)?;
+                if let Value::Struct(_, fields) = obj_val {
+                     let f = fields.borrow();
+                     if let Some(val) = f.get(field) {
+                        Ok(val.clone())
+                     } else {
+                         println!("Runtime Error: Missing field '{}'. Available: {:?}", field, f.keys().collect::<Vec<_>>());
+                         Ok(Value::Null)
+                     }
+                } else if let Value::Array(arr) = obj_val {
+                     if let Ok(idx) = field.parse::<usize>() {
+                         Ok(arr.borrow().get(idx).cloned().unwrap_or(Value::Null))
+                     } else { Ok(Value::Null) }
+                } else { Ok(Value::Null) }
+            },
         }
     }
     
