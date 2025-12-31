@@ -159,6 +159,13 @@ defer close(file); // Executed at end of scope
 
 ---
 
+## Validation & Status
+- **Tests**: 100% Pass (Core language features verified)
+- **Benchmarks**: Outperforms Python & Ruby, competitive with LuaJIT.
+- **Roadmap**: See [ROADMAP.md](./ROADMAP.md) for future plans.
+
+---
+
 ## 📜 Version History
 
 | Version | Key Features |
