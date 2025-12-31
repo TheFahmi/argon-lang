@@ -1,0 +1,15 @@
+fn main() {
+    print("Optimization Test");
+    let x = 10 * 20 + 5; // Should be folded to 205
+    print("Result: " + x);
+    
+    if (1 < 2) {
+        print("True branch executed");
+    } else {
+        print("False branch (removed)");
+    }
+    
+    if (false) {
+        print("Ghost code");
+    }
+}

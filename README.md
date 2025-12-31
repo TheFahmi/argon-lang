@@ -90,6 +90,7 @@ impl Circle {
 ```
 
 ## Version History
+- **v2.22.0**: Optimization Pass (Constant Folding, Dead Code Elimination).
 - **v2.21.0**: Garbage Collection (Reference Counting), Reference Semantics for Arrays/Objects.
 - **v2.20.0**: FFI (extern, pointers) and Traits (trait, impl, dynamic dispatch) support. New Rust Interpreter.
 - **v2.19.0**: WebAssembly target (compile to WASM, browser deployment, WASI support)
@@ -118,7 +119,7 @@ impl Circle {
 - [x] FFI (Foreign Function Interface) ✅ (v2.20.0)
 - [x] Traits/Interfaces ✅ (v2.20.0)
 - [x] Garbage Collection (RC) ✅ (v2.21.0)
-- [ ] Optimization (LTO, Constant Propagation)
+- [x] Optimization (Constant Folding) ✅ (v2.22.0)
 - [ ] Destructors / RAII (Auto-cleanup for FFI/Files)
 - [ ] Macros / Metaprogramming
 - [ ] Ecosystem Demo (Web Framework / Game)

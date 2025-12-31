@@ -1,36 +1,37 @@
-# Session Summary - Argon Language v2.21.0
+# Session Summary - Argon Language v2.22.0
 
 ## Date: 31 December 2025
 
 ---
 
-## ✅ COMPLETED: Garbage Collection (v2.21.0)
+## ✅ COMPLETED: Optimizations (v2.22.0)
 
 ### Status
-- **Interpreter**: Updated to support Reference Counting (RC).
-- **Semantics**: Moving from Copy Semantics to **Reference Semantics** (like Python/JS).
-- **Memory Management**: Automatic cleanup of Arrays/Structs via `Rc<RefCell<T>>`.
-- **Version**: Bumped to v2.21.0.
+- **Interpreter**: Added Optimization Pass (Constant Folding, Dead Code Elimination).
+- **Architecture**: `Parser -> Optimizer -> Interpreter`.
+- **Version**: Bumped to v2.22.0.
+- **Previous**: v2.21.0 (Garbage Collection).
 
 ---
 
 ## What Was Done Today
 
-### 1. Garbage Collection (RC)
-- Rewrote `interpreter.rs` to use `Rc<RefCell<...>>` for Arrays and Structs.
-- This creates **shared state**: `a = [1]; b = a;` now makes `b` reflect changes to `a`.
-- Previous version (v2.20.0) made copies, which was inefficient and confusing for system programming.
+### 1. AST Optimizer (`src/optimizer.rs`)
+- Implemented a tree-walking optimizer that pre-calculates constant expressions.
+- **Constant Folding**: `10 * 20 + 5` -> `205` at compile time.
+- **Dead Code Elimination**: `if (false) { ... }` blocks are removed entirely.
+- **Optimization Strategy**: Primitive recursive constant propagation.
 
-### 2. Parser Improvements
-- Fixed assignment parser (`Expr::Index` and `Expr::Field` handling) to support `obj.field = val` and `arr[i] = val` proper statements.
-- This was critical for the GC test suite.
+### 2. Integration
+- `src/main.rs` now runs the optimizer on the AST before execution.
+- Performance improvement for math-heavy or config-heavy scripts.
 
-### 3. FFI & Traits (v2.20.0)
-- Implemented `extern "C"` and `*T` pointers.
-- Implemented `trait` and `impl`.
+### 3. Garbage Collection (v2.21.0)
+- Implemented Reference Counting (RC) for Arrays and Structs.
+- Fixed assignment parser for complex lvalues (`obj.field = val`).
 
 ### 4. Demo
-- `examples/gc_test.ar`: Verifies that reference semantics works (PASS).
+- `examples/optimize_test.ar`: Verifies constant folding and dead branch removal.
 
 ---
 
@@ -39,16 +40,16 @@
 ### New Files
 | File | Description |
 |------|-------------|
-| `examples/gc_test.ar` | Test suite for Reference Semantics |
-| `docs/gc_design.md` | Design document for Memory Model |
+| `src/optimizer.rs` | AST Optimizer implementation |
+| `examples/optimize_test.ar` | Verify optimizations |
+| `docs/optimization_design.md` | Design doc for Optimizations |
 
 ### Modified Files
 | File | Changes |
 |------|---------|
-| `src/interpreter.rs` | Massive rewrite for GC support |
-| `src/parser.rs` | Fix assignment logic |
-| `Cargo.toml` | v2.21.0 |
-| `README.md` | v2.21.0 |
+| `src/main.rs` | Integrate optimizer module |
+| `Cargo.toml` | v2.22.0 |
+| `README.md` | v2.22.0 |
 
 ---
 
@@ -66,8 +67,8 @@
 | WebAssembly | ✅ |
 | FFI | ✅ (v2.20.0) |
 | Traits | ✅ (v2.20.0) |
-| **Garbage Collection** | ✅ (v2.21.0) |
-| Optimization | ⬜ Next |
-| Destructors / RAII | ⬜ Planned |
+| Garbage Collection | ✅ (v2.21.0) |
+| **Optimization** | ✅ (v2.22.0) |
+| Destructors / RAII | ⬜ Next |
 | Macros | ⬜ Planned |
 | Ecosystem Demo | ⬜ Planned |
