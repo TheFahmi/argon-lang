@@ -438,25 +438,32 @@ let AST_ATTRIBUTE = 153;
 | 3 | ✅ | Basic arithmetic & functions (codegen done) |
 | 4 | ✅ | Control flow (if/while) (codegen done) |
 | 5 | ✅ | WASI print support (template done) |
-| 6 | 🔄 | JS interop (@wasm_export) - syntax defined |
+| 6 | ✅ | JS interop (@wasm_export) - tokens added |
 | 7 | ✅ | Browser demo (`examples/wasm_demo.html`) |
 | 8 | ✅ | String/array support (`stdlib/wasm.ar`) |
-| 9 | ⬜ | Integrate to main compiler CLI |
-| 10 | ⬜ | Bootstrap new binary with WASM support |
+| 9 | ✅ | Integrate to main compiler CLI |
+| 10 | 🔄 | Bootstrap new binary with WASM support |
 
 ### Completed Files
 - ✅ `docs/wasm_design.md` - Design document
-- ✅ `self-host/wasm_codegen.ar` - WAT code generator
+- ✅ `self-host/wasm_codegen.ar` - Standalone WAT code generator
+- ✅ `self-host/compiler.ar` - WASM codegen integrated
 - ✅ `stdlib/wasm.ar` - WASM standard library  
 - ✅ `examples/wasm_example.ar` - Example program
 - ✅ `examples/wasm_demo.html` - Browser demo
 - ✅ `examples/argon_loader.js` - JavaScript loader
 
+### CLI Options Added
+```bash
+argonc --target wasm32 hello.ar        # Compile to WASM
+argonc --target wasm32-wasi hello.ar   # Compile with WASI
+argonc -o output.wat hello.ar          # Custom output file
+argonc --version                       # Show version
+argonc --help                          # Show help
+```
+
 ### Remaining Work
-- ⬜ Add `--target wasm32` CLI parsing to `compiler.ar`
-- ⬜ Add `@` attribute token and parser
-- ⬜ Call `generate_wasm()` when target is WASM
-- ⬜ Bootstrap new compiler binary
+- 🔄 Bootstrap new compiler binary with WASM support
 
 ## Example Program
 
