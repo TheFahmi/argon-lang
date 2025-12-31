@@ -1,4 +1,4 @@
-// Argon Interpreter v2.26.0
+// Argon Interpreter v2.27.0
 // Rust implementation that can run Argon source files
 
 mod lexer;
@@ -9,6 +9,7 @@ mod optimizer;
 mod expander;
 mod bytecode_vm;
 mod fast_vm;
+mod ffi;
 
 use std::env;
 use std::fs;
@@ -44,11 +45,11 @@ fn main() {
         } else {
             match args[i].as_str() {
                 "-h" | "--help" => {
-                    println!("Argon Interpreter v2.26.0");
+                    println!("Argon Interpreter v2.27.0");
                     return;
                 }
                 "-v" | "--version" => {
-                    println!("Argon Interpreter v2.26.0");
+                    println!("Argon Interpreter v2.27.0");
                     return;
                 }
                 "--emit-llvm" => {

@@ -1,9 +1,10 @@
 // Argon Interpreter - Executes AST
-// Compatible with compiler.ar v2.24.0 (GC + Defer)
+// Compatible with compiler.ar v2.27.0 (FFI Support)
 
 #![allow(dead_code)]
 
 use crate::parser::{Expr, Stmt, TopLevel, Function, Param, TraitDef};
+use crate::ffi::FfiManager;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{Read, Write};
@@ -84,14 +85,16 @@ pub struct Interpreter {
     llvm_buffer: String,
     program_args: Vec<String>,
     methods: HashMap<(String, String), Function>,
-    traits: HashMap<String, TraitDef>,  // Trait definitions
-    trait_impls: HashMap<(String, String), bool>,  // (TypeName, TraitName) -> implemented
+    traits: HashMap<String, TraitDef>,
+    trait_impls: HashMap<(String, String), bool>,
     loaded_modules: HashSet<String>,
-    base_path: String, // Base directory for relative imports
+    base_path: String,
     // Networking
     listeners: HashMap<i64, TcpListener>,
     sockets: HashMap<i64, TcpStream>,
     next_sock_id: i64,
+    // FFI
+    ffi: FfiManager,
 }
 
 #[derive(Debug)]
@@ -119,6 +122,7 @@ impl Interpreter {
             listeners: HashMap::new(),
             sockets: HashMap::new(),
             next_sock_id: 1000,
+            ffi: FfiManager::new(),
         }
     }
     
@@ -870,6 +874,52 @@ impl Interpreter {
             "make_ast_str" | "make_ast_id" | "make_ast_array" | "make_struct_def" |
             "make_struct_init" | "make_enum_def" | "make_match" | "make_index" => {
                 return Ok(Value::Array(Rc::new(RefCell::new(args))));
+            }
+            // ============================================
+            // FFI Built-ins
+            // ============================================
+            "ffi_load" => {
+                // ffi_load("libname") - Load a dynamic library
+                if let Some(Value::String(lib_name)) = args.first() {
+                    match self.ffi.load_library(lib_name) {
+                        Ok(()) => return Ok(Value::Bool(true)),
+                        Err(e) => {
+                            eprintln!("FFI Load Error: {}", e);
+                            return Ok(Value::Bool(false));
+                        }
+                    }
+                }
+                return Ok(Value::Bool(false));
+            }
+            "ffi_call" => {
+                // ffi_call("libname", "funcname", [arg1, arg2, ...]) - Call a function
+                if args.len() >= 2 {
+                    if let (Value::String(lib_name), Value::String(func_name)) = (&args[0], &args[1]) {
+                        let call_args: Vec<i64> = if args.len() > 2 {
+                            if let Value::Array(arr) = &args[2] {
+                                arr.borrow().iter().map(|v| {
+                                    match v {
+                                        Value::Int(n) => *n,
+                                        _ => 0,
+                                    }
+                                }).collect()
+                            } else {
+                                vec![]
+                            }
+                        } else {
+                            vec![]
+                        };
+                        
+                        match self.ffi.call_i64(lib_name, func_name, &call_args) {
+                            Ok(result) => return Ok(Value::Int(result)),
+                            Err(e) => {
+                                eprintln!("FFI Call Error: {}", e);
+                                return Ok(Value::Null);
+                            }
+                        }
+                    }
+                }
+                return Ok(Value::Null);
             }
             _ => {}
         }

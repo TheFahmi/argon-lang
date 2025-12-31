@@ -1,12 +1,13 @@
 [package]
 name = "argon"
-version = "2.24.0"
+version = "2.27.0"
 edition = "2021"
 description = "Argon Language Interpreter - Compiles Argon to LLVM IR"
 authors = ["TheFahmi"]
 
 [dependencies]
 rustc-hash = "1.1"
+libloading = "0.8"
 
 [[bin]]
 name = "argon"
