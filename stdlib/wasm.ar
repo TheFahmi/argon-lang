@@ -1,0 +1,175 @@
+// ============================================
+// ARGON WASM STANDARD LIBRARY
+// WebAssembly utilities and interop
+// Part of Argon Stdlib v2.19.0
+// ============================================
+
+// =================== WASM MEMORY ===================
+
+// Allocate memory in WASM linear memory
+fn wasm_alloc(size: i32) {
+    return @wasm_call("argon_alloc", size);
+}
+
+// Free allocated memory (no-op for bump allocator)
+fn wasm_free(ptr: i32) {
+    // No-op for simple bump allocator
+}
+
+// =================== WASM MEMORY ACCESS ===================
+
+// Store 32-bit integer at offset
+fn wasm_store_i32(base: i32, offset: i32, value: i32) {
+    @wasm_store_i32(base + offset, value);
+}
+
+// Load 32-bit integer from offset
+fn wasm_load_i32(base: i32, offset: i32) {
+    return @wasm_load_i32(base + offset);
+}
+
+// Store 64-bit integer at offset
+fn wasm_store_i64(base: i32, offset: i32, value: i64) {
+    @wasm_store_i64(base + offset, value);
+}
+
+// Load 64-bit integer from offset
+fn wasm_load_i64(base: i32, offset: i32) {
+    return @wasm_load_i64(base + offset);
+}
+
+// Store byte at offset
+fn wasm_store_byte(base: i32, offset: i32, value: i32) {
+    @wasm_store8(base + offset, value);
+}
+
+// Load byte from offset
+fn wasm_load_byte(base: i32, offset: i32) {
+    return @wasm_load8_u(base + offset);
+}
+
+// =================== WASM STRING UTILITIES ===================
+
+// Get string length (null-terminated)
+fn wasm_strlen(ptr: i32) {
+    let len = 0;
+    while (wasm_load_byte(ptr, len) != 0) {
+        len = len + 1;
+    }
+    return len;
+}
+
+// Copy string to new location
+fn wasm_strcpy(dest: i32, src: i32) {
+    let i = 0;
+    let c = wasm_load_byte(src, i);
+    while (c != 0) {
+        wasm_store_byte(dest, i, c);
+        i = i + 1;
+        c = wasm_load_byte(src, i);
+    }
+    wasm_store_byte(dest, i, 0);  // Null terminator
+    return dest;
+}
+
+// Concatenate strings
+fn wasm_strcat(dest: i32, src: i32) {
+    let dest_len = wasm_strlen(dest);
+    let i = 0;
+    let c = wasm_load_byte(src, i);
+    while (c != 0) {
+        wasm_store_byte(dest, dest_len + i, c);
+        i = i + 1;
+        c = wasm_load_byte(src, i);
+    }
+    wasm_store_byte(dest, dest_len + i, 0);
+    return dest;
+}
+
+// =================== WASM ARRAY UTILITIES ===================
+
+// Create array in WASM memory
+// Format: [length: i32, capacity: i32, ...elements: i64]
+fn wasm_array_new(capacity: i32) {
+    // Allocate: 8 bytes header + capacity * 8 bytes
+    let size = 8 + capacity * 8;
+    let ptr = wasm_alloc(size);
+    wasm_store_i32(ptr, 0, 0);         // length = 0
+    wasm_store_i32(ptr, 4, capacity);  // capacity
+    return ptr;
+}
+
+// Get array length
+fn wasm_array_len(arr: i32) {
+    return wasm_load_i32(arr, 0);
+}
+
+// Get array element
+fn wasm_array_get(arr: i32, index: i32) {
+    // Skip 8 byte header, each element is 8 bytes
+    return wasm_load_i64(arr, 8 + index * 8);
+}
+
+// Set array element
+fn wasm_array_set(arr: i32, index: i32, value: i64) {
+    wasm_store_i64(arr, 8 + index * 8, value);
+}
+
+// Push element to array
+fn wasm_array_push(arr: i32, value: i64) {
+    let len = wasm_array_len(arr);
+    wasm_store_i32(arr, 0, len + 1);  // Increment length
+    wasm_store_i64(arr, 8 + len * 8, value);
+    return arr;
+}
+
+// =================== WASM I/O ===================
+
+// Print string (WASI fd_write)
+fn wasm_print(ptr: i32, len: i32) {
+    @wasm_call("print", ptr, len);
+}
+
+// Print string with newline
+fn wasm_println(ptr: i32, len: i32) {
+    @wasm_call("println", ptr, len);
+}
+
+// =================== WASM MATH ===================
+
+fn wasm_min(a: i64, b: i64) {
+    if (a < b) {
+        return a;
+    }
+    return b;
+}
+
+fn wasm_max(a: i64, b: i64) {
+    if (a > b) {
+        return a;
+    }
+    return b;
+}
+
+fn wasm_abs(x: i64) {
+    if (x < 0) {
+        return 0 - x;
+    }
+    return x;
+}
+
+fn wasm_clamp(x: i64, min: i64, max: i64) {
+    if (x < min) {
+        return min;
+    }
+    if (x > max) {
+        return max;
+    }
+    return x;
+}
+
+// =================== WASM EXPORTS HELPER ===================
+
+// This module provides utility functions that can be used
+// in WASM-targeted Argon programs. When compiling with
+// --target wasm32, these functions will be available.

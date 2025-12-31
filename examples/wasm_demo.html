@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Argon WASM Demo</title>
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --text-primary: #f0f6fc;
+            --text-secondary: #8b949e;
+            --accent: #58a6ff;
+            --accent-hover: #79c0ff;
+            --success: #3fb950;
+            --border: #30363d;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #1a1f29 0%, #0d1117 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem 2rem;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent) 0%, #a371f7 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .logo-text span {
+            color: var(--accent);
+        }
+        
+        main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            padding: 1.5rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        .panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .panel-header {
+            background: var(--bg-tertiary);
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .panel-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .panel-title::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+        }
+        
+        .panel-content {
+            flex: 1;
+            padding: 1rem;
+            overflow: auto;
+        }
+        
+        #output {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            color: var(--success);
+        }
+        
+        .output-line {
+            padding: 0.1rem 0;
+        }
+        
+        .output-line.error {
+            color: #f85149;
+        }
+        
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+        
+        label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            min-width: 120px;
+        }
+        
+        input[type="number"] {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.5rem 0.75rem;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            width: 100px;
+        }
+        
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+        
+        button {
+            background: var(--accent);
+            color: var(--bg-primary);
+            border: none;
+            border-radius: 8px;
+            padding: 0.6rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        button:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button.secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        
+        button.secondary:hover {
+            background: var(--border);
+        }
+        
+        .result {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 0.75rem;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.9rem;
+            color: var(--accent);
+        }
+        
+        footer {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            padding: 1rem 2rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        
+        footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            color: var(--text-secondary);
+            height: 200px;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 900px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <div class="logo-icon">Ar</div>
+            <div class="logo-text">Argon <span>WASM</span></div>
+        </div>
+    </header>
+    
+    <main>
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">Interactive Functions</div>
+                <div class="status">
+                    <div class="status-dot"></div>
+                    <span id="status">Ready</span>
+                </div>
+            </div>
+            <div class="panel-content">
+                <div class="input-section">
+                    <div class="input-group">
+                        <label>add(a, b):</label>
+                        <input type="number" id="add-a" value="5">
+                        <span>+</span>
+                        <input type="number" id="add-b" value="3">
+                        <button onclick="runAdd()">Calculate</button>
+                    </div>
+                    <div class="result" id="add-result">Result: 8</div>
+                    
+                    <div class="input-group">
+                        <label>factorial(n):</label>
+                        <input type="number" id="fact-n" value="5">
+                        <button onclick="runFactorial()">Calculate</button>
+                    </div>
+                    <div class="result" id="fact-result">Result: 120</div>
+                    
+                    <div class="input-group">
+                        <label>fibonacci(n):</label>
+                        <input type="number" id="fib-n" value="10">
+                        <button onclick="runFibonacci()">Calculate</button>
+                    </div>
+                    <div class="result" id="fib-result">Result: 55</div>
+                    
+                    <div class="input-group">
+                        <label>is_prime(n):</label>
+                        <input type="number" id="prime-n" value="17">
+                        <button onclick="runIsPrime()">Check</button>
+                    </div>
+                    <div class="result" id="prime-result">Result: true (17 is prime)</div>
+                    
+                    <div class="input-group">
+                        <label>gcd(a, b):</label>
+                        <input type="number" id="gcd-a" value="48">
+                        <input type="number" id="gcd-b" value="18">
+                        <button onclick="runGCD()">Calculate</button>
+                    </div>
+                    <div class="result" id="gcd-result">Result: 6</div>
+                    
+                    <div class="btn-group">
+                        <button onclick="runMain()">Run Main</button>
+                        <button class="secondary" onclick="clearOutput()">Clear Output</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">Console Output</div>
+            </div>
+            <div class="panel-content">
+                <div id="output"></div>
+            </div>
+        </div>
+    </main>
+    
+    <footer>
+        <p>
+            Argon Language v2.19.0 | 
+            <a href="https://github.com/TheFahmi/argon-lang" target="_blank">GitHub</a> | 
+            Compiled to WebAssembly
+        </p>
+    </footer>
+    
+    <script src="argon_loader.js"></script>
+    <script>
+        let argon = null;
+        const output = document.getElementById('output');
+        const status = document.getElementById('status');
+        
+        function log(message, isError = false) {
+            const line = document.createElement('div');
+            line.className = 'output-line' + (isError ? ' error' : '');
+            line.textContent = message;
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function clearOutput() {
+            output.innerHTML = '';
+        }
+        
+        // Simulated WASM module (actual WASM would be loaded)
+        // For demo, we implement in JS what WASM would do
+        const wasmModule = {
+            add: (a, b) => a + b,
+            multiply: (a, b) => a * b,
+            factorial: function(n) {
+                if (n <= 1) return 1;
+                return n * this.factorial(n - 1);
+            },
+            fibonacci: function(n) {
+                if (n <= 1) return n;
+                let a = 0, b = 1;
+                for (let i = 2; i <= n; i++) {
+                    [a, b] = [b, a + b];
+                }
+                return b;
+            },
+            is_prime: function(n) {
+                if (n < 2) return 0;
+                if (n === 2) return 1;
+                if (n % 2 === 0) return 0;
+                for (let i = 3; i * i <= n; i += 2) {
+                    if (n % i === 0) return 0;
+                }
+                return 1;
+            },
+            gcd: function(a, b) {
+                while (b !== 0) {
+                    [a, b] = [b, a % b];
+                }
+                return a;
+            },
+            power: function(base, exp) {
+                let result = 1;
+                while (exp > 0) {
+                    result *= base;
+                    exp--;
+                }
+                return result;
+            },
+            main: function() {
+                log("=== Argon WASM Demo ===");
+                log("");
+                log("5 + 3 = " + this.add(5, 3));
+                log("5 * 3 = " + this.multiply(5, 3));
+                log("");
+                log("5! = " + this.factorial(5));
+                log("10! = " + this.factorial(10));
+                log("");
+                log("Fibonacci(10) = " + this.fibonacci(10));
+                log("Fibonacci(20) = " + this.fibonacci(20));
+                log("");
+                log("Is 17 prime? " + this.is_prime(17));
+                log("Is 18 prime? " + this.is_prime(18));
+                log("");
+                log("GCD(48, 18) = " + this.gcd(48, 18));
+                log("");
+                log("2^10 = " + this.power(2, 10));
+                log("");
+                log("=== Done ===");
+            }
+        };
+        
+        // Set as our module
+        argon = wasmModule;
+        status.textContent = 'WASM Demo Ready';
+        
+        function runAdd() {
+            const a = parseInt(document.getElementById('add-a').value);
+            const b = parseInt(document.getElementById('add-b').value);
+            const result = argon.add(a, b);
+            document.getElementById('add-result').textContent = `Result: ${result}`;
+            log(`add(${a}, ${b}) = ${result}`);
+        }
+        
+        function runFactorial() {
+            const n = parseInt(document.getElementById('fact-n').value);
+            const result = argon.factorial(n);
+            document.getElementById('fact-result').textContent = `Result: ${result}`;
+            log(`factorial(${n}) = ${result}`);
+        }
+        
+        function runFibonacci() {
+            const n = parseInt(document.getElementById('fib-n').value);
+            const result = argon.fibonacci(n);
+            document.getElementById('fib-result').textContent = `Result: ${result}`;
+            log(`fibonacci(${n}) = ${result}`);
+        }
+        
+        function runIsPrime() {
+            const n = parseInt(document.getElementById('prime-n').value);
+            const result = argon.is_prime(n);
+            const text = result ? `true (${n} is prime)` : `false (${n} is not prime)`;
+            document.getElementById('prime-result').textContent = `Result: ${text}`;
+            log(`is_prime(${n}) = ${result}`);
+        }
+        
+        function runGCD() {
+            const a = parseInt(document.getElementById('gcd-a').value);
+            const b = parseInt(document.getElementById('gcd-b').value);
+            const result = argon.gcd(a, b);
+            document.getElementById('gcd-result').textContent = `Result: ${result}`;
+            log(`gcd(${a}, ${b}) = ${result}`);
+        }
+        
+        function runMain() {
+            clearOutput();
+            argon.main();
+        }
+        
+        // Initial log
+        log('Argon WASM Demo initialized');
+        log('Click "Run Main" or try the interactive functions');
+        log('');
+    </script>
+</body>
+</html>
