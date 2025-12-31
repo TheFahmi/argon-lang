@@ -1,0 +1,13 @@
+// Debug traits example
+
+struct Point {
+    x: i32,
+    y: i32
+}
+
+fn main() {
+    print("Start");
+    let p = Point { x: 1, y: 2 };
+    print("Point created");
+    print("x: " + p.x);
+}

@@ -16,7 +16,7 @@ pub enum Value {
     String(String),
     Array(Vec<Value>),
     Struct(String, HashMap<String, Value>),
-    Function(String, Vec<Param>, Vec<Stmt>),
+    Function(String, Vec<Param>, Option<Vec<Stmt>>),
 }
 
 impl Value {
@@ -69,6 +69,7 @@ pub struct Interpreter {
     llvm_output: String,
     llvm_buffer: String,
     program_args: Vec<String>,
+    methods: HashMap<(String, String), Function>,
 }
 
 #[derive(Debug)]
@@ -88,6 +89,7 @@ impl Interpreter {
             llvm_output: String::new(),
             llvm_buffer: String::new(),
             program_args: Vec::new(),
+            methods: HashMap::new(),
         }
     }
     
@@ -158,6 +160,14 @@ impl Interpreter {
                 TopLevel::Let(name, expr) => {
                     let val = self.eval_expr(expr)?;
                     self.globals.insert(name.clone(), val);
+                }
+                TopLevel::Impl(impl_def) => {
+                    for method in &impl_def.methods {
+                        self.methods.insert((impl_def.type_name.clone(), method.name.clone()), method.clone());
+                    }
+                }
+                TopLevel::Trait(_) | TopLevel::Extern(_) => {
+                    // Ignore for now in interpreter
                 }
                 _ => {}
             }
@@ -277,19 +287,21 @@ impl Interpreter {
             None => return Err(format!("Undefined function: {}", name)),
         };
         
+        self.execute_function(func, args)
+    }
+
+    fn execute_function(&mut self, func: Function, args: Vec<Value>) -> Result<Value, String> {
         self.push_scope();
-        
-        // Bind parameters
         for (i, param) in func.params.iter().enumerate() {
             let val = args.get(i).cloned().unwrap_or(Value::Null);
             self.declare_var(&param.name, val);
         }
-        
-        // Execute body
-        let result = self.exec_stmts(&func.body);
-        
+        let result = if let Some(body) = &func.body {
+            self.exec_stmts(body)
+        } else {
+            Ok(())
+        };
         self.pop_scope();
-        
         match result {
             Ok(_) => Ok(Value::Null),
             Err(ControlFlow::Return(val)) => Ok(val),
@@ -442,10 +454,25 @@ impl Interpreter {
             }
             Expr::MethodCall(obj, method, args) => {
                 let obj_val = self.eval_expr(obj)?;
-                let mut arg_vals: Vec<Value> = vec![obj_val];
+                // Clone obj_val because we need it for type resolution and as first arg
+                let mut arg_vals: Vec<Value> = vec![obj_val.clone()];
                 for a in args {
                     arg_vals.push(self.eval_expr(a)?);
                 }
+                
+                let type_name = match &obj_val {
+                    Value::Struct(name, _) => name.clone(),
+                    Value::Int(_) => "i32".to_string(), 
+                    Value::String(_) => "string".to_string(),
+                    _ => "".to_string(),
+                };
+                
+                if !type_name.is_empty() {
+                    if let Some(func) = self.methods.get(&(type_name, method.clone())) {
+                         return self.execute_function(func.clone(), arg_vals);
+                    }
+                }
+                
                 self.call_function(method, arg_vals)
             }
             Expr::Index(arr, idx) => {

@@ -1,8 +1,8 @@
 // ============================================
-// ARGON SELF-HOSTING COMPILER v2.19.0
+// ARGON SELF-HOSTING COMPILER v2.20.0
 // Written entirely in Argon
 // Complete Lexer, Parser, and Code Generator
-// With WebAssembly, Async/Await, Generics, Structs & Enums
+// With FFI, Traits, WebAssembly, Async/Await, Generics
 // ============================================
 
 let OPT_UNSAFE = 0; // Optimization flag
@@ -90,6 +90,14 @@ let TOK_AT = 82;        // @ (attribute prefix)
 let TOK_EXTERN = 83;    // extern fn
 let TOK_WASM_EXPORT = 84; // @wasm_export
 let TOK_WASM_IMPORT = 85; // @wasm_import
+// FFI tokens
+let TOK_PTR = 90;       // * for pointers  
+let TOK_REF = 91;       // & for references
+// Trait tokens
+let TOK_TRAIT = 92;     // trait keyword
+let TOK_IMPL = 93;      // impl keyword
+let TOK_FOR = 94;       // for keyword (in impl)
+let TOK_SELF_TYPE = 95; // Self type
 
 // =================== LEXER ===================
 
@@ -416,6 +424,10 @@ fn tokenize(source: string) {
             else if (id_str == "async") { tokens = push(tokens, make_token(TOK_ASYNC, "async")); }
             else if (id_str == "await") { tokens = push(tokens, make_token(TOK_AWAIT, "await")); }
             else if (id_str == "extern") { tokens = push(tokens, make_token(TOK_EXTERN, "extern")); }
+            else if (id_str == "trait") { tokens = push(tokens, make_token(TOK_TRAIT, "trait")); }
+            else if (id_str == "impl") { tokens = push(tokens, make_token(TOK_IMPL, "impl")); }
+            else if (id_str == "for") { tokens = push(tokens, make_token(TOK_FOR, "for")); }
+            else if (id_str == "Self") { tokens = push(tokens, make_token(TOK_SELF_TYPE, "Self")); }
             else { tokens = push(tokens, make_token(TOK_ID, id_str)); }
         }
         // @ symbol for attributes
@@ -480,6 +492,15 @@ let AST_AWAIT = 141;       // Await expression
 let AST_WASM_EXPORT = 150; // WASM export annotation
 let AST_WASM_IMPORT = 151; // WASM import annotation
 let AST_EXTERN_FUNC = 152; // External function declaration
+// Trait AST types
+let AST_TRAIT_DEF = 160;   // trait Name { methods }
+let AST_IMPL_BLOCK = 161;  // impl Trait for Type { methods }
+let AST_TRAIT_BOUND = 162; // T: Trait
+let AST_SELF_TYPE = 163;   // Self type reference
+// FFI AST types
+let AST_PTR_TYPE = 170;    // *T pointer type
+let AST_DEREF = 171;       // *expr dereference
+let AST_ADDR_OF = 172;     // &expr address-of
 
 // =================== PARSER ===================
 

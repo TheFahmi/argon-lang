@@ -1,0 +1,24 @@
+// Argon FFI Example
+// Demonstrates FFI syntax parsing
+
+extern "C" fn puts(s: *i8) -> i32;
+extern "C" fn malloc(size: i64) -> *void;
+
+extern "C" {
+    fn sin(x: f64) -> f64;
+    fn cos(x: f64) -> f64;
+}
+
+fn main() {
+    print("=== FFI Demo ===");
+    print("Parsed extern definitions successfully");
+    
+    // Note: The interpreter ignores extern definitions currently,
+    // so we can't call them yet, but the parser validates the syntax.
+    
+    // Test pointer syntax parsing
+    let x: *i8 = null;
+    let y: *void = null;
+    
+    print("=== FFI Demo Complete ===");
+}

@@ -1,5 +1,5 @@
 // Argon Lexer - Tokenizes Argon source code
-// Compatible with compiler.ar v2.19.0
+// Compatible with compiler.ar v2.20.0
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
@@ -7,6 +7,8 @@ pub enum Token {
     Fn, Let, Return, If, Else, While, Print, True, False,
     Break, Continue, Struct, Enum, Match, Import, From,
     Async, Await, Extern,
+    // FFI & Traits keywords
+    Trait, Impl, For, SelfType,
     
     // Literals
     Number(i64),
@@ -261,6 +263,10 @@ impl Lexer {
                         "async" => Token::Async,
                         "await" => Token::Await,
                         "extern" => Token::Extern,
+                        "trait" => Token::Trait,
+                        "impl" => Token::Impl,
+                        "for" => Token::For,
+                        "Self" => Token::SelfType,
                         _ => Token::Identifier(id),
                     }
                 }

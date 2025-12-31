@@ -49,7 +49,7 @@ pub struct Param {
 pub struct Function {
     pub name: String,
     pub params: Vec<Param>,
-    pub body: Vec<Stmt>,
+    pub body: Option<Vec<Stmt>>, // Body is optional for traits/extern
     pub is_async: bool,
     pub return_type: Option<String>,
 }
@@ -67,12 +67,34 @@ pub struct EnumDef {
 }
 
 #[derive(Debug, Clone)]
+pub struct TraitDef {
+    pub name: String,
+    pub methods: Vec<Function>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ImplDef {
+    pub trait_name: String,
+    pub type_name: String,
+    pub methods: Vec<Function>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExternBlock {
+    pub abi: String,
+    pub functions: Vec<Function>,
+}
+
+#[derive(Debug, Clone)]
 pub enum TopLevel {
     Function(Function),
     Struct(StructDef),
     Enum(EnumDef),
     Let(String, Expr),
     Import(String, Vec<String>),
+    Trait(TraitDef),
+    Impl(ImplDef),
+    Extern(ExternBlock),
 }
 
 pub struct Parser {
@@ -149,11 +171,13 @@ impl Parser {
                     items.push(TopLevel::Import(path, names));
                 }
                 Token::Extern => {
-                    // Skip extern fn declarations
-                    self.advance();
-                    if self.peek() == &Token::Fn {
-                        self.parse_function()?;
-                    }
+                    items.push(TopLevel::Extern(self.parse_extern()?));
+                }
+                Token::Trait => {
+                    items.push(TopLevel::Trait(self.parse_trait()?));
+                }
+                Token::Impl => {
+                    items.push(TopLevel::Impl(self.parse_impl()?));
                 }
                 Token::Eof => break,
                 _ => {
@@ -207,7 +231,11 @@ impl Parser {
             return_type = Some(self.parse_type()?);
         }
         
-        let body = self.parse_block()?;
+        let body = if self.match_token(&Token::Semi) {
+            None
+        } else {
+            Some(self.parse_block()?)
+        };
         
         Ok(Function {
             name,
@@ -219,6 +247,14 @@ impl Parser {
     }
     
     fn parse_type(&mut self) -> Result<String, String> {
+        if self.match_token(&Token::Star) {
+            let inner = self.parse_type()?;
+            return Ok(format!("*{}", inner));
+        }
+        if self.match_token(&Token::SelfType) {
+            return Ok("Self".to_string());
+        }
+        
         let mut typ = match self.advance() {
             Token::Identifier(s) => s,
             _ => return Err("Expected type".to_string()),
@@ -240,6 +276,75 @@ impl Parser {
         Ok(typ)
     }
     
+    fn parse_trait(&mut self) -> Result<TraitDef, String> {
+        self.expect(Token::Trait)?;
+        let name = match self.advance() {
+            Token::Identifier(s) => s,
+            _ => return Err("Expected trait name".to_string()),
+        };
+        
+        self.expect(Token::LBrace)?;
+        let mut methods = Vec::new();
+        while self.peek() != &Token::RBrace {
+            methods.push(self.parse_function()?);
+        }
+        self.expect(Token::RBrace)?;
+        
+        Ok(TraitDef { name, methods })
+    }
+    
+    fn parse_impl(&mut self) -> Result<ImplDef, String> {
+        self.expect(Token::Impl)?;
+        let trait_name = match self.advance() {
+            Token::Identifier(s) => s,
+            _ => return Err("Expected trait name".to_string()),
+        };
+        
+        self.expect(Token::For)?;
+        let type_name = match self.advance() {
+            Token::Identifier(s) => s,
+            _ => return Err("Expected type name".to_string()),
+        };
+        
+        self.expect(Token::LBrace)?;
+        let mut methods = Vec::new();
+        while self.peek() != &Token::RBrace {
+            methods.push(self.parse_function()?);
+        }
+        self.expect(Token::RBrace)?;
+        
+        Ok(ImplDef { trait_name, type_name, methods })
+    }
+    
+    fn parse_extern(&mut self) -> Result<ExternBlock, String> {
+        self.expect(Token::Extern)?;
+        let abi = match self.peek() {
+            Token::String(s) => {
+                let abi = s.clone();
+                self.advance();
+                abi
+            },
+            _ => "C".to_string(),
+        };
+        
+        // Handle single function declaration: extern "C" fn foo();
+        if self.peek() == &Token::Fn {
+            let func = self.parse_function()?;
+            return Ok(ExternBlock { abi, functions: vec![func] });
+        }
+        
+        // Handle block: extern "C" { ... }
+        if self.match_token(&Token::LBrace) {
+             let mut functions = Vec::new();
+             while self.peek() != &Token::RBrace {
+                 functions.push(self.parse_function()?);
+             }
+             self.expect(Token::RBrace)?;
+             return Ok(ExternBlock { abi, functions });
+        }
+        
+        Err("Expected fn or block after extern".to_string())
+    }
     fn parse_struct(&mut self) -> Result<StructDef, String> {
         self.expect(Token::Struct)?;
         let name = match self.advance() {
