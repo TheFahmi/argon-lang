@@ -529,6 +529,330 @@ impl Interpreter {
                 let ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_nanos();
                 return Ok(Value::Int((ts % 1000000) as i64));
             }
+            // ============================================
+            // Math Built-ins
+            // ============================================
+            "abs" => {
+                if let Some(Value::Int(n)) = args.first() {
+                    return Ok(Value::Int(n.abs()));
+                }
+                return Ok(Value::Int(0));
+            }
+            "max" => {
+                if args.len() >= 2 {
+                    if let (Value::Int(a), Value::Int(b)) = (&args[0], &args[1]) {
+                        return Ok(Value::Int((*a).max(*b)));
+                    }
+                }
+                return Ok(Value::Int(0));
+            }
+            "min" => {
+                if args.len() >= 2 {
+                    if let (Value::Int(a), Value::Int(b)) = (&args[0], &args[1]) {
+                        return Ok(Value::Int((*a).min(*b)));
+                    }
+                }
+                return Ok(Value::Int(0));
+            }
+            "rand_int" => {
+                if args.len() >= 2 {
+                    use std::time::{SystemTime, UNIX_EPOCH};
+                    if let (Value::Int(min_val), Value::Int(max_val)) = (&args[0], &args[1]) {
+                        let ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_nanos();
+                        let range = (max_val - min_val + 1) as u128;
+                        let result = min_val + (ts % range) as i64;
+                        return Ok(Value::Int(result));
+                    }
+                }
+                return Ok(Value::Int(0));
+            }
+            // ============================================
+            // String Built-ins
+            // ============================================
+            "split" => {
+                if args.len() >= 2 {
+                    if let (Value::String(s), Value::String(delim)) = (&args[0], &args[1]) {
+                        let parts: Vec<Value> = s.split(delim.as_str())
+                            .map(|p| Value::String(p.to_string()))
+                            .collect();
+                        return Ok(Value::Array(Rc::new(RefCell::new(parts))));
+                    }
+                }
+                return Ok(Value::Array(Rc::new(RefCell::new(vec![]))));
+            }
+            "join" => {
+                if args.len() >= 2 {
+                    if let (Value::Array(arr), Value::String(delim)) = (&args[0], &args[1]) {
+                        let parts: Vec<String> = arr.borrow().iter()
+                            .map(|v| v.to_string_val())
+                            .collect();
+                        return Ok(Value::String(parts.join(delim)));
+                    }
+                }
+                return Ok(Value::String(String::new()));
+            }
+            "trim" => {
+                if let Some(Value::String(s)) = args.first() {
+                    return Ok(Value::String(s.trim().to_string()));
+                }
+                return Ok(Value::String(String::new()));
+            }
+            "to_upper" | "toUpperCase" | "upper" => {
+                if let Some(Value::String(s)) = args.first() {
+                    return Ok(Value::String(s.to_uppercase()));
+                }
+                return Ok(Value::String(String::new()));
+            }
+            "to_lower" | "toLowerCase" | "lower" => {
+                if let Some(Value::String(s)) = args.first() {
+                    return Ok(Value::String(s.to_lowercase()));
+                }
+                return Ok(Value::String(String::new()));
+            }
+            "contains" => {
+                if args.len() >= 2 {
+                    if let (Value::String(s), Value::String(sub)) = (&args[0], &args[1]) {
+                        return Ok(Value::Bool(s.contains(sub.as_str())));
+                    }
+                    if let (Value::Array(arr), val) = (&args[0], &args[1]) {
+                        let found = arr.borrow().iter().any(|v| v.to_string_val() == val.to_string_val());
+                        return Ok(Value::Bool(found));
+                    }
+                }
+                return Ok(Value::Bool(false));
+            }
+            "starts_with" | "startsWith" => {
+                if args.len() >= 2 {
+                    if let (Value::String(s), Value::String(prefix)) = (&args[0], &args[1]) {
+                        return Ok(Value::Bool(s.starts_with(prefix.as_str())));
+                    }
+                }
+                return Ok(Value::Bool(false));
+            }
+            "ends_with" | "endsWith" => {
+                if args.len() >= 2 {
+                    if let (Value::String(s), Value::String(suffix)) = (&args[0], &args[1]) {
+                        return Ok(Value::Bool(s.ends_with(suffix.as_str())));
+                    }
+                }
+                return Ok(Value::Bool(false));
+            }
+            "replace" => {
+                if args.len() >= 3 {
+                    if let (Value::String(s), Value::String(from), Value::String(to)) = 
+                        (&args[0], &args[1], &args[2]) 
+                    {
+                        return Ok(Value::String(s.replace(from.as_str(), to.as_str())));
+                    }
+                }
+                return Ok(Value::String(String::new()));
+            }
+            "char_at" | "charAt" => {
+                if args.len() >= 2 {
+                    if let (Value::String(s), Value::Int(idx)) = (&args[0], &args[1]) {
+                        if let Some(c) = s.chars().nth(*idx as usize) {
+                            return Ok(Value::String(c.to_string()));
+                        }
+                    }
+                }
+                return Ok(Value::String(String::new()));
+            }
+            "index_of" | "indexOf" => {
+                if args.len() >= 2 {
+                    if let (Value::String(s), Value::String(sub)) = (&args[0], &args[1]) {
+                        if let Some(idx) = s.find(sub.as_str()) {
+                            return Ok(Value::Int(idx as i64));
+                        }
+                        return Ok(Value::Int(-1));
+                    }
+                }
+                return Ok(Value::Int(-1));
+            }
+            "repeat" => {
+                if args.len() >= 2 {
+                    if let (Value::String(s), Value::Int(n)) = (&args[0], &args[1]) {
+                        return Ok(Value::String(s.repeat(*n as usize)));
+                    }
+                }
+                return Ok(Value::String(String::new()));
+            }
+            // ============================================
+            // Array Built-ins
+            // ============================================
+            "pop" => {
+                if let Some(Value::Array(arr)) = args.first() {
+                    if let Some(val) = arr.borrow_mut().pop() {
+                        return Ok(val);
+                    }
+                }
+                return Ok(Value::Null);
+            }
+            "shift" => {
+                if let Some(Value::Array(arr)) = args.first() {
+                    if !arr.borrow().is_empty() {
+                        let val = arr.borrow_mut().remove(0);
+                        return Ok(val);
+                    }
+                }
+                return Ok(Value::Null);
+            }
+            "reverse" => {
+                if let Some(Value::Array(arr)) = args.first() {
+                    arr.borrow_mut().reverse();
+                    return Ok(args[0].clone());
+                }
+                if let Some(Value::String(s)) = args.first() {
+                    return Ok(Value::String(s.chars().rev().collect()));
+                }
+                return Ok(Value::Null);
+            }
+            "sort" => {
+                if let Some(Value::Array(arr)) = args.first() {
+                    arr.borrow_mut().sort_by(|a, b| {
+                        a.to_string_val().cmp(&b.to_string_val())
+                    });
+                    return Ok(args[0].clone());
+                }
+                return Ok(Value::Null);
+            }
+            "slice" => {
+                if args.len() >= 2 {
+                    if let (Value::Array(arr), Value::Int(start)) = (&args[0], &args[1]) {
+                        let start = *start as usize;
+                        let end = if args.len() > 2 {
+                            if let Value::Int(e) = &args[2] { *e as usize } else { arr.borrow().len() }
+                        } else {
+                            arr.borrow().len()
+                        };
+                        let sliced: Vec<Value> = arr.borrow().iter()
+                            .skip(start)
+                            .take(end.saturating_sub(start))
+                            .cloned()
+                            .collect();
+                        return Ok(Value::Array(Rc::new(RefCell::new(sliced))));
+                    }
+                }
+                return Ok(Value::Array(Rc::new(RefCell::new(vec![]))));
+            }
+            "range" => {
+                if args.len() >= 2 {
+                    if let (Value::Int(start), Value::Int(end)) = (&args[0], &args[1]) {
+                        let step = if args.len() > 2 {
+                            if let Value::Int(s) = &args[2] { *s } else { 1 }
+                        } else { 1 };
+                        let mut result = vec![];
+                        let mut i = *start;
+                        while i < *end {
+                            result.push(Value::Int(i));
+                            i += step;
+                        }
+                        return Ok(Value::Array(Rc::new(RefCell::new(result))));
+                    }
+                }
+                return Ok(Value::Array(Rc::new(RefCell::new(vec![]))));
+            }
+            "find_index" | "findIndex" => {
+                if args.len() >= 2 {
+                    if let (Value::Array(arr), val) = (&args[0], &args[1]) {
+                        for (i, v) in arr.borrow().iter().enumerate() {
+                            if v.to_string_val() == val.to_string_val() {
+                                return Ok(Value::Int(i as i64));
+                            }
+                        }
+                    }
+                }
+                return Ok(Value::Int(-1));
+            }
+            // ============================================
+            // Type Built-ins
+            // ============================================
+            "typeof" | "type_of" | "type" => {
+                if let Some(val) = args.first() {
+                    let type_name = match val {
+                        Value::Null => "null",
+                        Value::Int(_) => "int",
+                        Value::Bool(_) => "bool",
+                        Value::String(_) => "string",
+                        Value::Array(_) => "array",
+                        Value::Struct(_, _) => "struct",
+                        Value::Function(_, _, _) => "function",
+                    };
+                    return Ok(Value::String(type_name.to_string()));
+                }
+                return Ok(Value::String("unknown".to_string()));
+            }
+            "is_null" | "isNull" => {
+                if let Some(val) = args.first() {
+                    return Ok(Value::Bool(matches!(val, Value::Null)));
+                }
+                return Ok(Value::Bool(true));
+            }
+            "is_array" | "isArray" => {
+                if let Some(val) = args.first() {
+                    return Ok(Value::Bool(matches!(val, Value::Array(_))));
+                }
+                return Ok(Value::Bool(false));
+            }
+            "is_string" | "isString" => {
+                if let Some(val) = args.first() {
+                    return Ok(Value::Bool(matches!(val, Value::String(_))));
+                }
+                return Ok(Value::Bool(false));
+            }
+            "is_int" | "isInt" | "is_number" | "isNumber" => {
+                if let Some(val) = args.first() {
+                    return Ok(Value::Bool(matches!(val, Value::Int(_))));
+                }
+                return Ok(Value::Bool(false));
+            }
+            // ============================================
+            // Conversion Built-ins
+            // ============================================
+            "int" | "to_int" | "toInt" => {
+                if let Some(val) = args.first() {
+                    match val {
+                        Value::Int(n) => return Ok(Value::Int(*n)),
+                        Value::String(s) => return Ok(Value::Int(s.parse().unwrap_or(0))),
+                        Value::Bool(b) => return Ok(Value::Int(if *b { 1 } else { 0 })),
+                        _ => return Ok(Value::Int(0)),
+                    }
+                }
+                return Ok(Value::Int(0));
+            }
+            "str" | "to_string" => {
+                if let Some(val) = args.first() {
+                    return Ok(Value::String(val.to_string_val()));
+                }
+                return Ok(Value::String(String::new()));
+            }
+            // ============================================
+            // Console/Debug Built-ins
+            // ============================================
+            "debug" => {
+                if let Some(val) = args.first() {
+                    println!("[DEBUG] {:?}", val);
+                }
+                return Ok(Value::Null);
+            }
+            "assert" => {
+                if let Some(Value::Bool(b)) = args.first() {
+                    if !b {
+                        let msg = if args.len() > 1 {
+                            args[1].to_string_val()
+                        } else {
+                            "Assertion failed".to_string()
+                        };
+                        return Err(format!("Assertion Error: {}", msg));
+                    }
+                }
+                return Ok(Value::Null);
+            }
+            "exit" => {
+                let code = if let Some(Value::Int(n)) = args.first() {
+                    *n as i32
+                } else { 0 };
+                std::process::exit(code);
+            }
             "make_token" | "make_binop" | "make_unary" | "make_call" | 
             "make_if" | "make_while" | "make_func" | "make_return" | "make_let" | 
             "make_assign" | "make_block" | "make_print" | "make_ast_num" | 

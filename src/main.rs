@@ -1,4 +1,4 @@
-// Argon Interpreter v2.24.0
+// Argon Interpreter v2.25.0
 // Rust implementation that can run Argon source files
 
 mod lexer;
@@ -7,6 +7,8 @@ mod interpreter;
 mod codegen;
 mod optimizer;
 mod expander;
+mod bytecode_vm;
+mod fast_vm;
 
 use std::env;
 use std::fs;
@@ -19,9 +21,11 @@ fn main() {
         println!("Argon - A Memory-Safe Systems Language");
         println!("USAGE: argon [OPTIONS] [FILE]");
         println!("OPTIONS:");
-        println!("    -h, --help        Print help");
-        println!("    -v, --version     Print version");
-        println!("    --emit-llvm FILE  Compile & emit LLVM IR");
+        println!("    -h, --help          Print help");
+        println!("    -v, --version       Print version");
+        println!("    --emit-llvm FILE    Compile & emit LLVM IR");
+        println!("    --vm-bench N        Run fibonacci(N) via bytecode VM");
+        println!("    --native-bench N    Run fibonacci(N) as native Rust (target perf)");
         return;
     }
 
@@ -30,6 +34,8 @@ fn main() {
     let mut source_file = String::new();
     let mut program_args: Vec<String> = Vec::new();
     let mut found_source = false;
+    let mut vm_bench: Option<i64> = None;
+    let mut native_bench: Option<i64> = None;
 
     let mut i = 1;
     while i < args.len() {
@@ -38,17 +44,29 @@ fn main() {
         } else {
             match args[i].as_str() {
                 "-h" | "--help" => {
-                    println!("Argon Interpreter v2.24.0");
+                    println!("Argon Interpreter v2.25.0");
                     return;
                 }
                 "-v" | "--version" => {
-                    println!("Argon Interpreter v2.24.0");
+                    println!("Argon Interpreter v2.25.0");
                     return;
                 }
                 "--emit-llvm" => {
                     emit_llvm = true;
                     if i + 1 < args.len() {
                         llvm_output = args[i + 1].clone();
+                        i += 1;
+                    }
+                }
+                "--vm-bench" => {
+                    if i + 1 < args.len() {
+                        vm_bench = args[i + 1].parse().ok();
+                        i += 1;
+                    }
+                }
+                "--native-bench" => {
+                    if i + 1 < args.len() {
+                        native_bench = args[i + 1].parse().ok();
                         i += 1;
                     }
                 }
@@ -60,6 +78,33 @@ fn main() {
             }
         }
         i += 1;
+    }
+
+    // Native benchmark mode - shows target performance
+    if let Some(n) = native_bench {
+        println!("Argon Native: Running Fib({})...", n);
+        let (result, elapsed) = fast_vm::run_native_fib_bench(n);
+        println!("Argon Native: Result = {}", result);
+        println!("Argon Native: Time = {}ms", elapsed.as_millis());
+        return;
+    }
+
+    // Fast path: bytecode VM benchmark mode
+    if let Some(n) = vm_bench {
+        println!("Argon VM: Running Fib({})...", n);
+        let start = std::time::Instant::now();
+        
+        let mut vm = bytecode_vm::BytecodeVM::new();
+        vm.add_function(bytecode_vm::compile_fib());
+        let result = vm.call("fib", vec![bytecode_vm::VMValue::Int(n)]);
+        
+        let elapsed = start.elapsed();
+        match result {
+            bytecode_vm::VMValue::Int(r) => println!("Argon VM: Result = {}", r),
+            _ => println!("Argon VM: Result = {:?}", result),
+        }
+        println!("Argon VM: Time = {}ms", elapsed.as_millis());
+        return;
     }
 
     if source_file.is_empty() {

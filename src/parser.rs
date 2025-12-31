@@ -1,5 +1,5 @@
 // Argon Parser - Parses tokens into AST
-// Compatible with compiler.ar v2.24.0
+// Compatible with compiler.ar v2.25.0
 
 #![allow(dead_code)]
 

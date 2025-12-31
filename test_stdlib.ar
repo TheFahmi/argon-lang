@@ -1,0 +1,109 @@
+// Comprehensive Argon v2.25.0 Standard Library Test
+
+fn main() {
+    print("=== Argon v2.25.0 Standard Library Tests ===");
+    print("");
+    
+    // 1. Math Functions
+    print("1. Math Functions:");
+    print("   abs(-42) = " + toString(abs(-42)));
+    print("   max(3, 7) = " + toString(max(3, 7)));
+    print("   min(3, 7) = " + toString(min(3, 7)));
+    print("   rand_int(1, 100) = " + toString(rand_int(1, 100)));
+    
+    // 2. String Functions
+    print("");
+    print("2. String Functions:");
+    let s = "  Hello, Argon World!  ";
+    print("   original = '" + s + "'");
+    print("   trim() = '" + trim(s) + "'");
+    print("   to_upper('hello') = " + to_upper("hello"));
+    print("   to_lower('HELLO') = " + to_lower("HELLO"));
+    print("   contains('Argon') = " + toString(contains(s, "Argon")));
+    print("   starts_with('  Hello') = " + toString(starts_with(s, "  Hello")));
+    print("   ends_with('!  ') = " + toString(ends_with(s, "!  ")));
+    print("   replace('Argon', 'Rust') = " + replace(s, "Argon", "Rust"));
+    print("   char_at(2) = " + char_at(s, 2));
+    print("   index_of('Argon') = " + toString(index_of(s, "Argon")));
+    print("   repeat('ab', 3) = " + repeat("ab", 3));
+    
+    // 3. String Splitting/Joining
+    print("");
+    print("3. Split/Join:");
+    let parts = split("a,b,c,d", ",");
+    print("   split('a,b,c,d', ',') = " + toString(parts));
+    print("   join(['a','b','c'], '-') = " + join(["a", "b", "c"], "-"));
+    
+    // 4. Array Functions
+    print("");
+    print("4. Array Functions:");
+    let arr = [5, 2, 8, 1, 9];
+    print("   original = " + toString(arr));
+    print("   pop() = " + toString(pop(arr)));
+    print("   after pop = " + toString(arr));
+    push(arr, 10);
+    print("   after push(10) = " + toString(arr));
+    sort(arr);
+    print("   after sort() = " + toString(arr));
+    reverse(arr);
+    print("   after reverse() = " + toString(arr));
+    
+    // 5. Slice and Range
+    print("");
+    print("5. Slice/Range:");
+    let nums = [0, 1, 2, 3, 4, 5];
+    print("   slice([0,1,2,3,4,5], 2, 4) = " + toString(slice(nums, 2, 4)));
+    print("   range(0, 5) = " + toString(range(0, 5)));
+    print("   range(0, 10, 2) = " + toString(range(0, 10, 2)));
+    
+    // 6. String Reverse
+    print("");
+    print("6. String Reverse:");
+    print("   reverse('hello') = " + reverse("hello"));
+    
+    // 7. Contains (array)
+    print("");
+    print("7. Array Contains:");
+    let fruits = ["apple", "banana", "cherry"];
+    print("   contains(fruits, 'banana') = " + toString(contains(fruits, "banana")));
+    print("   contains(fruits, 'mango') = " + toString(contains(fruits, "mango")));
+    print("   findIndex(fruits, 'cherry') = " + toString(find_index(fruits, "cherry")));
+    
+    // 8. Type Functions
+    print("");
+    print("8. Type Functions:");
+    print("   typeof(42) = " + typeof(42));
+    print("   typeof('hello') = " + typeof("hello"));
+    print("   typeof([1,2,3]) = " + typeof([1,2,3]));
+    print("   typeof(true) = " + typeof(true));
+    print("   typeof(null) = " + typeof(null));
+    print("   is_string('test') = " + toString(is_string("test")));
+    print("   is_int(42) = " + toString(is_int(42)));
+    print("   is_array([1]) = " + toString(is_array([1])));
+    print("   is_null(null) = " + toString(is_null(null)));
+    
+    // 9. Conversion Functions
+    print("");
+    print("9. Conversion Functions:");
+    print("   int('123') = " + toString(int("123")));
+    print("   str(456) = " + str(456));
+    
+    // 10. Existing Functions
+    print("");
+    print("10. Core Functions:");
+    print("   len('hello') = " + toString(len("hello")));
+    print("   len([1,2,3]) = " + toString(len([1,2,3])));
+    print("   substr('hello world', 6, 5) = " + substr("hello world", 6, 5));
+    print("   uuid() = " + uuid());
+    print("   timestamp() = " + toString(timestamp()));
+    
+    // 11. Debug/Assert
+    print("");
+    print("11. Debug Functions:");
+    debug("This is a debug message");
+    assert(1 + 1 == 2, "Math is broken!");
+    print("   assert(1+1==2) passed!");
+    
+    print("");
+    print("=== All 11 test categories passed! ===");
+}

@@ -1,8 +1,8 @@
 FROM rust:slim
 
-# Install C++ compiler (g++) and clang
+# Install C++ compiler (g++), clang, and LLVM
 RUN apt-get update && apt-get install -y \
-    g++ clang llvm \
+    g++ clang llvm time \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -10,16 +10,17 @@ WORKDIR /app
 # Copy Source
 COPY Cargo.toml .
 COPY src/ ./src/
+COPY self-host/ ./self-host/
 
-# Build Argon (Release mode for max speed)
-# This produces a Linux binary inside the container
+# Build Argon Interpreter (Release mode for max speed)
 RUN cargo build --release
 
-# Copies binary to path
+# Copy binary to path
 RUN cp target/release/argon /usr/bin/argon
 
-# Copy Benchmarks
+# Copy Benchmarks and stdlib
 COPY benchmarks/comparison/ ./benchmarks/
+COPY stdlib/ ./stdlib/
 
 # Work in benchmark dir
 WORKDIR /app/benchmarks
