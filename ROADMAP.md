@@ -22,50 +22,68 @@ The core infrastructure is now stable and performant.
 
 ---
 
-## 🚧 Phase 2: Language Features (v2.26 - v3.0) [CURRENT FOCUS]
-Focus on advanced language features to make Argon viable for complex production software.
+## ✅ Phase 2: Language Features (v2.26 - v2.28) [COMPLETED]
+Advanced language features for production software.
 
-### ✅ 1. Traits & Interfaces [COMPLETED v2.26.0]
-Enable polymorphism and better code reuse.
-- [x] Add `TraitDef` to valid runtime types.
-- [x] Register trait implementations in `impl Trait for Type`.
-- [x] Method dispatch works with trait-based polymorphism.
-- [x] Example: `examples/traits_test.ar`
+### ✅ 1. Traits & Interfaces [v2.26.0]
+- [x] `TraitDef` in runtime
+- [x] `impl Trait for Type` support
+- [x] Method dispatch with polymorphism
 
-### ✅ 2. Garbage Collection (GC) [COMPLETED v2.28.0]
-Mark-and-Sweep garbage collector for safe memory management.
-- [x] Implement Object Header & Heap Arena.
-- [x] Implement Tracing (Mark phase).
-- [x] Implement Sweeping.
-- [x] `gc_collect()` and `gc_stats()` built-ins.
-- [x] Example: `examples/gc_test.ar`
+### ✅ 2. FFI (Foreign Function Interface) [v2.27.0]
+- [x] `libloading` crate integration
+- [x] `ffi_load()` and `ffi_call()` built-ins
+- [x] Load .dll/.so dynamically
 
-### ✅ 3. FFI (Foreign Function Interface) [COMPLETED v2.27.0]
-Load and call C dynamic libraries directly from Argon.
-- [x] Integrate `libloading` crate.
-- [x] `ffi_load(libname)` - Load .dll/.so files.
-- [x] `ffi_call(lib, func, args)` - Call C functions.
-- [x] Example: `examples/ffi_test.ar`
+### ✅ 3. Garbage Collection [v2.28.0]
+- [x] Mark-and-Sweep GC module
+- [x] `gc_collect()` and `gc_stats()` built-ins
+- [x] Object header & heap arena
 
 ---
 
-## 🔮 Phase 3: Ecosystem & Stability (v3.0+)
-Focus on developer experience and enterprise readiness.
+## ✅ Phase 3: Developer Experience (v2.29) [COMPLETED]
+Focus on tooling and developer productivity.
 
-- **Language Server Protocol (LSP)**: Real-time error checking and "Go to Definition".
-- **Debugger**: Step-through debugging support.
+### ✅ 1. Language Server Protocol (LSP)
+- [x] Diagnostics (syntax errors)
+- [x] Hover (function signatures)
+- [x] Go to Definition (Ctrl+Click)
+- [x] Find References (Shift+F12)
+- [x] Autocomplete with snippets
+- [x] Signature help (parameter hints)
+- [x] Document formatting
+
+### ✅ 2. Debugger Support
+- [x] DWARF debug info in LLVM IR
+- [x] `-g` / `--debug` compiler flag
+- [x] GDB/LLDB integration
+- [x] Breakpoints & variable inspection
+
+---
+
+## 🔮 Phase 4: Enterprise Features (v3.0+) [NEXT]
+Focus on ecosystem and enterprise readiness.
+
 - **Standard Library Expansion**:
-    - `crypto` (OpenSSL binding via FFI)
-    - `sql` (SQLite/Postgres binding)
-    - `http` (Native high-performance server)
-- **Concurrency**: True parallelism (M:N threading model) beyond current async/await.
+    - [ ] `crypto` module (via FFI to OpenSSL)
+    - [ ] `sql` module (SQLite/Postgres bindings)
+    - [ ] `http` module (high-performance server)
+- **Concurrency**:
+    - [ ] True parallelism (M:N threading)
+    - [ ] Channel-based communication
+- **Tooling**:
+    - [ ] Package registry (apm.argon.dev)
+    - [ ] Documentation generator
 
 ---
 
 ## Release Schedule
-- **v2.25.0**: Performance & Stdlib ✅
-- **v2.26.0**: Traits & Interfaces ✅
-- **v2.27.0**: FFI Support ✅
-- **v2.28.0**: Garbage Collector ✅ (Current)
-- **v2.29.0**: Phase 3 - LSP & Debugger
-
+| Version | Feature | Status |
+|---------|---------|--------|
+| v2.25.0 | Performance & Stdlib | ✅ |
+| v2.26.0 | Traits & Interfaces | ✅ |
+| v2.27.0 | FFI Support | ✅ |
+| v2.28.0 | Garbage Collector | ✅ |
+| v2.29.0 | LSP & Debugger | ✅ (Current) |
+| v3.0.0  | Enterprise Features | 🔮 Next |

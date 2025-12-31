@@ -1,5 +1,5 @@
 // Argon Interpreter - Executes AST
-// Compatible with compiler.ar v2.28.0 (GC + FFI)
+// Compatible with compiler.ar v2.29.0 (GC + FFI)
 
 #![allow(dead_code)]
 

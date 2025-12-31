@@ -1,4 +1,4 @@
-# Argon Programming Language (v2.28.0)
+# Argon Programming Language (v2.29.0)
 
 <img src="logo.png" alt="Argon Logo" width="150" height="auto">
 
@@ -170,7 +170,7 @@ defer close(file); // Executed at end of scope
 
 | Version | Key Features |
 |---------|--------------|
-| **v2.28.0** | **Performance Optimization**: Bytecode VM, LLVM Native Compilation, FxHashMap |
+| **v2.29.0** | **LSP & Debugger Complete**: Bytecode VM, LLVM Native Compilation, FxHashMap |
 | **v2.24.0** | **Macros System**, **ArgonWeb CLI**, **Env/Crypto Built-ins** |
 | **v2.23.0** | `defer` statement for resource management |
 | **v2.22.0** | Optimization Pass (Constant Folding) |
