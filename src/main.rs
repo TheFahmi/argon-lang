@@ -1,4 +1,4 @@
-// Argon Interpreter v2.23.0
+// Argon Interpreter v2.24.0
 // Rust implementation that can run Argon source files
 
 mod lexer;

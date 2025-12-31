@@ -1,7 +1,7 @@
 /**
  * Argon WASM Loader
  * JavaScript helper for loading and interacting with Argon WASM modules
- * Version: 2.20.0
+ * Version: 2.24.0
  */
 
 class ArgonWASM {

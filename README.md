@@ -1,4 +1,4 @@
-# Argon Programming Language (v2.20.0)
+# Argon Programming Language (v2.24.0)
 ![Argon Logo](logo.png)
 
 Argon is a high-performance, **self-hosted** systems programming language that compiles directly to using custom Rust Interpreter.
@@ -23,13 +23,13 @@ Argon is a high-performance, **self-hosted** systems programming language that c
 
 ## Quick Start
 ```bash
-# Build Rust Interpreter (v2.20.0)
+# Build Rust Interpreter (v2.24.0)
 cargo build --release
 # Copy binary
-cp target/release/argon.exe argon_v220.exe
+cp target/release/argon.exe argon_v224.exe
 
 # Run Hello World
-./argon_v220.exe examples/hello.ar
+./argon_v224.exe examples/hello.ar
 # Run FFI Example
 ./argon_v220.exe examples/ffi_example.ar
 # Run Traits Example
