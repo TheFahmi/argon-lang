@@ -1,6 +1,8 @@
 // Argon Interpreter - Executes AST
 // Compatible with compiler.ar v2.19.0
 
+#![allow(dead_code)]
+
 use crate::parser::{Expr, Stmt, TopLevel, Function, Param};
 use std::collections::HashMap;
 use std::fs::File;

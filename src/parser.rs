@@ -1,6 +1,8 @@
 // Argon Parser - Parses tokens into AST
 // Compatible with compiler.ar v2.19.0
 
+#![allow(dead_code)]
+
 use crate::lexer::Token;
 
 #[derive(Debug, Clone)]
@@ -217,11 +219,10 @@ impl Parser {
     }
     
     fn parse_type(&mut self) -> Result<String, String> {
-        let mut typ = String::new();
-        match self.advance() {
-            Token::Identifier(s) => typ = s,
+        let mut typ = match self.advance() {
+            Token::Identifier(s) => s,
             _ => return Err("Expected type".to_string()),
-        }
+        };
         // Handle generic types like Box<T>
         if self.peek() == &Token::Lt {
             typ.push('<');
