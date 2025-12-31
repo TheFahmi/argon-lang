@@ -1,81 +1,182 @@
 // ============================================
-// ARGON STANDARD LIBRARY: HTTP
-// HTTP server and client utilities
+// ARGON STANDARD LIBRARY: HTTP (v3.0.0)
+// HTTP utilities, routing, and server helpers
 // ============================================
+
+// ============================================
+// CONSTANTS
+// ============================================
+
+let HTTP_VERSION = "3.0.0";
 
 // HTTP Status Codes
 let HTTP_OK = 200;
 let HTTP_CREATED = 201;
+let HTTP_ACCEPTED = 202;
 let HTTP_NO_CONTENT = 204;
+let HTTP_MOVED_PERMANENTLY = 301;
+let HTTP_FOUND = 302;
+let HTTP_NOT_MODIFIED = 304;
 let HTTP_BAD_REQUEST = 400;
 let HTTP_UNAUTHORIZED = 401;
 let HTTP_FORBIDDEN = 403;
 let HTTP_NOT_FOUND = 404;
 let HTTP_METHOD_NOT_ALLOWED = 405;
+let HTTP_CONFLICT = 409;
+let HTTP_GONE = 410;
+let HTTP_UNPROCESSABLE_ENTITY = 422;
+let HTTP_TOO_MANY_REQUESTS = 429;
 let HTTP_INTERNAL_ERROR = 500;
+let HTTP_NOT_IMPLEMENTED = 501;
+let HTTP_BAD_GATEWAY = 502;
 let HTTP_SERVICE_UNAVAILABLE = 503;
 
 // HTTP Methods
 let METHOD_GET = "GET";
 let METHOD_POST = "POST";
 let METHOD_PUT = "PUT";
-let METHOD_DELETE = "DELETE";
 let METHOD_PATCH = "PATCH";
+let METHOD_DELETE = "DELETE";
 let METHOD_HEAD = "HEAD";
 let METHOD_OPTIONS = "OPTIONS";
 
-// Common Content Types
-let CONTENT_TYPE_HTML = "text/html";
+// Content Types
 let CONTENT_TYPE_JSON = "application/json";
+let CONTENT_TYPE_HTML = "text/html";
 let CONTENT_TYPE_TEXT = "text/plain";
 let CONTENT_TYPE_XML = "application/xml";
 let CONTENT_TYPE_FORM = "application/x-www-form-urlencoded";
+let CONTENT_TYPE_MULTIPART = "multipart/form-data";
 
-// Create HTTP response string
-fn http_response(status, content_type, body) {
-    let status_text = http_status_text(status);
-    let response = "HTTP/1.1 " + status + " " + status_text + "\r\n";
-    response = response + "Content-Type: " + content_type + "\r\n";
-    response = response + "Content-Length: " + len(body) + "\r\n";
-    response = response + "Connection: close\r\n";
-    response = response + "\r\n";
-    response = response + body;
-    return response;
+// ============================================
+// STRUCTS
+// ============================================
+
+// HTTP Request object
+struct Request {
+    method: string,
+    path: string,
+    headers: any,
+    body: string,
+    params: any,
+    query: any,
+    cookies: any,
+    ip: string,
+    userAgent: string
 }
 
-// Create HTTP OK response
-fn http_ok(body, content_type) {
-    return http_response(HTTP_OK, content_type, body);
+// HTTP Response object
+struct Response {
+    status: int,
+    headers: any,
+    body: string,
+    cookies: [any]
 }
 
-// Create HTTP JSON response
-fn http_json(body) {
-    return http_response(HTTP_OK, CONTENT_TYPE_JSON, body);
+// Cookie struct
+struct Cookie {
+    name: string,
+    value: string,
+    path: string,
+    domain: string,
+    maxAge: int,
+    httpOnly: bool,
+    secure: bool
 }
 
-// Create HTTP HTML response
-fn http_html(body) {
-    return http_response(HTTP_OK, CONTENT_TYPE_HTML, body);
+// Route struct
+struct Route {
+    method: string,
+    path: string,
+    handler: any,
+    middleware: [any]
 }
 
-// Create HTTP error response
-fn http_error(status, message) {
-    return http_response(status, CONTENT_TYPE_TEXT, message);
+// Router struct
+struct Router {
+    routes: [Route],
+    prefix: string,
+    middleware: [any]
+}
+
+// ============================================
+// RESPONSE HELPERS
+// ============================================
+
+// Create basic response
+fn response(status: int, body: string) -> Response {
+    return Response {
+        status: status,
+        headers: {},
+        body: body,
+        cookies: []
+    };
+}
+
+// Create JSON response
+fn jsonResponse(status: int, data: any) -> Response {
+    let res = response(status, json_stringify(data));
+    res.headers["Content-Type"] = CONTENT_TYPE_JSON;
+    return res;
+}
+
+// Create HTML response
+fn htmlResponse(status: int, html: string) -> Response {
+    let res = response(status, html);
+    res.headers["Content-Type"] = CONTENT_TYPE_HTML;
+    return res;
+}
+
+// Create text response
+fn textResponse(status: int, text: string) -> Response {
+    let res = response(status, text);
+    res.headers["Content-Type"] = CONTENT_TYPE_TEXT;
+    return res;
 }
 
 // Create redirect response
-fn http_redirect(url) {
-    let response = "HTTP/1.1 302 Found\r\n";
-    response = response + "Location: " + url + "\r\n";
-    response = response + "Content-Length: 0\r\n";
-    response = response + "\r\n";
-    return response;
+fn redirect(url: string) -> Response {
+    let res = response(HTTP_FOUND, "");
+    res.headers["Location"] = url;
+    return res;
 }
 
-// Get status text for code
-fn http_status_text(code) {
+// Create permanent redirect
+fn redirectPermanent(url: string) -> Response {
+    let res = response(HTTP_MOVED_PERMANENTLY, "");
+    res.headers["Location"] = url;
+    return res;
+}
+
+// Error responses
+fn badRequest(message: string) -> Response {
+    return jsonResponse(HTTP_BAD_REQUEST, { error: message });
+}
+
+fn unauthorized(message: string) -> Response {
+    return jsonResponse(HTTP_UNAUTHORIZED, { error: message });
+}
+
+fn forbidden(message: string) -> Response {
+    return jsonResponse(HTTP_FORBIDDEN, { error: message });
+}
+
+fn notFound(message: string) -> Response {
+    return jsonResponse(HTTP_NOT_FOUND, { error: message });
+}
+
+fn internalError(message: string) -> Response {
+    return jsonResponse(HTTP_INTERNAL_ERROR, { error: message });
+}
+
+// ============================================
+// STATUS TEXT
+// ============================================
+
+fn statusText(code: int) -> string {
     if (code == 200) { return "OK"; }
     if (code == 201) { return "Created"; }
+    if (code == 202) { return "Accepted"; }
     if (code == 204) { return "No Content"; }
     if (code == 301) { return "Moved Permanently"; }
     if (code == 302) { return "Found"; }
@@ -85,343 +186,268 @@ fn http_status_text(code) {
     if (code == 403) { return "Forbidden"; }
     if (code == 404) { return "Not Found"; }
     if (code == 405) { return "Method Not Allowed"; }
+    if (code == 409) { return "Conflict"; }
+    if (code == 410) { return "Gone"; }
+    if (code == 422) { return "Unprocessable Entity"; }
+    if (code == 429) { return "Too Many Requests"; }
     if (code == 500) { return "Internal Server Error"; }
+    if (code == 501) { return "Not Implemented"; }
     if (code == 502) { return "Bad Gateway"; }
     if (code == 503) { return "Service Unavailable"; }
     return "Unknown";
 }
 
-// Parse HTTP request
-// Returns struct with method, path, headers, body
-fn http_parse_request(raw) {
-    let result = [];
-    
-    // Split by lines
-    let lines = http_split_lines(raw);
-    if (len(lines) == 0) {
-        return null;
-    }
-    
-    // Parse request line: METHOD PATH HTTP/1.1
-    let request_line = lines[0];
-    let parts = http_split_spaces(request_line);
-    if (len(parts) < 2) {
-        return null;
-    }
-    
-    let method = parts[0];
-    let path = parts[1];
-    
-    // Parse headers
-    let headers = [];
-    let i = 1;
-    let body_start = 0;
-    while (i < len(lines)) {
-        let line = lines[i];
-        if (len(line) == 0) {
-            body_start = i + 1;
-            i = len(lines); // break
-        } else {
-            let colon_idx = http_index_of(line, ":");
-            if (colon_idx > 0) {
-                let key = http_substring(line, 0, colon_idx);
-                let value = http_trim(http_substring(line, colon_idx + 1, len(line)));
-                let header = [key, value];
-                headers = push(headers, header);
-            }
-            i = i + 1;
-        }
-    }
-    
-    // Extract body
-    let body = "";
-    if (body_start > 0) {
-        i = body_start;
-        while (i < len(lines)) {
-            if (i > body_start) {
-                body = body + "\n";
-            }
-            body = body + lines[i];
-            i = i + 1;
-        }
-    }
-    
-    // Return as array [method, path, headers, body]
-    result = push(result, method);
-    result = push(result, path);
-    result = push(result, headers);
-    result = push(result, body);
-    return result;
+// ============================================
+// ROUTER
+// ============================================
+
+fn createRouter() -> Router {
+    return Router {
+        routes: [],
+        prefix: "",
+        middleware: []
+    };
 }
 
-// Get header value from parsed request
-fn http_get_header(request, name) {
-    let headers = request[2];
-    let i = 0;
-    while (i < len(headers)) {
-        let header = headers[i];
-        if (http_eq_ignore_case(header[0], name)) {
-            return header[1];
-        }
-        i = i + 1;
-    }
-    return "";
+fn createRouterWithPrefix(prefix: string) -> Router {
+    return Router {
+        routes: [],
+        prefix: prefix,
+        middleware: []
+    };
 }
 
-// Parse URL query string
-fn http_parse_query(query_str) {
-    let result = [];
-    if (len(query_str) == 0) {
+fn addRoute(router: Router, method: string, path: string, handler: any) {
+    let fullPath = router.prefix + path;
+    let route = Route {
+        method: method,
+        path: fullPath,
+        handler: handler,
+        middleware: []
+    };
+    push(router.routes, route);
+}
+
+fn addRouteWithMiddleware(router: Router, method: string, path: string, handler: any, middleware: [any]) {
+    let fullPath = router.prefix + path;
+    let route = Route {
+        method: method,
+        path: fullPath,
+        handler: handler,
+        middleware: middleware
+    };
+    push(router.routes, route);
+}
+
+// HTTP method shortcuts
+fn get(router: Router, path: string, handler: any) {
+    addRoute(router, METHOD_GET, path, handler);
+}
+
+fn post(router: Router, path: string, handler: any) {
+    addRoute(router, METHOD_POST, path, handler);
+}
+
+fn put(router: Router, path: string, handler: any) {
+    addRoute(router, METHOD_PUT, path, handler);
+}
+
+fn patch(router: Router, path: string, handler: any) {
+    addRoute(router, METHOD_PATCH, path, handler);
+}
+
+fn deleteRoute(router: Router, path: string, handler: any) {
+    addRoute(router, METHOD_DELETE, path, handler);
+}
+
+fn options(router: Router, path: string, handler: any) {
+    addRoute(router, METHOD_OPTIONS, path, handler);
+}
+
+// ============================================
+// URL PARSING
+// ============================================
+
+// Parse query string to object
+fn parseQuery(queryString: string) -> any {
+    let result = {};
+    if (len(queryString) == 0) {
         return result;
     }
     
-    // Remove leading ?
-    let start = 0;
-    if (query_str[0] == "?") {
-        start = 1;
-    }
-    
-    let pairs = http_split(http_substring(query_str, start, len(query_str)), "&");
+    let pairs = split(queryString, "&");
     let i = 0;
     while (i < len(pairs)) {
-        let pair_str = pairs[i];
-        let eq_idx = http_index_of(pair_str, "=");
-        if (eq_idx > 0) {
-            let key = http_substring(pair_str, 0, eq_idx);
-            let value = http_substring(pair_str, eq_idx + 1, len(pair_str));
-            let pair = [key, value];
-            result = push(result, pair);
+        let pair = split(pairs[i], "=");
+        if (len(pair) == 2) {
+            result[pair[0]] = urlDecode(pair[1]);
+        } else if (len(pair) == 1) {
+            result[pair[0]] = "";
         }
         i = i + 1;
     }
     return result;
 }
 
-// Get query parameter value
-fn http_get_param(params, name) {
-    let i = 0;
-    while (i < len(params)) {
-        let pair = params[i];
-        if (pair[0] == name) {
-            return pair[1];
-        }
-        i = i + 1;
-    }
-    return "";
-}
-
-// URL encode string
-fn http_url_encode(s) {
-    let result = "";
-    let i = 0;
-    while (i < len(s)) {
-        let c = s[i];
-        let code = char_code_at(s, i);
-        
-        // Safe characters: A-Z, a-z, 0-9, -, _, ., ~
-        if ((code >= 65) == (code <= 90)) {  // A-Z
-            result = result + c;
-        } else if ((code >= 97) == (code <= 122)) {  // a-z
-            result = result + c;
-        } else if ((code >= 48) == (code <= 57)) {  // 0-9
-            result = result + c;
-        } else if (c == "-") {
-            result = result + c;
-        } else if (c == "_") {
-            result = result + c;
-        } else if (c == ".") {
-            result = result + c;
-        } else if (c == "~") {
-            result = result + c;
-        } else if (c == " ") {
-            result = result + "+";
-        } else {
-            // Encode as %XX
-            result = result + "%" + http_hex_byte(code);
-        }
-        i = i + 1;
-    }
-    return result;
-}
-
-// Helper: convert byte to hex string
-fn http_hex_byte(n) {
-    let hex = "0123456789ABCDEF";
-    let high = n / 16;
-    let low = n - (high * 16);
-    return hex[high] + hex[low];
-}
-
-// Helper functions (duplicated to avoid import dependencies)
-fn http_split_lines(s) {
-    let result = [];
-    let current = "";
-    let i = 0;
-    while (i < len(s)) {
-        let c = s[i];
-        if (c == "\n") {
-            // Remove trailing \r
-            if (len(current) > 0) {
-                if (current[len(current) - 1] == "\r") {
-                    current = http_substring(current, 0, len(current) - 1);
-                }
-            }
-            result = push(result, current);
-            current = "";
-        } else {
-            current = current + c;
-        }
-        i = i + 1;
-    }
-    if (len(current) > 0) {
-        result = push(result, current);
-    }
-    return result;
-}
-
-fn http_split_spaces(s) {
-    let result = [];
-    let current = "";
-    let i = 0;
-    while (i < len(s)) {
-        let c = s[i];
-        if (c == " ") {
-            if (len(current) > 0) {
-                result = push(result, current);
-                current = "";
-            }
-        } else {
-            current = current + c;
-        }
-        i = i + 1;
-    }
-    if (len(current) > 0) {
-        result = push(result, current);
-    }
-    return result;
-}
-
-fn http_split(s, delim) {
-    let result = [];
-    let current = "";
-    let i = 0;
-    while (i < len(s)) {
-        if (s[i] == delim) {
-            result = push(result, current);
-            current = "";
-        } else {
-            current = current + s[i];
-        }
-        i = i + 1;
-    }
-    result = push(result, current);
-    return result;
-}
-
-fn http_index_of(s, sub) {
-    let s_len = len(s);
-    let sub_len = len(sub);
-    if (sub_len > s_len) {
-        return 0 - 1;
-    }
-    let i = 0;
-    while (i <= s_len - sub_len) {
-        let is_match = true;
-        let j = 0;
-        while (j < sub_len) {
-            if (s[i + j] != sub[j]) {
-                is_match = false;
-                j = sub_len;
-            } else {
-                j = j + 1;
-            }
-        }
-        if (is_match) {
-            return i;
-        }
-        i = i + 1;
-    }
-    return 0 - 1;
-}
-
-fn http_substring(s, start, end) {
-    let result = "";
-    let i = start;
-    while (i < end) {
-        result = result + s[i];
-        i = i + 1;
-    }
-    return result;
-}
-
-fn http_trim(s) {
-    let start = 0;
-    let end = len(s);
-    while (start < end) {
-        let c = s[start];
-        if (c == " ") {
-            start = start + 1;
-        } else if (c == "\t") {
-            start = start + 1;
-        } else {
-            start = end; // break
-        }
-    }
-    // Trim end
-    while (end > start) {
-        let c = s[end - 1];
-        if (c == " ") {
-            end = end - 1;
-        } else if (c == "\t") {
-            end = end - 1;
-        } else {
-            // break
-            return http_substring(s, start, end);
-        }
-    }
-    return http_substring(s, start, end);
-}
-
-fn http_eq_ignore_case(a, b) {
-    if (len(a) != len(b)) {
-        return false;
-    }
-    let i = 0;
-    while (i < len(a)) {
-        let ca = char_code_at(a, i);
-        let cb = char_code_at(b, i);
-        // Convert to lowercase
-        if ((ca >= 65) == (ca <= 90)) {
-            ca = ca + 32;
-        }
-        if ((cb >= 65) == (cb <= 90)) {
-            cb = cb + 32;
-        }
-        if (ca != cb) {
-            return false;
-        }
-        i = i + 1;
-    }
-    return true;
-}
-
-// Simple HTTP server loop
-fn http_serve(port, handler_fn) {
-    let server = argon_listen(port);
-    print("Server listening on port " + port);
+// Parse URL path with parameters
+fn parsePath(pattern: string, path: string) -> any {
+    let params = {};
+    let patternParts = split(pattern, "/");
+    let pathParts = split(path, "/");
     
-    while (true) {
-        let client = argon_accept(server);
-        if (client != (0 - 1)) {
-            let request_raw = argon_socket_read(client);
-            let request = http_parse_request(request_raw);
-            
-            if (request != null) {
-                let response = handler_fn(request);
-                argon_socket_write(client, response);
+    if (len(patternParts) != len(pathParts)) {
+        return null;
+    }
+    
+    let i = 0;
+    while (i < len(patternParts)) {
+        let pp = patternParts[i];
+        if (len(pp) > 0) {
+            if (char_at(pp, 0) == ":") {
+                let paramName = substr(pp, 1, len(pp) - 1);
+                params[paramName] = pathParts[i];
+            } else if (pp != pathParts[i]) {
+                return null;
             }
-            
-            argon_socket_close(client);
+        }
+        i = i + 1;
+    }
+    
+    return params;
+}
+
+// URL decode
+fn urlDecode(s: string) -> string {
+    // Simplified: replace + with space
+    let result = replace(s, "+", " ");
+    // Note: Full URL decode would need %XX handling
+    return result;
+}
+
+// URL encode
+fn urlEncode(s: string) -> string {
+    // Simplified: replace space with +
+    let result = replace(s, " ", "+");
+    return result;
+}
+
+// ============================================
+// COOKIE HANDLING
+// ============================================
+
+fn createCookie(name: string, value: string) -> Cookie {
+    return Cookie {
+        name: name,
+        value: value,
+        path: "/",
+        domain: "",
+        maxAge: 0,
+        httpOnly: false,
+        secure: false
+    };
+}
+
+fn createSecureCookie(name: string, value: string, maxAge: int) -> Cookie {
+    return Cookie {
+        name: name,
+        value: value,
+        path: "/",
+        domain: "",
+        maxAge: maxAge,
+        httpOnly: true,
+        secure: true
+    };
+}
+
+fn cookieToString(cookie: Cookie) -> string {
+    let result = cookie.name + "=" + cookie.value;
+    if (len(cookie.path) > 0) {
+        result = result + "; Path=" + cookie.path;
+    }
+    if (len(cookie.domain) > 0) {
+        result = result + "; Domain=" + cookie.domain;
+    }
+    if (cookie.maxAge > 0) {
+        result = result + "; Max-Age=" + toString(cookie.maxAge);
+    }
+    if (cookie.httpOnly) {
+        result = result + "; HttpOnly";
+    }
+    if (cookie.secure) {
+        result = result + "; Secure";
+    }
+    return result;
+}
+
+// ============================================
+// CORS HEADERS
+// ============================================
+
+fn addCorsHeaders(res: Response, origin: string) {
+    res.headers["Access-Control-Allow-Origin"] = origin;
+    res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+    res.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization";
+    res.headers["Access-Control-Max-Age"] = "86400";
+}
+
+fn addCorsHeadersWildcard(res: Response) {
+    addCorsHeaders(res, "*");
+}
+
+// ============================================
+// CACHING HEADERS
+// ============================================
+
+fn noCacheHeaders(res: Response) {
+    res.headers["Cache-Control"] = "no-store, no-cache, must-revalidate";
+    res.headers["Pragma"] = "no-cache";
+    res.headers["Expires"] = "0";
+}
+
+fn cacheHeaders(res: Response, maxAge: int) {
+    res.headers["Cache-Control"] = "public, max-age=" + toString(maxAge);
+}
+
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
+
+fn isSuccess(status: int) -> bool {
+    return status >= 200 && status < 300;
+}
+
+fn isRedirect(status: int) -> bool {
+    return status >= 300 && status < 400;
+}
+
+fn isClientError(status: int) -> bool {
+    return status >= 400 && status < 500;
+}
+
+fn isServerError(status: int) -> bool {
+    return status >= 500;
+}
+
+// Simple string replace
+fn replace(s: string, from: string, to: string) -> string {
+    let result = "";
+    let i = 0;
+    while (i < len(s)) {
+        let match = true;
+        let j = 0;
+        while (j < len(from) && i + j < len(s)) {
+            if (char_at(s, i + j) != char_at(from, j)) {
+                match = false;
+            }
+            j = j + 1;
+        }
+        if (match && j == len(from)) {
+            result = result + to;
+            i = i + len(from);
+        } else {
+            result = result + char_at(s, i);
+            i = i + 1;
         }
     }
+    return result;
 }

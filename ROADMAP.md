@@ -85,5 +85,5 @@ Focus on ecosystem and enterprise readiness.
 | v2.26.0 | Traits & Interfaces | ✅ |
 | v2.27.0 | FFI Support | ✅ |
 | v2.28.0 | Garbage Collector | ✅ |
-| v2.29.0 | LSP & Debugger | ✅ (Current) |
+| v3.0.0 | LSP & Debugger | ✅ (Current) |
 | v3.0.0  | Enterprise Features | 🔮 Next |
