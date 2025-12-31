@@ -154,6 +154,7 @@ my-api/
 | `uuid()` / `generate_id()` | Generate unique ID |
 | `random()` | Pseudo-random number |
 | `sleep(ms)` | Sleep for milliseconds |
+| `env(key, default)` | Get environment variable |
 
 ## Version History (Continued)
 - **v2.22.0**: Optimization Pass (Constant Folding, Dead Code Elimination).

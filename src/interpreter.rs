@@ -430,6 +430,20 @@ impl Interpreter {
                 }
                 return Ok(Value::Null);
             }
+            "env" => {
+                if let Some(Value::String(key)) = args.first() {
+                    match std::env::var(key) {
+                        Ok(val) => return Ok(Value::String(val)),
+                        Err(_) => {
+                            if args.len() > 1 {
+                                return Ok(args[1].clone());
+                            }
+                            return Ok(Value::Null);
+                        }
+                    }
+                }
+                return Ok(Value::Null);
+            }
             // ============================================
             // Crypto Built-ins (simplified for demo)
             // ============================================

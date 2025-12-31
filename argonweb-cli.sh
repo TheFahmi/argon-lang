@@ -36,8 +36,8 @@ create_project() {
 // Application Configuration
 let APP_NAME = "ArgonWeb API";
 let APP_VERSION = "1.0.0";
-let APP_PORT = 3000;
-let JWT_SECRET = "your-secret-key-change-in-production";
+let APP_PORT = env("PORT", 3000);
+let JWT_SECRET = env("JWT_SECRET", "your-secret-key-change-in-production");
 EOF
 
     # Create utils
