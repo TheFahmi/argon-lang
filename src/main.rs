@@ -1,4 +1,4 @@
-// Argon Native v3.1.0
+// Argon Native v3.2.1
 // High-performance native execution engine for Argon
 // Default mode: Native compilation via LLVM for maximum performance
 
@@ -23,7 +23,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 2 {
-        println!("Argon Native v3.1.0 - High-Performance Systems Language");
+        println!("Argon Native v3.2.1 - High-Performance Systems Language");
         println!("USAGE: argon [OPTIONS] [FILE]");
         println!("OPTIONS:");
         println!("    -h, --help          Print help");
@@ -52,13 +52,13 @@ fn main() {
         } else {
             match args[i].as_str() {
                 "-h" | "--help" => {
-                    println!("Argon Native v3.1.0");
+                    println!("Argon Native v3.2.1");
                     println!("Default: Native compilation for maximum performance");
                     println!("Use --interpret for tree-walking interpreter mode");
                     return;
                 }
                 "-v" | "--version" => {
-                    println!("Argon Native v3.1.0");
+                    println!("Argon Native v3.2.1");
                     return;
                 }
                 "--interpret" => {
