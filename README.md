@@ -482,12 +482,12 @@ impl UsersController {
 | Function | Description |
 |----------|-------------|
 | `env(key, default)` | Get environment variable |
-| `bcrypt_hash(password)` | Hash password |
-| `bcrypt_verify(password, hash)` | Verify password |
-| `jwt_sign(payload, secret)` | Create JWT |
-| `jwt_verify(token, secret)` | Verify JWT |
-| `json_parse(string)` | Parse JSON |
-| `json_stringify(value)` | Serialize to JSON |
+| `bcryptHash(password)` | Hash password |
+| `bcryptVerify(password, hash)` | Verify password |
+| `jwtSign(payload, secret)` | Create JWT |
+| `jwtVerify(token, secret)` | Verify JWT |
+| `jsonParse(string)` | Parse JSON |
+| `jsonStringify(value)` | Serialize to JSON |
 
 ### Swagger / OpenAPI Documentation
 
@@ -497,19 +497,19 @@ Generate interactive API documentation with built-in Swagger UI.
 import "swagger"
 
 // Create API spec
-let api = swagger_new("My API", "1.0.0");
-swagger_set_description(api, "REST API documentation");
-swagger_add_server(api, "http://localhost:8080", "Dev server");
+let api = swaggerNew("My API", "1.0.0");
+swaggerSetDescription(api, "REST API documentation");
+swaggerAddServer(api, "http://localhost:8080", "Dev server");
 
 // Define endpoint
-let ep = endpoint_new("GET", "/api/users/{id}", "Get user");
-endpoint_param_path(ep, "id", "User ID", "integer");
-endpoint_response(ep, 200, "User found", "application/json");
-endpoint_response(ep, 404, "Not found", "application/json");
-swagger_add_endpoint(api, ep);
+let ep = endpointNew("GET", "/api/users/{id}", "Get user");
+endpointParamPath(ep, "id", "User ID", "integer");
+endpointResponse(ep, 200, "User found", "application/json");
+endpointResponse(ep, 404, "Not found", "application/json");
+swaggerAddEndpoint(api, ep);
 
 // Generate OpenAPI JSON
-let json = swagger_to_json(api);
+let json = swaggerToJson(api);
 ```
 
 **Run Swagger UI Server:**
@@ -521,15 +521,15 @@ let json = swagger_to_json(api);
 
 | Function | Description |
 |----------|-------------|
-| `swagger_new(title, version)` | Create API specification |
-| `swagger_add_server(api, url, desc)` | Add server |
-| `swagger_add_tag(api, name, desc)` | Add tag |
-| `endpoint_new(method, path, summary)` | Create endpoint |
-| `endpoint_param_path(ep, name, desc, type)` | Add path parameter |
-| `endpoint_param_query(ep, name, desc, type, required)` | Add query parameter |
-| `endpoint_response(ep, code, desc, content_type)` | Add response |
-| `swagger_to_json(api)` | Generate OpenAPI 3.0 JSON |
-| `swagger_ui_html(json, title)` | Generate Swagger UI HTML |
+| `swaggerNew(title, version)` | Create API specification |
+| `swaggerAddServer(api, url, desc)` | Add server |
+| `swaggerAddTag(api, name, desc)` | Add tag |
+| `endpointNew(method, path, summary)` | Create endpoint |
+| `endpointParamPath(ep, name, desc, type)` | Add path parameter |
+| `endpointParamQuery(ep, name, desc, type, required)` | Add query parameter |
+| `endpointResponse(ep, code, desc, contentType)` | Add response |
+| `swaggerToJson(api)` | Generate OpenAPI 3.0 JSON |
+| `swaggerUiHtml(json, title)` | Generate Swagger UI HTML |
 
 ---
 
