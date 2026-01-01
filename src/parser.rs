@@ -938,6 +938,18 @@ impl Parser {
                 self.expect(Token::RParen)?;
                 Ok(expr)
             }
+            Token::At => {
+                // Built-in function call: @name(args)
+                self.advance();
+                let name = match self.advance() {
+                    Token::Identifier(s) => s,
+                    t => return Err(format!("Expected identifier after @, got {:?}", t)),
+                };
+                self.expect(Token::LParen)?;
+                let args = self.parse_args()?;
+                self.expect(Token::RParen)?;
+                Ok(Expr::Call(name, args))
+            }
             _ => {
                 Err(format!("Unexpected token: {:?}", self.peek()))
             }

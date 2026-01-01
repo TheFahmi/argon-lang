@@ -254,59 +254,59 @@ impl Lexer {
                     self.advance();
                     let attr = self.read_identifier();
                     
-                    // Parse optional argument in parentheses
-                    let arg = if self.peek() == Some('(') {
-                        self.advance(); // consume (
-                        let mut arg_str = String::new();
-                        
-                        // Check if it's a string argument
-                        if self.peek() == Some('"') {
-                            self.advance(); // consume opening "
-                            while let Some(c) = self.peek() {
-                                if c == '"' {
-                                    self.advance();
-                                    break;
-                                }
-                                arg_str.push(c);
-                                self.advance();
-                            }
-                        } else {
-                            // Read identifier argument (like AuthGuard)
-                            while let Some(c) = self.peek() {
-                                if c == ')' { break; }
-                                if !c.is_whitespace() {
-                                    arg_str.push(c);
-                                }
-                                self.advance();
-                            }
-                        }
-                        
-                        // Consume closing )
-                        if self.peek() == Some(')') {
-                            self.advance();
-                        }
-                        arg_str
-                    } else {
-                        String::new()
-                    };
-                    
+                    // Check if it's a known decorator with optional argument
                     match attr.as_str() {
                         "wasm_export" => Token::WasmExport,
                         "wasm_import" => Token::WasmImport,
-                        "Controller" => Token::DecController(arg),
-                        "Get" => Token::DecGet(arg),
-                        "Post" => Token::DecPost(arg),
-                        "Put" => Token::DecPut(arg),
-                        "Delete" => Token::DecDelete(arg),
-                        "Patch" => Token::DecPatch(arg),
-                        "Injectable" => Token::DecInjectable,
-                        "Module" => Token::DecModule,
-                        "Body" => Token::DecBody,
-                        "Param" => Token::DecParam(arg),
-                        "Query" => Token::DecQuery(arg),
-                        "Guard" => Token::DecGuard(arg),
-                        "Middleware" => Token::DecMiddleware(arg),
-                        _ => Token::At,
+                        "Controller" | "Get" | "Post" | "Put" | "Delete" | "Patch" |
+                        "Injectable" | "Module" | "Body" | "Param" | "Query" | "Guard" | "Middleware" => {
+                            // Parse optional argument in parentheses for decorators
+                            let arg = if self.peek() == Some('(') {
+                                self.advance();
+                                let mut arg_str = String::new();
+                                if self.peek() == Some('"') {
+                                    self.advance();
+                                    while let Some(c) = self.peek() {
+                                        if c == '"' { self.advance(); break; }
+                                        arg_str.push(c);
+                                        self.advance();
+                                    }
+                                } else {
+                                    while let Some(c) = self.peek() {
+                                        if c == ')' { break; }
+                                        if !c.is_whitespace() { arg_str.push(c); }
+                                        self.advance();
+                                    }
+                                }
+                                if self.peek() == Some(')') { self.advance(); }
+                                arg_str
+                            } else {
+                                String::new()
+                            };
+                            
+                            match attr.as_str() {
+                                "Controller" => Token::DecController(arg),
+                                "Get" => Token::DecGet(arg),
+                                "Post" => Token::DecPost(arg),
+                                "Put" => Token::DecPut(arg),
+                                "Delete" => Token::DecDelete(arg),
+                                "Patch" => Token::DecPatch(arg),
+                                "Injectable" => Token::DecInjectable,
+                                "Module" => Token::DecModule,
+                                "Body" => Token::DecBody,
+                                "Param" => Token::DecParam(arg),
+                                "Query" => Token::DecQuery(arg),
+                                "Guard" => Token::DecGuard(arg),
+                                "Middleware" => Token::DecMiddleware(arg),
+                                _ => Token::At, // shouldn't happen
+                            }
+                        }
+                        _ => {
+                            // Unknown @ identifier - this is a builtin call like @sleep(1)
+                            // Push Token::At, then push identifier, let parser handle the rest
+                            tokens.push(Token::At);
+                            Token::Identifier(attr)
+                        }
                     }
                 }
                 

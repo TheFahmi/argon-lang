@@ -9,7 +9,7 @@ use crate::gc::GarbageCollector;
 use crate::threading::{ThreadManager, ThreadValue};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::{Read, Write, BufRead};
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::net::{TcpListener, TcpStream};
@@ -515,6 +515,72 @@ impl Interpreter {
                      }
                 }
                 return Ok(Value::Int(-1));
+            }
+            "tcp_connect" | "argon_tcp_connect" => {
+                // Connect to remote host:port
+                // Args: host (string), port (int)
+                if args.len() >= 2 {
+                    if let (Value::String(host), Value::Int(port)) = (&args[0], &args[1]) {
+                        let addr = format!("{}:{}", host, port);
+                        match TcpStream::connect(&addr) {
+                            Ok(stream) => {
+                                // Set read timeout to avoid blocking forever
+                                let _ = stream.set_read_timeout(Some(std::time::Duration::from_secs(5)));
+                                let id = self.next_sock_id;
+                                self.next_sock_id += 1;
+                                self.sockets.insert(id, stream);
+                                return Ok(Value::Int(id));
+                            }
+                            Err(e) => {
+                                eprintln!("[tcp_connect] Failed to connect to {}: {}", addr, e);
+                                return Ok(Value::Int(-1));
+                            }
+                        }
+                    }
+                }
+                return Ok(Value::Int(-1));
+            }
+            "tcp_read_line" | "argon_socket_readline" => {
+                // Read until newline
+                if let Some(Value::Int(id)) = args.first() {
+                    if let Some(stream) = self.sockets.get_mut(id) {
+                        let mut reader = std::io::BufReader::new(stream);
+                        let mut line = String::new();
+                        if reader.read_line(&mut line).is_ok() {
+                            return Ok(Value::String(line.trim_end().to_string()));
+                        }
+                    }
+                }
+                return Ok(Value::String("".to_string()));
+            }
+            "tcp_write" | "argon_tcp_write" => {
+                // Write string with newline
+                if args.len() >= 2 {
+                    if let (Value::Int(id), Value::String(s)) = (&args[0], &args[1]) {
+                        if let Some(stream) = self.sockets.get_mut(id) {
+                            let data = format!("{}\r\n", s);
+                            if stream.write_all(data.as_bytes()).is_ok() {
+                                let _ = stream.flush();
+                                return Ok(Value::Bool(true));
+                            }
+                        }
+                    }
+                }
+                return Ok(Value::Bool(false));
+            }
+            "tcp_read_bytes" | "argon_socket_read_bytes" => {
+                // Read exact number of bytes
+                if args.len() >= 2 {
+                    if let (Value::Int(id), Value::Int(count)) = (&args[0], &args[1]) {
+                        if let Some(stream) = self.sockets.get_mut(id) {
+                            let mut buf = vec![0u8; *count as usize];
+                            if stream.read_exact(&mut buf).is_ok() {
+                                return Ok(Value::String(String::from_utf8_lossy(&buf).to_string()));
+                            }
+                        }
+                    }
+                }
+                return Ok(Value::String("".to_string()));
             }
             "argon_accept" => {
                 if let Some(Value::Int(id)) = args.first() {
