@@ -1,0 +1,353 @@
+// ============================================
+// ARGON MYSQL CLIENT (Native Implementation)
+// MySQL Wire Protocol
+// ============================================
+
+let MYSQL_VERSION = "1.0.0";
+
+// Connection struct
+struct MySqlConnection {
+    socket: int,
+    connected: bool,
+    host: string,
+    port: int,
+    user: string,
+    database: string,
+    server_version: string,
+    capabilities: int
+}
+
+// Query result
+struct MySqlResult {
+    success: bool,
+    rows: any,
+    columns: any,
+    affected: int,
+    error: string
+}
+
+// ============================================
+// BYTE UTILITIES
+// ============================================
+
+fn int32_to_bytes_le(n) {
+    // Little-endian for MySQL
+    let bytes = [];
+    push(bytes, n % 256);
+    push(bytes, (n / 256) % 256);
+    push(bytes, (n / 65536) % 256);
+    push(bytes, (n / 16777216) % 256);
+    return bytes;
+}
+
+fn int24_to_bytes_le(n) {
+    let bytes = [];
+    push(bytes, n % 256);
+    push(bytes, (n / 256) % 256);
+    push(bytes, (n / 65536) % 256);
+    return bytes;
+}
+
+fn bytes_to_int32_le(bytes, offset) {
+    let b0 = bytes[offset];
+    let b1 = bytes[offset + 1];
+    let b2 = bytes[offset + 2];
+    let b3 = bytes[offset + 3];
+    return b0 + b1 * 256 + b2 * 65536 + b3 * 16777216;
+}
+
+fn bytes_to_int24_le(bytes, offset) {
+    return bytes[offset] + bytes[offset + 1] * 256 + bytes[offset + 2] * 65536;
+}
+
+fn bytes_to_int16_le(bytes, offset) {
+    return bytes[offset] + bytes[offset + 1] * 256;
+}
+
+fn append_bytes(dest, src) {
+    let i = 0;
+    while (i < len(src)) {
+        push(dest, src[i]);
+        i = i + 1;
+    }
+}
+
+fn append_string(dest, s) {
+    let bytes = @string_to_bytes(s);
+    append_bytes(dest, bytes);
+}
+
+fn append_null_string(dest, s) {
+    append_string(dest, s);
+    push(dest, 0);
+}
+
+fn read_null_string(bytes, offset) {
+    let result = [];
+    let i = offset;
+    while (i < len(bytes) && bytes[i] != 0) {
+        push(result, bytes[i]);
+        i = i + 1;
+    }
+    return @bytes_to_string(result);
+}
+
+fn read_length_encoded_string(bytes, offset) {
+    let length = bytes[offset];
+    let result = [];
+    let i = 0;
+    while (i < length && (offset + 1 + i) < len(bytes)) {
+        push(result, bytes[offset + 1 + i]);
+        i = i + 1;
+    }
+    return @bytes_to_string(result);
+}
+
+// ============================================
+// CONNECTION
+// ============================================
+
+fn mysql_connect(host, port, user, password, database) {
+    print("[MySQL] Connecting to " + host + ":" + port + "...");
+    
+    let socket = @tcp_connect(host, port);
+    if (socket < 0) {
+        print("[MySQL] Failed to connect!");
+        return null;
+    }
+    
+    print("[MySQL] TCP connected, reading handshake...");
+    
+    let conn = MySqlConnection {
+        socket: socket,
+        connected: false,
+        host: host,
+        port: port,
+        user: user,
+        database: database,
+        server_version: "",
+        capabilities: 0
+    };
+    
+    // Read initial handshake packet
+    if (!read_handshake(conn)) {
+        print("[MySQL] Failed to read handshake");
+        @argon_socket_close(socket);
+        return null;
+    }
+    
+    // Send authentication response
+    if (!send_auth_response(conn, user, password, database)) {
+        print("[MySQL] Authentication failed");
+        @argon_socket_close(socket);
+        return null;
+    }
+    
+    conn.connected = true;
+    print("[MySQL] Connected successfully to " + conn.server_version);
+    
+    return conn;
+}
+
+fn read_handshake(conn) {
+    // Read packet header: 3 bytes length + 1 byte sequence
+    let header = @tcp_read_raw(conn.socket, 4);
+    if (len(header) < 4) {
+        print("[MySQL] Failed to read packet header");
+        return false;
+    }
+    
+    let packet_len = bytes_to_int24_le(header, 0);
+    let seq = header[3];
+    
+    // Read packet body
+    let body = @tcp_read_raw(conn.socket, packet_len);
+    if (len(body) < packet_len) {
+        print("[MySQL] Failed to read handshake packet");
+        return false;
+    }
+    
+    // Parse handshake v10
+    let protocol_version = body[0];
+    if (protocol_version != 10) {
+        print("[MySQL] Unsupported protocol version: " + protocol_version);
+        return false;
+    }
+    
+    // Read server version (null-terminated)
+    conn.server_version = read_null_string(body, 1);
+    print("[MySQL] Server version: " + conn.server_version);
+    
+    return true;
+}
+
+fn send_auth_response(conn, user, password, database) {
+    // Build HandshakeResponse41 packet
+    // For simplicity, using mysql_native_password without actual hashing
+    // This works when MySQL is configured with mysql_native_password
+    
+    let packet = [];
+    
+    // Client capabilities (simplified)
+    // CLIENT_PROTOCOL_41 | CLIENT_CONNECT_WITH_DB | CLIENT_SECURE_CONNECTION
+    let caps = 524805;
+    append_bytes(packet, int32_to_bytes_le(caps));
+    
+    // Max packet size
+    append_bytes(packet, int32_to_bytes_le(16777215));
+    
+    // Character set (utf8mb4 = 255)
+    push(packet, 255);
+    
+    // Reserved 23 bytes
+    let i = 0;
+    while (i < 23) {
+        push(packet, 0);
+        i = i + 1;
+    }
+    
+    // Username (null-terminated)
+    append_null_string(packet, user);
+    
+    // Auth response (empty for now - requires proper hashing)
+    push(packet, 0);  // Zero-length auth response
+    
+    // Database (null-terminated)
+    append_null_string(packet, database);
+    
+    // Auth plugin name
+    append_null_string(packet, "mysql_native_password");
+    
+    // Build final packet with header
+    let final_packet = [];
+    append_bytes(final_packet, int24_to_bytes_le(len(packet)));
+    push(final_packet, 1);  // Sequence number
+    append_bytes(final_packet, packet);
+    
+    // Send packet
+    @tcp_write_raw(conn.socket, final_packet);
+    
+    // Read response
+    let resp_header = @tcp_read_raw(conn.socket, 4);
+    if (len(resp_header) < 4) {
+        print("[MySQL] No auth response");
+        return false;
+    }
+    
+    let resp_len = bytes_to_int24_le(resp_header, 0);
+    let resp_body = @tcp_read_raw(conn.socket, resp_len);
+    
+    if (len(resp_body) > 0) {
+        let status = resp_body[0];
+        if (status == 0) {
+            print("[MySQL] Authentication OK");
+            return true;
+        } else if (status == 255) {
+            print("[MySQL] Auth error from server");
+            return false;
+        } else if (status == 254) {
+            print("[MySQL] Auth switch requested (not supported)");
+            return false;
+        }
+    }
+    
+    return false;
+}
+
+// ============================================
+// QUERY EXECUTION
+// ============================================
+
+fn mysql_query(conn, sql) {
+    if (!conn.connected) {
+        return MySqlResult { success: false, rows: [], columns: [], affected: 0, error: "Not connected" };
+    }
+    
+    print("[MySQL] Executing: " + sql);
+    
+    // Build COM_QUERY packet
+    let packet = [];
+    push(packet, 3);  // COM_QUERY command
+    append_string(packet, sql);
+    
+    // Add header
+    let final_packet = [];
+    append_bytes(final_packet, int24_to_bytes_le(len(packet)));
+    push(final_packet, 0);  // Sequence 0
+    append_bytes(final_packet, packet);
+    
+    // Send
+    @tcp_write_raw(conn.socket, final_packet);
+    
+    // Read response
+    let result = MySqlResult {
+        success: false,
+        rows: [],
+        columns: [],
+        affected: 0,
+        error: ""
+    };
+    
+    let resp_header = @tcp_read_raw(conn.socket, 4);
+    if (len(resp_header) < 4) {
+        result.error = "No response";
+        return result;
+    }
+    
+    let resp_len = bytes_to_int24_le(resp_header, 0);
+    let resp_body = @tcp_read_raw(conn.socket, resp_len);
+    
+    if (len(resp_body) > 0) {
+        let status = resp_body[0];
+        if (status == 0) {
+            // OK packet
+            result.success = true;
+            if (len(resp_body) > 1) {
+                result.affected = resp_body[1];
+            }
+            print("[MySQL] OK: " + result.affected + " rows affected");
+        } else if (status == 255) {
+            // Error packet
+            result.error = "Query error";
+            print("[MySQL] Query error");
+        } else {
+            // Result set
+            let num_cols = status;
+            result.columns = num_cols;
+            print("[MySQL] Result set with " + num_cols + " columns");
+            result.success = true;
+            
+            // Skip column definitions and read rows (simplified)
+            // Full implementation would parse all packets
+        }
+    }
+    
+    return result;
+}
+
+// ============================================
+// DISCONNECT
+// ============================================
+
+fn mysql_close(conn) {
+    if (conn.connected) {
+        // Send COM_QUIT
+        let packet = [];
+        push(packet, 1);  // COM_QUIT
+        
+        let final_packet = [];
+        append_bytes(final_packet, int24_to_bytes_le(1));
+        push(final_packet, 0);
+        append_bytes(final_packet, packet);
+        
+        @tcp_write_raw(conn.socket, final_packet);
+        @argon_socket_close(conn.socket);
+        conn.connected = false;
+        print("[MySQL] Connection closed");
+    }
+}
+
+fn mysql_exec(conn, sql) {
+    let result = mysql_query(conn, sql);
+    return result.success;
+}

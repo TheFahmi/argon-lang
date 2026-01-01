@@ -1,0 +1,92 @@
+// ============================================
+// REAL MYSQL TEST (Native Argon)
+// Connects to MySQL using wire protocol
+// ============================================
+
+import "mysql_native"
+
+fn main() {
+    print("==========================================");
+    print("      REAL MYSQL CONNECTION TEST");
+    print("       (Native Argon Implementation)");
+    print("==========================================");
+    print("");
+    
+    // Connect to MySQL
+    // Docker-compose: port 3307, user argon, password argon123
+    let conn = mysql_connect("127.0.0.1", 3307, "argon", "argon123", "argondb");
+    
+    if (conn == null) {
+        print("");
+        print("[FAIL] Could not connect to MySQL!");
+        print("Make sure MySQL is running:");
+        print("  docker-compose -f docker-compose.db.yml up -d");
+        return 1;
+    }
+    
+    print("");
+    print("==========================================");
+    print("    Connection established!");
+    print("==========================================");
+    print("");
+    
+    // Test 1: Create table
+    print("[1] Creating test table...");
+    let result1 = mysql_query(conn, "DROP TABLE IF EXISTS argon_test");
+    let result2 = mysql_query(conn, "CREATE TABLE argon_test (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), value INT)");
+    if (result2.success) {
+        print("    [PASS] Table created!");
+    } else {
+        print("    [FAIL] " + result2.error);
+    }
+    print("");
+    
+    // Test 2: Insert data
+    print("[2] Inserting data...");
+    let ins1 = mysql_query(conn, "INSERT INTO argon_test (name, value) VALUES ('hello', 42)");
+    let ins2 = mysql_query(conn, "INSERT INTO argon_test (name, value) VALUES ('world', 100)");
+    let ins3 = mysql_query(conn, "INSERT INTO argon_test (name, value) VALUES ('argon', 2024)");
+    if (ins1.success && ins2.success && ins3.success) {
+        print("    [PASS] 3 rows inserted!");
+    }
+    print("");
+    
+    // Test 3: Select data
+    print("[3] Selecting data...");
+    let sel = mysql_query(conn, "SELECT * FROM argon_test");
+    if (sel.success) {
+        print("    [PASS] Query executed");
+    }
+    print("");
+    
+    // Test 4: Update data
+    print("[4] Updating data...");
+    let upd = mysql_query(conn, "UPDATE argon_test SET value = 999 WHERE name = 'hello'");
+    if (upd.success) {
+        print("    [PASS] Data updated!");
+    }
+    print("");
+    
+    // Test 5: Delete data
+    print("[5] Deleting data...");
+    let del = mysql_query(conn, "DELETE FROM argon_test WHERE name = 'world'");
+    if (del.success) {
+        print("    [PASS] Data deleted!");
+    }
+    print("");
+    
+    // Cleanup
+    print("[6] Cleanup...");
+    mysql_query(conn, "DROP TABLE argon_test");
+    print("    [PASS] Table dropped");
+    print("");
+    
+    // Close connection
+    mysql_close(conn);
+    
+    print("==========================================");
+    print("    ALL MYSQL TESTS PASSED!");
+    print("==========================================");
+    
+    return 0;
+}

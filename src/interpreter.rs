@@ -594,6 +594,93 @@ impl Interpreter {
                 }
                 return Ok(Value::String("".to_string()));
             }
+            "tcp_write_raw" | "socket_write_raw" => {
+                // Write raw bytes (from array of ints)
+                if args.len() >= 2 {
+                    if let (Value::Int(id), Value::Array(arr)) = (&args[0], &args[1]) {
+                        if let Some(stream) = self.sockets.get_mut(id) {
+                            let bytes: Vec<u8> = arr.borrow().iter().filter_map(|v| {
+                                if let Value::Int(n) = v { Some(*n as u8) } else { None }
+                            }).collect();
+                            if stream.write_all(&bytes).is_ok() {
+                                let _ = stream.flush();
+                                return Ok(Value::Bool(true));
+                            }
+                        }
+                    }
+                }
+                return Ok(Value::Bool(false));
+            }
+            "tcp_read_raw" | "socket_read_raw" => {
+                // Read bytes as array of ints
+                if args.len() >= 2 {
+                    if let (Value::Int(id), Value::Int(count)) = (&args[0], &args[1]) {
+                        if let Some(stream) = self.sockets.get_mut(id) {
+                            let mut buf = vec![0u8; *count as usize];
+                            if stream.read_exact(&mut buf).is_ok() {
+                                let arr: Vec<Value> = buf.iter().map(|b| Value::Int(*b as i64)).collect();
+                                return Ok(Value::Array(Rc::new(RefCell::new(arr))));
+                            }
+                        }
+                    }
+                }
+                return Ok(Value::Array(Rc::new(RefCell::new(Vec::new()))));
+            }
+            "tcp_read_available" | "socket_read_available" => {
+                // Read all available bytes (non-blocking style with timeout)
+                if let Some(Value::Int(id)) = args.first() {
+                    if let Some(stream) = self.sockets.get_mut(id) {
+                        let mut buf = vec![0u8; 4096];
+                        // Set short timeout for this read
+                        let _ = stream.set_read_timeout(Some(std::time::Duration::from_millis(100)));
+                        match stream.read(&mut buf) {
+                            Ok(n) if n > 0 => {
+                                let arr: Vec<Value> = buf[..n].iter().map(|b| Value::Int(*b as i64)).collect();
+                                return Ok(Value::Array(Rc::new(RefCell::new(arr))));
+                            }
+                            _ => {}
+                        }
+                        // Reset timeout
+                        let _ = stream.set_read_timeout(Some(std::time::Duration::from_secs(5)));
+                    }
+                }
+                return Ok(Value::Array(Rc::new(RefCell::new(Vec::new()))));
+            }
+            "chr" => {
+                // Convert int to character
+                if let Some(Value::Int(n)) = args.first() {
+                    let c = (*n as u8) as char;
+                    return Ok(Value::String(c.to_string()));
+                }
+                return Ok(Value::String("".to_string()));
+            }
+            "ord" => {
+                // Convert character to int
+                if let Some(Value::String(s)) = args.first() {
+                    if let Some(c) = s.chars().next() {
+                        return Ok(Value::Int(c as i64));
+                    }
+                }
+                return Ok(Value::Int(0));
+            }
+            "bytes_to_string" => {
+                // Convert byte array to string
+                if let Some(Value::Array(arr)) = args.first() {
+                    let bytes: Vec<u8> = arr.borrow().iter().filter_map(|v| {
+                        if let Value::Int(n) = v { Some(*n as u8) } else { None }
+                    }).collect();
+                    return Ok(Value::String(String::from_utf8_lossy(&bytes).to_string()));
+                }
+                return Ok(Value::String("".to_string()));
+            }
+            "string_to_bytes" => {
+                // Convert string to byte array
+                if let Some(Value::String(s)) = args.first() {
+                    let arr: Vec<Value> = s.bytes().map(|b| Value::Int(b as i64)).collect();
+                    return Ok(Value::Array(Rc::new(RefCell::new(arr))));
+                }
+                return Ok(Value::Array(Rc::new(RefCell::new(Vec::new()))));
+            }
             "argon_accept" => {
                 if let Some(Value::Int(id)) = args.first() {
                     if let Some(listener) = self.listeners.get(id) {

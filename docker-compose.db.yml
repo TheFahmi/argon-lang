@@ -8,6 +8,7 @@ services:
       POSTGRES_USER: argon
       POSTGRES_PASSWORD: argon123
       POSTGRES_DB: argondb
+      POSTGRES_HOST_AUTH_METHOD: trust
     ports:
       - "5432:5432"
     volumes:
@@ -19,7 +20,7 @@ services:
       retries: 5
 
   mysql:
-    image: mysql:8.0
+    image: mariadb:10.11
     container_name: argon-mysql
     environment:
       MYSQL_ROOT_PASSWORD: root123
@@ -31,7 +32,7 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-uroot", "-proot123"]
       interval: 5s
       timeout: 5s
       retries: 5
