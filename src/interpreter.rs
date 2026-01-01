@@ -541,14 +541,26 @@ impl Interpreter {
                 return Ok(Value::Int(-1));
             }
             "tcp_read_line" | "argon_socket_readline" => {
-                // Read until newline
+                // Read until newline (byte by byte to avoid buffer issues)
                 if let Some(Value::Int(id)) = args.first() {
                     if let Some(stream) = self.sockets.get_mut(id) {
-                        let mut reader = std::io::BufReader::new(stream);
-                        let mut line = String::new();
-                        if reader.read_line(&mut line).is_ok() {
-                            return Ok(Value::String(line.trim_end().to_string()));
+                        let mut line = Vec::new();
+                        let mut buf = [0u8; 1];
+                        loop {
+                            match stream.read(&mut buf) {
+                                Ok(0) => break, // EOF
+                                Ok(_) => {
+                                    if buf[0] == b'\n' {
+                                        break;
+                                    }
+                                    if buf[0] != b'\r' {
+                                        line.push(buf[0]);
+                                    }
+                                }
+                                Err(_) => break,
+                            }
                         }
+                        return Ok(Value::String(String::from_utf8_lossy(&line).to_string()));
                     }
                 }
                 return Ok(Value::String("".to_string()));
