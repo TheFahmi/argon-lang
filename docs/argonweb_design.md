@@ -1,6 +1,6 @@
 # ArgonWeb Framework
 
-**Version:** v3.1.0  
+**Version:** v3.2.1  
 **Status:** ✅ Implemented
 
 ## Overview
