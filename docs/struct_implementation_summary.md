@@ -54,15 +54,15 @@ Test 4: Rectangle Area
 
 ### Parser Changes
 - Added `TOK_STRUCT` (56) token
-- Added `parse_struct_def()` function
-- Field access parsing in `parse_primary()`
+- Added `parseStructDef()` function
+- Field access parsing in `parsePrimary()`
 - Struct instantiation parsing (`Name { field: value }`)
 
 ### Code Generation
 Structs are implemented as **arrays** at runtime:
 - `Point { x: 10, y: 20 }` → `[10, 20]`
-- `p.x` → `argon_get(p, 0)`
-- `p.y` → `argon_get(p, 1)`
+- `p.x` → `argonGet(p, 0)`
+- `p.y` → `argonGet(p, 1)`
 
 ### Key Workarounds (Stage 1 Compatibility)
 

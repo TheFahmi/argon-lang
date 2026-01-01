@@ -96,7 +96,7 @@ pub enum TopLevel {
 Compiles Argon AST directly to LLVM IR.
 
 ```rust
-pub fn compile_to_llvm(source: &str) -> Result<String, String>
+pub fn compileToLlvm(source: &str) -> Result<String, String>
 ```
 
 ### 4. Interpreter (`src/interpreter.rs`)
@@ -153,24 +153,24 @@ let p = Point { x: 10, y: 20 };
 ### Traits & Generics
 ```javascript
 trait Printable {
-    fn to_string(self) -> string;
+    fn toString(self) -> string;
 }
 
 impl Printable for Point {
-    fn to_string(self) -> string {
+    fn toString(self) -> string {
         return "Point(" + self.x + ", " + self.y + ")";
     }
 }
 
 fn print_it<T: Printable>(obj: T) {
-    print(obj.to_string());
+    print(obj.toString());
 }
 ```
 
 ### Async/Await
 ```javascript
-async fn fetch_data() -> string {
-    let response = await http_get("https://api.example.com");
+async fn fetchData() -> string {
+    let response = await httpGet("https://api.example.com");
     return response;
 }
 ```
@@ -191,8 +191,8 @@ struct UsersController {
 
 impl UsersController {
     @Get("/:id")
-    fn get_user(self, id: i32) -> User {
-        return self.service.find_one(id);
+    fn getUser(self, id: i32) -> User {
+        return self.service.findOne(id);
     }
 }
 ```

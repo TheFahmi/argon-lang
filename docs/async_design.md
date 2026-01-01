@@ -12,8 +12,8 @@ Add asynchronous programming support to Argon with:
 
 ### Async Function Declaration
 ```argon
-async fn fetch_data(url: string) {
-    let response = await http_get(url);
+async fn fetchData(url: string) {
+    let response = await httpGet(url);
     return response;
 }
 ```
@@ -21,7 +21,7 @@ async fn fetch_data(url: string) {
 ### Await Expression
 ```argon
 fn main() {
-    let data = await fetch_data("http://example.com");
+    let data = await fetchData("http://example.com");
     print(data);
 }
 ```
@@ -30,8 +30,8 @@ fn main() {
 ```argon
 async fn main() {
     // Start tasks concurrently
-    let task1 = spawn fetch_data("url1");
-    let task2 = spawn fetch_data("url2");
+    let task1 = spawn fetchData("url1");
+    let task2 = spawn fetchData("url2");
     
     // Wait for all
     let r1 = await task1;
@@ -50,8 +50,8 @@ async fn main() {
 ### Phase 2: Runtime Support
 1. Add `Future` struct in runtime
 2. Implement simple event loop
-3. Add `argon_spawn()` - Create new async task
-4. Add `argon_await()` - Wait for task completion
+3. Add `argonSpawn()` - Create new async task
+4. Add `argonAwait()` - Wait for task completion
 
 ### Phase 3: Code Generation
 1. Transform async functions to state machines
@@ -74,16 +74,16 @@ async fn main() {
 
 ```c
 // Create a new async task
-i64 argon_async_spawn(i64 fn_ptr);
+i64 argonAsyncSpawn(i64 fn_ptr);
 
 // Wait for task completion
-i64 argon_async_await(i64 task_id);
+i64 argonAsyncAwait(i64 task_id);
 
 // Check if task is ready
-i64 argon_async_poll(i64 task_id);
+i64 argonAsyncPoll(i64 task_id);
 
 // Simple event loop tick
-void argon_async_tick();
+void argonAsyncTick();
 ```
 
 ## Simple Implementation (v1)
@@ -100,14 +100,14 @@ This is simpler but still provides useful async semantics.
 ```argon
 import "stdlib/async"
 
-async fn slow_operation() {
+async fn slowOperation() {
     sleep(1000);  // 1 second
     return 42;
 }
 
 async fn main() {
     print("Starting...");
-    let result = await slow_operation();
+    let result = await slowOperation();
     print("Result: " + result);
 }
 ```

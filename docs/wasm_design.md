@@ -32,12 +32,12 @@ argonc --target wasm32-wasi hello.ar -o hello.wasm
 ### Export Functions to JavaScript
 ```argon
 // Export function for JavaScript to call
-@wasm_export("add")
+@wasmExport("add")
 fn add(a: i32, b: i32) -> i32 {
     return a + b;
 }
 
-@wasm_export("greet")
+@wasmExport("greet")
 fn greet(name: string) {
     print("Hello, " + name + "!");
 }
@@ -46,16 +46,16 @@ fn greet(name: string) {
 ### Import Functions from JavaScript
 ```argon
 // Import JavaScript console.log
-@wasm_import("console", "log")
-extern fn js_log(msg: string);
+@wasmImport("console", "log")
+extern fn jsLog(msg: string);
 
 // Import custom JS function
-@wasm_import("env", "get_time")
-extern fn get_time() -> i64;
+@wasmImport("env", "get_time")
+extern fn getTime() -> i64;
 
 fn main() {
-    js_log("Hello from Argon WASM!");
-    let t = get_time();
+    jsLog("Hello from Argon WASM!");
+    let t = getTime();
     print("Time: " + t);
 }
 ```
@@ -63,14 +63,14 @@ fn main() {
 ### Memory Management
 ```argon
 // Allocate WASM linear memory
-let buffer = wasm_alloc(1024);  // 1KB
+let buffer = wasmAlloc(1024);  // 1KB
 
 // Read/Write memory
-wasm_store_i32(buffer, 0, 42);
-let val = wasm_load_i32(buffer, 0);
+wasmStoreI32(buffer, 0, 42);
+let val = wasmLoadI32(buffer, 0);
 
 // Free memory
-wasm_free(buffer);
+wasmFree(buffer);
 ```
 
 ## Implementation Strategy
@@ -170,10 +170,10 @@ AST_ATTRIBUTE = 153    // [153, attr_name, attr_args]
   (memory (export "memory") 1)
   
   ;; Imports from JavaScript
-  (import "console" "log" (func $js_log (param i32 i32)))
+  (import "console" "log" (func $jsLog(param i32 i32)))
   
   ;; Argon runtime functions
-  (func $argon_alloc (param $size i32) (result i32)
+  (func $argonAlloc(param $size i32) (result i32)
     ;; Simple bump allocator
     ...
   )
@@ -270,9 +270,8 @@ local.set $result
 
 ### Print Implementation
 ```wat
-;; Import WASI fd_write
-(import "wasi_snapshot_preview1" "fd_write" 
-  (func $fd_write (param i32 i32 i32 i32) (result i32)))
+;; Import WASI fdWrite(import "wasi_snapshot_preview1" "fd_write" 
+  (func $fdWrite(param i32 i32 i32 i32) (result i32)))
 
 ;; Print string
 (func $print (param $ptr i32) (param $len i32)
@@ -284,7 +283,7 @@ local.set $result
   local.get $len       ;; string length
   i32.store
   
-  ;; fd_write(stdout=1, iovec_ptr=0, iovec_len=1, nwritten_ptr=8)
+  ;; fdWrite(stdout=1, iovec_ptr=0, iovec_len=1, nwritten_ptr=8)
   i32.const 1
   i32.const 0
   i32.const 1
@@ -471,12 +470,12 @@ argonc --help                          # Show help
 // examples/wasm_example.ar
 // Compile: argonc --target wasm32 wasm_example.ar -o demo.wasm
 
-@wasm_export("add")
+@wasmExport("add")
 fn add(a: i32, b: i32) -> i32 {
     return a + b;
 }
 
-@wasm_export("factorial")
+@wasmExport("factorial")
 fn factorial(n: i32) -> i32 {
     if (n <= 1) {
         return 1;
@@ -484,7 +483,7 @@ fn factorial(n: i32) -> i32 {
     return n * factorial(n - 1);
 }
 
-@wasm_export("main")
+@wasmExport("main")
 fn main() {
     print("Hello from Argon WASM!");
     print("5 + 3 = " + add(5, 3));

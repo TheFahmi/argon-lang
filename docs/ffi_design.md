@@ -133,7 +133,7 @@ FFI functions are inherently unsafe:
 
 ```argon
 // Recommended: wrap in safe interface
-fn safe_malloc(size: i64) -> Option<*void> {
+fn safeMalloc(size: i64) -> Option<*void> {
     let ptr = malloc(size as usize);
     if (ptr == null) {
         return None;

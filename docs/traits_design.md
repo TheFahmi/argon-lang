@@ -10,7 +10,7 @@ Traits define shared behavior (interfaces) that types can implement.
 
 ```argon
 trait Printable {
-    fn to_string(self) -> string;
+    fn toString(self) -> string;
 }
 
 trait Comparable {
@@ -20,7 +20,7 @@ trait Comparable {
 
 trait Iterator<T> {
     fn next(self) -> Option<T>;
-    fn has_next(self) -> bool;
+    fn hasNext(self) -> bool;
 }
 ```
 
@@ -33,7 +33,7 @@ struct Point {
 }
 
 impl Printable for Point {
-    fn to_string(self) -> string {
+    fn toString(self) -> string {
         return "(" + self.x + ", " + self.y + ")";
     }
 }
@@ -56,12 +56,12 @@ impl Comparable for Point {
 ```argon
 // Function that requires Printable
 fn print_it<T: Printable>(item: T) {
-    print(item.to_string());
+    print(item.toString());
 }
 
 // Multiple bounds
 fn compare_and_print<T: Comparable + Printable>(a: T, b: T) {
-    print("Comparing: " + a.to_string() + " vs " + b.to_string());
+    print("Comparing: " + a.toString() + " vs " + b.toString());
     let result = a.compare(b);
     if (result < 0) {
         print("First is smaller");
@@ -141,8 +141,8 @@ Traits are implemented via monomorphization (like generics):
 ```argon
 // Source
 fn print_it<T: Printable>(item: T) { ... }
-print_it(point);   // Point
-print_it(vec);     // Vec2
+printIt(point);   // Point
+printIt(vec);     // Vec2
 
 // Generated
 fn print_it_Point(item: Point) { ... }

@@ -219,37 +219,37 @@ fn main() {
 
 ```javascript
 trait Printable {
-    fn to_string(self) -> string;
+    fn toString(self) -> string;
 }
 
 struct Point { x: int, y: int }
 
 impl Printable for Point {
-    fn to_string(self) -> string {
+    fn toString(self) -> string {
         return "Point(" + self.x + ", " + self.y + ")";
     }
 }
 
-fn print_any<T: Printable>(item: T) {
-    print(item.to_string());
+fn printAny<T: Printable>(item: T) {
+    print(item.toString());
 }
 
 fn main() {
     let p = Point { x: 5, y: 10 };
-    print_any(p);  // Point(5, 10)
+    printAny(p);  // Point(5, 10)
 }
 ```
 
 ### Async/Await
 
 ```javascript
-async fn fetch_data(url: string) -> string {
-    let response = await http_get(url);
+async fn fetchData(url: string) -> string {
+    let response = await httpGet(url);
     return response.body;
 }
 
 async fn main() {
-    let data = await fetch_data("https://api.example.com/data");
+    let data = await fetchData("https://api.example.com/data");
     print(data);
 }
 ```
@@ -257,11 +257,11 @@ async fn main() {
 ### Error Handling with Defer
 
 ```javascript
-fn read_file(path: string) -> string {
+fn readFile(path: string) -> string {
     let file = open(path);
     defer close(file);  // Always executed when scope ends
     
-    let content = file.read_all();
+    let content = file.readAll();
     return content;
 }
 ```
@@ -345,14 +345,14 @@ fn main() {
 ```javascript
 // PostgreSQL example
 import "postgres_native"
-let conn = pg_connect("localhost", 5432, "user", "mydb");
-pg_query(conn, "SELECT * FROM users");
-pg_close(conn);
+let conn = pgConnect("localhost", 5432, "user", "mydb");
+pgQuery(conn, "SELECT * FROM users");
+pgClose(conn);
 
 // Redis example
-let redis = @tcp_connect("localhost", 6379);
-@tcp_write(redis, "SET key value");
-@tcp_read_line(redis);  // +OK
+let redis = @tcpConnect("localhost", 6379);
+@tcpWrite(redis, "SET key value");
+@tcpReadLine(redis);  // +OK
 ```
 
 ### Built-in Functions

@@ -14,7 +14,7 @@ A library written in Argon that provides:
 ### 2. Features Usage
 - **Macros**: `router.get("/", handler)` or even `#[route("/")]` (if attributes supported, otherwise macro `route!(GET, "/", handler)`).
 - **Traits**: `Handler` trait for controllers.
-- **Async**: `async fn handle_connection(conn)` for concurrency.
+- **Async**: `async fn handleConnection(conn)` for concurrency.
 - **Defer**: Closing sockets/files.
 - **Structs**: `Request`, `Response` models.
 
@@ -25,7 +25,7 @@ import "http"
 import "json"
 
 macro route(method, path, handler) {
-    server.add_route($method, $path, $handler);
+    server.addRoute($method, $path, $handler);
 }
 
 async fn main() {
@@ -40,11 +40,11 @@ async fn main() {
     await server.listen();
 }
 
-fn home_handler(req) {
+fn homeHandler(req) {
     return http.Response::html("<h1>Welcome to ArgonWeb</h1>");
 }
 
-fn list_todos(req) {
+fn listTodos(req) {
     let todos = [
         { "id": 1, "task": "Build Compiler" },
         { "id": 2, "task": "Make Demo" }

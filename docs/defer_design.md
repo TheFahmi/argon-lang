@@ -8,7 +8,7 @@ Full RAII (Destructors) is difficult to implement in the current Interpreter arc
 
 ## Syntax
 ```javascript
-fn process_file(path: string) {
+fn processFile(path: string) {
     let f = open(path);
     defer close(f); // Schedules execution for scope exit
     
@@ -40,7 +40,7 @@ struct Scope {
 
 **Execution Flow:**
 - When `defer expr` is encountered: Push `expr` to current scope's deferred list.
-- When `pop_scope()` is called (end of block, return, break):
+- When `popScope()` is called (end of block, return, break):
     - Iterate `deferred` list in **reverse order** (LIFO).
     - Execute each stmt/expr.
 

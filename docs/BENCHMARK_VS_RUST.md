@@ -45,7 +45,7 @@ Argon (Region/Bump allocation):
 ### Rust Code
 ```rust
 // Standard malloc/free via Box
-let mut points = Vec::with_capacity(1_000_000);
+let mut points = Vec::withCapacity(1_000_000);
 for i in 0..1_000_000 {
     points.push(Box::new(Point { ... }));
 }

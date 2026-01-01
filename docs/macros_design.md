@@ -7,7 +7,7 @@ Macros allow code generation and reduction of boilerplate. They enable Domain Sp
 We will use a simple parameter substitution syntax, similar to C preprocessor but operating on AST nodes.
 
 ```javascript
-macro log_error(msg) {
+macro logError(msg) {
     print("[ERROR] " + $msg);
     if (DEBUG) {
         print("Stack trace...");
@@ -15,7 +15,7 @@ macro log_error(msg) {
 }
 
 fn main() {
-    log_error("Something went wrong");
+    logError("Something went wrong");
 }
 ```
 

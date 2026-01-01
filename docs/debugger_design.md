@@ -36,7 +36,7 @@ Generate LLVM debug metadata that maps to Argon source:
 !0 = distinct !DICompileUnit(language: DW_LANG_C, file: !1, producer: "argonc v2.17.0")
 !1 = !DIFile(filename: "example.ar", directory: "/app")
 
-define i64 @my_function() !dbg !2 {
+define i64 @myFunction() !dbg !2 {
   ; ...
   call void @llvm.dbg.value(metadata i64 %x, metadata !3, metadata !DIExpression()), !dbg !4
 }

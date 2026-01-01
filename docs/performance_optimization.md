@@ -35,13 +35,13 @@ use rustc_hash::FxHashMap;
 
 ```rust
 // Pre-allocate scope with capacity
-fn push_scope_with_capacity(&mut self, cap: usize) {
-    self.stack.push(ScopeFrame::with_capacity(cap));
+fn pushScopeWithCapacity(&mut self, cap: usize) {
+    self.stack.push(ScopeFrame::withCapacity(cap));
 }
 
 // Fast path for pop_scope when no deferred statements
 #[inline]
-fn pop_scope(&mut self) -> Result<(), ControlFlow> {
+fn popScope(&mut self) -> Result<(), ControlFlow> {
     if let Some(scope) = self.stack.last() {
         if scope.deferred.is_empty() {
             self.stack.pop();
@@ -56,14 +56,14 @@ fn pop_scope(&mut self) -> Result<(), ControlFlow> {
 
 Added `#[inline]` to frequently called functions:
 
-- `get_var()` - Variable lookup
-- `set_var()` - Variable assignment
-- `declare_var()` - Variable declaration
-- `push_scope()` / `pop_scope()` - Scope management
-- `execute_function()` - Function execution
-- `exec_stmts()` - Statement execution
-- `eval_expr()` - Expression evaluation
-- `eval_binop()` - Binary operations
+- `getVar()` - Variable lookup
+- `setVar()` - Variable assignment
+- `declareVar()` - Variable declaration
+- `pushScope()` / `popScope()` - Scope management
+- `executeFunction()` - Function execution
+- `execStmts()` - Statement execution
+- `evalExpr()` - Expression evaluation
+- `evalBinop()` - Binary operations
 
 ### 1.4 Pre-allocated Stacks
 
@@ -71,8 +71,8 @@ Added `#[inline]` to frequently called functions:
 impl BytecodeVM {
     pub fn new() -> Self {
         BytecodeVM {
-            stack: Vec::with_capacity(4096),  // Pre-allocate
-            frames: Vec::with_capacity(256),
+            stack: Vec::withCapacity(4096),  // Pre-allocate
+            frames: Vec::withCapacity(256),
             // ...
         }
     }

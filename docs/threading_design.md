@@ -20,33 +20,33 @@ Argon provides **true OS-level parallelism** through its threading module. This 
 
 | Function | Description |
 |----------|-------------|
-| `thread_spawn(value, operation)` | Spawn a new OS thread with a computation |
-| `thread_join(worker_id)` | Wait for thread completion and get result |
-| `thread_is_done(worker_id)` | Check if thread has finished |
-| `thread_active_count()` | Get number of active threads |
+| `threadSpawn(value, operation)` | Spawn a new OS thread with a computation |
+| `threadJoin(worker_id)` | Wait for thread completion and get result |
+| `threadIsDone(worker_id)` | Check if thread has finished |
+| `threadActiveCount()` | Get number of active threads |
 
 ### Channel Communication
 
 | Function | Description |
 |----------|-------------|
-| `channel_new()` | Create a new unbuffered channel |
-| `channel_send(ch, value)` | Send value to channel (returns bool) |
-| `channel_recv(ch)` | Receive from channel (blocking) |
-| `channel_try_recv(ch)` | Receive without blocking (returns null if empty) |
-| `channel_recv_timeout(ch, ms)` | Receive with timeout in milliseconds |
-| `channel_close(ch)` | Close the channel |
+| `channelNew()` | Create a new unbuffered channel |
+| `channelSend(ch, value)` | Send value to channel (returns bool) |
+| `channelRecv(ch)` | Receive from channel (blocking) |
+| `channelTryRecv(ch)` | Receive without blocking (returns null if empty) |
+| `channelRecvTimeout(ch, ms)` | Receive with timeout in milliseconds |
+| `channelClose(ch)` | Close the channel |
 
 ## Supported Operations
 
-When spawning a thread with `thread_spawn(value, operation)`, the following operations are available:
+When spawning a thread with `threadSpawn(value, operation)`, the following operations are available:
 
 | Operation | Description | Example |
 |-----------|-------------|---------|
-| `"fib"` | Compute Fibonacci number | `thread_spawn(30, "fib")` |
-| `"factorial"` | Compute factorial | `thread_spawn(10, "factorial")` |
-| `"double"` | Multiply by 2 | `thread_spawn(21, "double")` |
-| `"square"` | Square the value | `thread_spawn(5, "square")` |
-| `"sleep"` | Sleep for N milliseconds | `thread_spawn(100, "sleep")` |
+| `"fib"` | Compute Fibonacci number | `threadSpawn(30, "fib")` |
+| `"factorial"` | Compute factorial | `threadSpawn(10, "factorial")` |
+| `"double"` | Multiply by 2 | `threadSpawn(21, "double")` |
+| `"square"` | Square the value | `threadSpawn(5, "square")` |
+| `"sleep"` | Sleep for N milliseconds | `threadSpawn(100, "sleep")` |
 
 ## Examples
 
@@ -55,16 +55,16 @@ When spawning a thread with `thread_spawn(value, operation)`, the following oper
 ```argon
 fn main() {
     // Spawn 4 parallel fibonacci computations
-    let t1 = thread_spawn(30, "fib");
-    let t2 = thread_spawn(31, "fib");
-    let t3 = thread_spawn(32, "fib");
-    let t4 = thread_spawn(33, "fib");
+    let t1 = threadSpawn(30, "fib");
+    let t2 = threadSpawn(31, "fib");
+    let t3 = threadSpawn(32, "fib");
+    let t4 = threadSpawn(33, "fib");
     
     // Wait for all results
-    let r1 = thread_join(t1);
-    let r2 = thread_join(t2);
-    let r3 = thread_join(t3);
-    let r4 = thread_join(t4);
+    let r1 = threadJoin(t1);
+    let r2 = threadJoin(t2);
+    let r3 = threadJoin(t3);
+    let r4 = threadJoin(t4);
     
     print("fib(30) = " + r1);  // 832040
     print("fib(31) = " + r2);  // 1346269
@@ -78,17 +78,17 @@ fn main() {
 ```argon
 fn main() {
     // Create channel
-    let ch = channel_new();
+    let ch = channelNew();
     
     // Send messages
-    channel_send(ch, 42);
-    channel_send(ch, 100);
-    channel_send(ch, 999);
+    channelSend(ch, 42);
+    channelSend(ch, 100);
+    channelSend(ch, 999);
     
     // Receive messages (FIFO order)
-    let v1 = channel_recv(ch);  // 42
-    let v2 = channel_recv(ch);  // 100
-    let v3 = channel_recv(ch);  // 999
+    let v1 = channelRecv(ch);  // 42
+    let v2 = channelRecv(ch);  // 100
+    let v3 = channelRecv(ch);  // 999
     
     print("Received: " + v1 + ", " + v2 + ", " + v3);
 }
@@ -98,19 +98,19 @@ fn main() {
 
 ```argon
 fn main() {
-    let ch = channel_new();
+    let ch = channelNew();
     
     // Try to receive from empty channel
-    let result = channel_try_recv(ch);
+    let result = channelTryRecv(ch);
     if (result == null) {
         print("Channel is empty");
     }
     
     // Send something
-    channel_send(ch, 777);
+    channelSend(ch, 777);
     
     // Now try_recv will succeed
-    let value = channel_try_recv(ch);
+    let value = channelTryRecv(ch);
     print("Got: " + value);  // 777
 }
 ```
@@ -119,10 +119,10 @@ fn main() {
 
 ```argon
 fn main() {
-    let ch = channel_new();
+    let ch = channelNew();
     
     // Wait up to 100ms for a message
-    let result = channel_recv_timeout(ch, 100);
+    let result = channelRecvTimeout(ch, 100);
     
     if (result == null) {
         print("Timeout - no message received");
@@ -136,15 +136,15 @@ fn main() {
 
 ```argon
 fn main() {
-    let worker = thread_spawn(500, "sleep");
+    let worker = threadSpawn(500, "sleep");
     
     // Check if done immediately
-    if (!thread_is_done(worker)) {
+    if (!threadIsDone(worker)) {
         print("Worker is still running...");
     }
     
     // Wait for completion
-    let result = thread_join(worker);
+    let result = threadJoin(worker);
     print("Worker finished");
 }
 ```

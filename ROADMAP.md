@@ -36,12 +36,12 @@ Advanced language features for production software.
 
 ### ✅ 2. FFI (Foreign Function Interface) [v2.27.0]
 - [x] `libloading` crate integration
-- [x] `ffi_load()` and `ffi_call()` built-ins
+- [x] `ffiLoad()` and `ffiCall()` built-ins
 - [x] Load .dll/.so dynamically
 
 ### ✅ 3. Garbage Collection [v2.28.0]
 - [x] Mark-and-Sweep GC module
-- [x] `gc_collect()` and `gc_stats()` built-ins
+- [x] `gcCollect()` and `gcStats()` built-ins
 - [x] Object header & heap arena
 
 ---
@@ -82,9 +82,9 @@ Focus on ecosystem and enterprise readiness.
 - [x] Work-stealing queues
 - [x] Pipeline patterns
 - [x] **True OS Threading** (native `std::thread`)
-  - [x] `thread_spawn()` / `thread_join()` built-ins
-  - [x] `channel_new()` / `channel_send()` / `channel_recv()` built-ins
-  - [x] Non-blocking `channel_try_recv()` and `channel_recv_timeout()`
+  - [x] `threadSpawn()` / `threadJoin()` built-ins
+  - [x] `channelNew()` / `channelSend()` / `channelRecv()` built-ins
+  - [x] Non-blocking `channelTryRecv()` and `channelRecvTimeout()`
 
 ### ✅ Tooling
 - [x] Documentation generator (`argondoc`)
@@ -125,7 +125,7 @@ All database clients are implemented **100% in native Argon** without external l
 - [x] Trust auth mode support
 - [x] TCP connection management
 - [x] Binary protocol message parsing
-- [x] `pg_connect()`, `pg_query()`, `pg_close()` API
+- [x] `pgConnect()`, `pgQuery()`, `pgClose()` API
 - [x] Full CRUD operations (CREATE, INSERT, UPDATE, DELETE, SELECT)
 - [x] Transaction support (BEGIN, COMMIT, ROLLBACK)
 
@@ -134,7 +134,7 @@ All database clients are implemented **100% in native Argon** without external l
 - [x] **SHA1-based mysql_native_password authentication**
 - [x] Auth switch protocol handling
 - [x] Full handshake parsing (scramble extraction)
-- [x] `mysql_connect()`, `mysql_query()`, `mysql_close()` API
+- [x] `mysqlConnect()`, `mysqlQuery()`, `mysqlClose()` API
 - [x] Full CRUD operations
 
 #### ✅ Redis (TCP-based)
@@ -149,29 +149,29 @@ All database clients are implemented **100% in native Argon** without external l
 #### TCP Client Functions
 | Function | Description |
 |----------|-------------|
-| `@tcp_connect(host, port)` | Connect to remote server |
-| `@tcp_write(conn, data)` | Write string with CRLF |
-| `@tcp_read_line(conn)` | Read until newline |
-| `@tcp_write_raw(conn, bytes)` | Write raw byte array |
-| `@tcp_read_raw(conn, count)` | Read exact bytes as array |
-| `@tcp_read_available(conn)` | Read all available bytes |
-| `@argon_socket_close(conn)` | Close connection |
+| `@tcpConnect(host, port)` | Connect to remote server |
+| `@tcpWrite(conn, data)` | Write string with CRLF |
+| `@tcpReadLine(conn)` | Read until newline |
+| `@tcpWriteRaw(conn, bytes)` | Write raw byte array |
+| `@tcpReadRaw(conn, count)` | Read exact bytes as array |
+| `@tcpReadAvailable(conn)` | Read all available bytes |
+| `@argonSocketClose(conn)` | Close connection |
 
 #### Crypto Functions
 | Function | Description |
 |----------|-------------|
 | `@sha1(string)` | SHA1 hash → hex string |
-| `@sha1_bytes(data)` | SHA1 hash → 20-byte array |
-| `@xor_bytes(a, b)` | XOR two byte arrays |
-| `@concat_bytes(a, b)` | Concatenate byte arrays |
+| `@sha1Bytes(data)` | SHA1 hash → 20-byte array |
+| `@xorBytes(a, b)` | XOR two byte arrays |
+| `@concatBytes(a, b)` | Concatenate byte arrays |
 
 #### Encoding Functions
 | Function | Description |
 |----------|-------------|
 | `@chr(n)` | Integer to character |
 | `@ord(s)` | Character to integer |
-| `@bytes_to_string(arr)` | Byte array to string |
-| `@string_to_bytes(s)` | String to byte array |
+| `@bytesToString(arr)` | Byte array to string |
+| `@stringToBytes(s)` | String to byte array |
 
 ---
 

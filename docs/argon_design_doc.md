@@ -72,7 +72,7 @@ Stage 2: stage1.out compiles compiler.ar → compiler.ar.ll (IDENTICAL to Stage 
 ```
 
 ### 4.2 Key Challenges Solved
-1. **Number Tagging Consistency**: Stage 0 (Rust) returns raw integers from `parseInt()`, while Stage 1+ returns tagged integers. Solved with `detect_stage()` function.
+1. **Number Tagging Consistency**: Stage 0 (Rust) returns raw integers from `parseInt()`, while Stage 1+ returns tagged integers. Solved with `detectStage()` function.
 2. **String Comparison**: Runtime `argon_eq` compares string *content*, not pointer addresses.
 3. **Control Flow**: Proper handling of `if/else`, `while`, `break`, `continue` with correct LLVM IR basic blocks.
 
@@ -94,13 +94,13 @@ fn main() {
 
 ### 5.2 Networking (v2.1)
 ```typescript
-fn start_server() {
-    let s = argon_listen(3000);
+fn startServer() {
+    let s = argonListen(3000);
     while (1) {
-        let c = argon_accept(s);
+        let c = argonAccept(s);
         if (c != -1) {
-             argon_socket_write(c, "HTTP/1.1 200 OK\r\n\r\nHello");
-             argon_socket_close(c);
+             argonSocketWrite(c, "HTTP/1.1 200 OK\r\n\r\nHello");
+             argonSocketClose(c);
         }
     }
 }
@@ -115,32 +115,32 @@ fn worker() {
 
 fn main() {
     // Atomic operations
-    let counter = argon_atomic_new(0);
-    argon_atomic_add(counter, 1);
-    let val = argon_atomic_load(counter);
+    let counter = argonAtomicNew(0);
+    argonAtomicAdd(counter, 1);
+    let val = argonAtomicLoad(counter);
     
     // Compare-and-swap
-    argon_atomic_cas(counter, 1, 100);
+    argonAtomicCas(counter, 1, 100);
     
     // Sleep
-    argon_sleep(1000); // 1 second
+    argonSleep(1000); // 1 second
 }
 ```
 
 **Threading Functions:**
 | Function | Description |
 |----------|-------------|
-| `argon_thread_spawn(fn)` | Spawn thread with function pointer |
-| `argon_thread_join(id)` | Wait for thread completion |
-| `argon_mutex_new()` | Create mutex |
-| `argon_mutex_lock(id)` | Lock mutex |
-| `argon_mutex_unlock(id)` | Unlock mutex |
-| `argon_atomic_new(v)` | Create atomic integer |
-| `argon_atomic_load(id)` | Load atomic value |
-| `argon_atomic_store(id, v)` | Store atomic value |
-| `argon_atomic_add(id, v)` | Atomic add, returns old |
-| `argon_atomic_cas(id, exp, new)` | Compare-and-swap |
-| `argon_sleep(ms)` | Sleep milliseconds |
+| `argonThreadSpawn(fn)` | Spawn thread with function pointer |
+| `argonThreadJoin(id)` | Wait for thread completion |
+| `argonMutexNew()` | Create mutex |
+| `argonMutexLock(id)` | Lock mutex |
+| `argonMutexUnlock(id)` | Unlock mutex |
+| `argonAtomicNew(v)` | Create atomic integer |
+| `argonAtomicLoad(id)` | Load atomic value |
+| `argonAtomicStore(id, v)` | Store atomic value |
+| `argonAtomicAdd(id, v)` | Atomic add, returns old |
+| `argonAtomicCas(id, exp, new)` | Compare-and-swap |
+| `argonSleep(ms)` | Sleep milliseconds |
 
 ### 5.4 Structs (v2.4)
 ```typescript
@@ -149,7 +149,7 @@ struct Point {
     y: int
 }
 
-fn create_point(x, y) {
+fn createPoint(x, y) {
     return Point { x: x, y: y };
 }
 
@@ -158,7 +158,7 @@ fn main() {
     print(p.x);  // 10
     print(p.y);  // 20
     
-    let p2 = create_point(30, 40);
+    let p2 = createPoint(30, 40);
     print(p2.x + p2.y);  // 70
 }
 ```

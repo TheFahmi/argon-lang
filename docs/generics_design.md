@@ -59,17 +59,17 @@ fn main() {
 
 **Generated:**
 ```argon
-fn identity_int(x) {
+fn identityInt(x) {
     return x;
 }
 
-fn identity_string(x) {
+fn identityString(x) {
     return x;
 }
 
 fn main() {
-    let a = identity_int(42);
-    let b = identity_string("hi");
+    let a = identityInt(42);
+    let b = identityString("hi");
 }
 ```
 
@@ -85,34 +85,34 @@ AST_TYPE_ARGS = 132       // <int, string>
 
 ### 1. After function name, check for `<`
 ```
-fn parse_function():
+fn parseFunction():
     expect(TOK_FN)
-    name = parse_identifier()
+    name = parseIdentifier()
     
     // NEW: Check for type parameters
     type_params = []
     if current() == TOK_LT:
         advance()  // skip <
-        type_params = parse_type_param_list()
+        type_params = parseTypeParamList()
         expect(TOK_GT)
     
     expect(TOK_LPAREN)
-    params = parse_params()
+    params = parseParams()
     ...
 ```
 
 ### 2. At call site, check for type arguments
 ```
-fn parse_call(name):
+fn parseCall(name):
     // NEW: Check for type arguments
     type_args = []
     if current() == TOK_LT:
         advance()
-        type_args = parse_type_arg_list()
+        type_args = parseTypeArgList()
         expect(TOK_GT)
     
     expect(TOK_LPAREN)
-    args = parse_args()
+    args = parseArgs()
     ...
 ```
 
@@ -125,7 +125,7 @@ During first pass, collect all generic function definitions.
 When encountering a call like `identity<int>(42)`:
 1. Look up the generic function `identity`
 2. Create a specialized version `identity_int` if not exists
-3. Replace call with `identity_int(42)`
+3. Replace call with `identityInt(42)`
 
 ### 3. Generate Specialized Functions
 For each instantiation, generate a concrete function with:
@@ -166,7 +166,7 @@ Heuristic: After identifier, if `<` followed by identifier and then `>` or `,`, 
 
 ## Phase 1 Implementation
 
-1. Add `is_generic_context()` helper in parser
-2. Modify `parse_primary()` to handle `ident<T>(...)`
+1. Add `isGenericContext()` helper in parser
+2. Modify `parsePrimary()` to handle `ident<T>(...)`
 3. Add generic storage in codegen
 4. Implement monomorphization pass before IR generation
