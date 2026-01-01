@@ -273,26 +273,26 @@ fn main() {
 ```
 my-api/
 ├── src/
-│   ├── main.ar                 # Entry point
-│   ├── app.module.ar           # Route registration
+│   ├── main.cryo                 # Entry point
+│   ├── app.module.cryo           # Route registration
 │   ├── config/
-│   │   └── app.config.ar       # Configuration
+│   │   └── app.config.cryo       # Configuration
 │   ├── common/
 │   │   ├── middleware/
-│   │   │   └── logger.middleware.ar
+│   │   │   └── logger.middleware.cryo
 │   │   ├── guards/
-│   │   │   └── auth.guard.ar
+│   │   │   └── auth.guard.cryo
 │   │   └── utils/
-│   │       └── response.util.ar
+│   │       └── response.util.cryo
 │   └── modules/
 │       ├── users/
-│       │   ├── user.entity.ar
-│       │   ├── users.service.ar
-│       │   └── users.controller.ar
+│       │   ├── user.entity.cryo
+│       │   ├── users.service.cryo
+│       │   └── users.controller.cryo
 │       └── todos/
-│           ├── todo.entity.ar
-│           ├── todos.service.ar
-│           └── todos.controller.ar
+│           ├── todo.entity.cryo
+│           ├── todos.service.cryo
+│           └── todos.controller.cryo
 └── README.md
 ```
 
@@ -303,7 +303,7 @@ Generate new projects with the CryoWeb CLI:
 ```bash
 ./cryoweb-cli.sh new my-project
 cd my-project
-cryo src/main.ar
+cryo src/main.cryo
 ```
 
 ## Performance
@@ -315,7 +315,7 @@ CryoWeb runs on Cryo's native runtime, leveraging:
 
 ## See Also
 
-- [HTTP Module](./stdlib/http.ar) - Low-level HTTP utilities
-- [JSON Module](./stdlib/json.ar) - JSON parsing/stringifying
-- [Example: api_server.ar](./examples/api_server.ar) - Full API demo
-- [Example: cryoweb_demo.ar](./examples/cryoweb_demo.ar) - NestJS-style demo
+- [HTTP Module](./stdlib/http.cryo) - Low-level HTTP utilities
+- [JSON Module](./stdlib/json.cryo) - JSON parsing/stringifying
+- [Example: api_server.cryo](./examples/api_server.cryo) - Full API demo
+- [Example: cryoweb_demo.cryo](./examples/cryoweb_demo.cryo) - NestJS-style demo

@@ -10,7 +10,7 @@
 ## 1. Introduction
 Cryo is a high-performance, self-hosted systems programming language designed to provide memory safety without a Garbage Collector (GC) or the complexity of Rust's lifetime annotations. It achieves this through **Region-Based Memory Management (RBMM)** and **Linear Capabilities**.
 
-Cryo has reached a major milestone: **Verified Self-Hosting**. The compiler (`compiler.ar`) is written in Cryo itself, can compile itself, and produces **byte-for-byte identical output** when compiled by itself (Stage 1 == Stage 2).
+Cryo has reached a major milestone: **Verified Self-Hosting**. The compiler (`compiler.cryo`) is written in Cryo itself, can compile itself, and produces **byte-for-byte identical output** when compiled by itself (Stage 1 == Stage 2).
 
 ---
 
@@ -38,9 +38,9 @@ Creating a truly self-hosted dynamic system required a uniform data representati
 
 ## 3. Architecture
 
-### 3.1 The Compiler (`compiler.ar`)
+### 3.1 The Compiler (`compiler.cryo`)
 The compiler is a monolithic application written in Cryo (~1930 lines).
-1.  **Lexer**: Tokenizes source code (`.ar` files), handling complex string escapes and operators.
+1.  **Lexer**: Tokenizes source code (`.cryo` files), handling complex string escapes and operators.
 2.  **Parser**: Recursive Descent parser generating a lightweight AST. Includes support for `if/else if/else`, `while` loops, `break/continue`, and function definitions.
 3.  **Code Generator**: Emits LLVM IR (Text format). Uses tagged integer arithmetic.
     - **Fast Path Optimization**: Detects integer parsing at compile time to emit native LLVM instructions (`add`, `sub`, `icmp`) instead of runtime calls, guarding them with runtime type checks.
@@ -66,9 +66,9 @@ A Docker-based wrapper ensuring consistent builds across Windows, Linux, and Mac
 
 ### 4.1 Bootstrap Process
 ```
-Stage 0: Rust Interpreter runs compiler.ar → generates compiler.ar.ll
-Stage 1: clang links compiler.ar.ll → stage1.out (native binary)
-Stage 2: stage1.out compiles compiler.ar → compiler.ar.ll (IDENTICAL to Stage 1)
+Stage 0: Rust Interpreter runs compiler.cryo → generates compiler.cryo.ll
+Stage 1: clang links compiler.cryo.ll → stage1.out (native binary)
+Stage 2: stage1.out compiles compiler.cryo → compiler.cryo.ll (IDENTICAL to Stage 1)
 ```
 
 ### 4.2 Key Challenges Solved

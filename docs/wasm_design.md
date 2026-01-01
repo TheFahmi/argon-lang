@@ -23,10 +23,10 @@ Add WebAssembly compilation target to Cryo, enabling:
 ### Basic Compilation
 ```bash
 # Compile to WASM
-cryoc --target wasm32 hello.ar -o hello.wasm
+cryoc --target wasm32 hello.cryo -o hello.wasm
 
 # Compile with WASI support
-cryoc --target wasm32-wasi hello.ar -o hello.wasm
+cryoc --target wasm32-wasi hello.cryo -o hello.wasm
 ```
 
 ### Export Functions to JavaScript
@@ -111,7 +111,7 @@ wasmFree(buffer);
 
 ```
                     ┌─────────────────┐
-    source.ar ──────►   Lexer/Parser  │
+    source.cryo ──────►   Lexer/Parser  │
                     └────────┬────────┘
                              │ AST
                              ▼
@@ -314,7 +314,7 @@ async function loadCryoModule(wasmPath) {
   };
   
   const response = await fetch(wasmPath);
-  const bytes = await response.arrayBuffer();
+  const bytes = await response.cryorayBuffer();
   const { instance } = await WebAssembly.instantiate(bytes, importObject);
   
   return instance.exports;
@@ -345,8 +345,8 @@ console.log('add result:', cryo.add(5, 3));
       
       // Redirect console.log to page
       const originalLog = console.log;
-      console.log = (...args) => {
-        originalLog(...args);
+      console.log = (...cryogs) => {
+        originalLog(...cryogs);
         output.innerHTML += args.join(' ') + '<br>';
       };
       
@@ -365,10 +365,10 @@ console.log('add result:', cryo.add(5, 3));
 
 | File | Action | Description |
 |------|--------|-------------|
-| `self-host/compiler.ar` | Modify | Add WASM backend |
-| `self-host/wasm_codegen.ar` | Create | WASM code generator |
-| `stdlib/wasm.ar` | Create | WASM utilities |
-| `examples/wasm_example.ar` | Create | Basic WASM demo |
+| `self-host/compiler.cryo` | Modify | Add WASM backend |
+| `self-host/wasm_codegen.cryo` | Create | WASM code generator |
+| `stdlib/wasm.cryo` | Create | WASM utilities |
+| `examples/wasm_example.cryo` | Create | Basic WASM demo |
 | `examples/wasm_demo.html` | Create | Browser demo |
 | `examples/cryo_loader.js` | Create | JS loader |
 
@@ -376,7 +376,7 @@ console.log('add result:', cryo.add(5, 3));
 
 ```bash
 # New options
-cryoc [OPTIONS] <file.ar>
+cryoc [OPTIONS] <file.cryo>
 
 Options:
   --target <target>     Compilation target
@@ -394,13 +394,13 @@ Options:
 
 ```bash
 # 1. Compile to WAT
-cryoc --target wasm32 --emit wat hello.ar -o hello.wat
+cryoc --target wasm32 --emit wat hello.cryo -o hello.wat
 
 # 2. Convert WAT to WASM (using wabt)
 wat2wasm hello.wat -o hello.wasm
 
 # Or one-step:
-cryoc --target wasm32 hello.ar -o hello.wasm
+cryoc --target wasm32 hello.cryo -o hello.wasm
 ```
 
 ## Constants
@@ -433,30 +433,30 @@ let AST_ATTRIBUTE = 153;
 | Phase | Status | Description |
 |-------|--------|-------------|
 | 1 | ✅ | Design document (`docs/wasm_design.md`) |
-| 2 | ✅ | WAT text output (`self-host/wasm_codegen.ar`) |
+| 2 | ✅ | WAT text output (`self-host/wasm_codegen.cryo`) |
 | 3 | ✅ | Basic arithmetic & functions (codegen done) |
 | 4 | ✅ | Control flow (if/while) (codegen done) |
 | 5 | ✅ | WASI print support (template done) |
 | 6 | ✅ | JS interop (@wasm_export) - tokens added |
 | 7 | ✅ | Browser demo (`examples/wasm_demo.html`) |
-| 8 | ✅ | String/array support (`stdlib/wasm.ar`) |
+| 8 | ✅ | String/array support (`stdlib/wasm.cryo`) |
 | 9 | ✅ | Integrate to main compiler CLI |
 | 10 | 🔄 | Bootstrap new binary with WASM support |
 
 ### Completed Files
 - ✅ `docs/wasm_design.md` - Design document
-- ✅ `self-host/wasm_codegen.ar` - Standalone WAT code generator
-- ✅ `self-host/compiler.ar` - WASM codegen integrated
-- ✅ `stdlib/wasm.ar` - WASM standard library  
-- ✅ `examples/wasm_example.ar` - Example program
+- ✅ `self-host/wasm_codegen.cryo` - Standalone WAT code generator
+- ✅ `self-host/compiler.cryo` - WASM codegen integrated
+- ✅ `stdlib/wasm.cryo` - WASM standard library  
+- ✅ `examples/wasm_example.cryo` - Example program
 - ✅ `examples/wasm_demo.html` - Browser demo
 - ✅ `examples/cryo_loader.js` - JavaScript loader
 
 ### CLI Options Added
 ```bash
-cryoc --target wasm32 hello.ar        # Compile to WASM
-cryoc --target wasm32-wasi hello.ar   # Compile with WASI
-cryoc -o output.wat hello.ar          # Custom output file
+cryoc --target wasm32 hello.cryo        # Compile to WASM
+cryoc --target wasm32-wasi hello.cryo   # Compile with WASI
+cryoc -o output.wat hello.cryo          # Custom output file
 cryoc --version                       # Show version
 cryoc --help                          # Show help
 ```
@@ -467,8 +467,8 @@ cryoc --help                          # Show help
 ## Example Program
 
 ```cryo
-// examples/wasm_example.ar
-// Compile: cryoc --target wasm32 wasm_example.ar -o demo.wasm
+// examples/wasm_example.cryo
+// Compile: cryoc --target wasm32 wasm_example.cryo -o demo.wasm
 
 @wasmExport("add")
 fn add(a: i32, b: i32) -> i32 {

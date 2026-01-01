@@ -196,5 +196,5 @@ The threading module is implemented in Rust using:
 
 ## See Also
 
-- [Channel Module](../stdlib/channel.ar) - High-level channel patterns
-- [Worker Module](../stdlib/worker.ar) - Worker pool abstractions
+- [Channel Module](../stdlib/channel.cryo) - High-level channel patterns
+- [Worker Module](../stdlib/worker.cryo) - Worker pool abstractions

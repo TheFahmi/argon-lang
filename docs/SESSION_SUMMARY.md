@@ -37,23 +37,23 @@
 - **Critical Fixes**: 
     - Fixed `expander.rs` macro substitution bug (missing recursion for `Field`, `MethodCall`).
     - Fixed `interpreter.rs` error swallowing (now prints Runtime Errors).
-- **Framework**: Created `examples/cryo_web.ar` (CryoWeb) with Router, Context, and Middleware-like macros.
-- **Demo**: Developed `examples/todo_server.ar` showcasing the full stack.
+- **Framework**: Created `examples/cryo_web.cryo` (CryoWeb) with Router, Context, and Middleware-like macros.
+- **Demo**: Developed `examples/todo_server.cryo` showcasing the full stack.
 - Implemented `defer` keyword for RAII-style cleanup.
 
 ### 4. Optimization (v2.22.0)
 - Implemented Constant Folding.
 
 ### 5. Demos (Verified)
-- `examples/macros_test.ar`
-- `examples/defer_test.ar`
-- `examples/optimize_test.ar`
-- `examples/gc_test.ar`
+- `examples/macros_test.cryo`
+- `examples/defer_test.cryo`
+- `examples/optimize_test.cryo`
+- `examples/gc_test.cryo`
 
 ### 6. Ecosystem & Tooling (Completed)
 - **Built-in Functions**: Added `bcrypt`, `jwt`, `timestamp`, `uuid`, etc. to `interpreter.rs`.
 - **CryoWeb CLI**: Created `cryoweb-cli.sh` for NestJS-style project scaffolding.
-- **REST API Demo**: Verified full stack capability with `examples/api_server.ar`.
+- **REST API Demo**: Verified full stack capability with `examples/api_server.cryo`.
 - **Documentation**: Updated README with CLI usage and API references.
 
 ---
@@ -63,10 +63,10 @@
 ### New Files
 | File | Description |
 |------|-------------|
-| `examples/macros_test.ar` | Test for Macros |
-| `examples/cryo_web.ar` | Web Framework Core |
-| `examples/todo_server.ar` | Todo API Demo |
-| `examples/api_server.ar` | Full REST API Demo |
+| `examples/macros_test.cryo` | Test for Macros |
+| `examples/cryo_web.cryo` | Web Framework Core |
+| `examples/todo_server.cryo` | Todo API Demo |
+| `examples/api_server.cryo` | Full REST API Demo |
 | `cryoweb-cli.sh` | Project Generator CLI |
 | `docs/macros_design.md` | Design Doc |
 | `src/expander.rs` | Macro Expander |

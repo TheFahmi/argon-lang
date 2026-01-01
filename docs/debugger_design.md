@@ -137,10 +137,10 @@ Add runtime debugging support:
 
 ```bash
 # Compile with debug info
-cryo compile -g myprogram.ar
+cryo compile -g myprogram.cryo
 
 # Debug with GDB
-gdb ./myprogram.ar.out
+gdb ./myprogram.cryo.out
 
 # In GDB:
 (gdb) break main
@@ -152,7 +152,7 @@ gdb ./myprogram.ar.out
 
 ## Files to Modify
 
-1. `self-host/compiler.ar` - Add debug metadata emission
+1. `self-host/compiler.cryo` - Add debug metadata emission
 2. `cryo.sh` - Add `debug` command
 3. `Dockerfile` - Include GDB
 

@@ -18,7 +18,7 @@ A library written in Cryo that provides:
 - **Defer**: Closing sockets/files.
 - **Structs**: `Request`, `Response` models.
 
-## API Example (`examples/web_demo.ar`)
+## API Example (`examples/web_demo.cryo`)
 
 ```javascript
 import "http"
@@ -54,9 +54,9 @@ fn listTodos(req) {
 ```
 
 ## Implementation Plan
-1. **`lib/http.ar`**: HTTP Request parsing and Response formatting.
-2. **`lib/server.ar`**: Async TCP Loop.
-3. **`examples/web_demo.ar`**: The application.
+1. **`lib/http.cryo`**: HTTP Request parsing and Response formatting.
+2. **`lib/server.cryo`**: Async TCP Loop.
+3. **`examples/web_demo.cryo`**: The application.
 
 ## Prerequisites
 - `std::net` must support `TcpListener` (already there).

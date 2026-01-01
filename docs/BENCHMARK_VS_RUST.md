@@ -52,7 +52,7 @@ for i in 0..1_000_000 {
 // Drop iterates all 1M items
 ```
 
-### Cryo Code (`bench.ar`)
+### Cryo Code (`bench.cryo`)
 ```typescript
 region batch {
     // Allocates in batch region (Bump Ptr)
@@ -81,7 +81,7 @@ error[E0597]: `data` does not live long enough
 ### Cryo (Region Escape)
 ```text
 error: Reference escapes region
-  --> main.ar:10:5
+  --> main.cryo:10:5
    |
 10 |     result = data;  // ERROR
    |     

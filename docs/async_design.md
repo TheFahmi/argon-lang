@@ -114,10 +114,10 @@ async fn main() {
 
 ## Files to Modify
 
-1. `self-host/compiler.ar` - Add async/await tokens and parsing
+1. `self-host/compiler.cryo` - Add async/await tokens and parsing
 2. `self-host/runtime.rs` - Add async runtime functions
-3. `stdlib/async.ar` - Async utilities module
-4. `examples/async_example.ar` - Demo
+3. `stdlib/async.cryo` - Async utilities module
+4. `examples/async_example.cryo` - Demo
 
 ## Token IDs
 - `TOK_ASYNC = 80`

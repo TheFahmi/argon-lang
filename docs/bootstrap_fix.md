@@ -16,7 +16,7 @@ The bootstrap issue has been resolved by rewriting the Rust interpreter from scr
 
 ### What Works ✅
 - **New Rust Interpreter** (`src/`) fully supports compiler syntax (v2.20.0).
-- **Self-Hosting** works: Interpreter can run `self-host/compiler.ar`.
+- **Self-Hosting** works: Interpreter can run `self-host/compiler.cryo`.
 - **WASM Support**: Interpreter enables WASM compilation target.
 - **FFI & Traits**: Interpreter supports parsing and running experimental syntax.
 
@@ -26,7 +26,7 @@ The bootstrap issue has been resolved by rewriting the Rust interpreter from scr
 cargo build --release
 
 # 2. Run Compiler Source using Interpreter
-./target/release/cryo self-host/compiler.ar examples/hello.ar
+./target/release/cryo self-host/compiler.cryo examples/hello.cryo
 
 # 3. Create Binary (Optional)
 # The rust interpreter acts as the universal binary now
@@ -41,7 +41,7 @@ cp target/release/cryo.exe cryo_v220.exe
 |------|-------------|
 | `cryo_v220.exe` | Newest Rust Interpreter (Windows) |
 | `src/*` | Rust source code for interpreter (Lexer, Parser, AST, Interpreter) |
-| `self-host/compiler.ar` | Cryo compiler source (v2.20.0) |
+| `self-host/compiler.cryo` | Cryo compiler source (v2.20.0) |
 | `examples/*` | Updated examples for FFI/Traits/WASM |
 
 ---

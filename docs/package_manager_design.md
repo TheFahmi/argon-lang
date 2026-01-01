@@ -11,12 +11,12 @@ my-project/
 ├── cryo.toml          # Project manifest
 ├── cryo.lock          # Lock file (generated)
 ├── src/
-│   └── main.ar         # Entry point
+│   └── main.cryo         # Entry point
 ├── lib/
-│   └── mylib.ar        # Library code
+│   └── mylib.cryo        # Library code
 └── deps/               # Downloaded dependencies
     └── http-utils/
-        └── lib.ar
+        └── lib.cryo
 ```
 
 ## cryo.toml Format

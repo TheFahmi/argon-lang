@@ -88,7 +88,7 @@ A new stack-based bytecode VM provides ~16x speedup over tree-walking interpreta
 ### Architecture
 
 ```
-Source (.ar) -> AST -> Bytecode -> VM Execution
+Source (.cryo) -> AST -> Bytecode -> VM Execution
 ```
 
 ### Key Features
@@ -134,16 +134,16 @@ For maximum performance, Cryo can be compiled to native code via LLVM IR.
 ### Compilation Pipeline
 
 ```
-Source (.ar) -> Parser -> AST -> LLVM IR -> Native Binary
+Source (.cryo) -> Parser -> AST -> LLVM IR -> Native Binary
 ```
 
 ### Self-Hosted Compiler
 
-The `self-host/compiler.ar` generates optimized LLVM IR:
+The `self-host/compiler.cryo` generates optimized LLVM IR:
 
 ```bash
 # Compile Cryo to LLVM IR
-./cryo.exe self-host/compiler.ar myprogram.ar -o myprogram.ll
+./cryo.exe self-host/compiler.cryo myprogram.cryo -o myprogram.ll
 
 # Compile LLVM IR to native
 clang -O3 myprogram.ll -o myprogram
@@ -226,5 +226,5 @@ clang -O3 -march=native -mtune=native -funroll-loops program.ll -o program
 
 - `src/interpreter.rs` - Optimized interpreter
 - `src/bytecode_vm.rs` - Bytecode virtual machine
-- `self-host/compiler.ar` - Self-hosted LLVM compiler
+- `self-host/compiler.cryo` - Self-hosted LLVM compiler
 - `benchmarks/comparison/run.sh` - Benchmark suite

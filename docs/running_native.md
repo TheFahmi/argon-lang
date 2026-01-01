@@ -96,7 +96,7 @@ cargo build --release --target x86_64-pc-windows-msvc
 ./target/release/cryo.exe --native-bench 35
 
 # Test file
-./target/release/cryo.exe examples/hello.ar
+./target/release/cryo.exe examples/hello.cryo
 ```
 
 ### Install ke System Path (Opsional)
@@ -125,13 +125,13 @@ Mode default dengan performa optimal. Menjalankan file Cryo dengan optimized int
 
 ```bash
 # Windows
-./cryo.exe examples/hello.ar
+./cryo.exe examples/hello.cryo
 
 # Linux/Mac
-./cryo examples/hello.ar
+./cryo examples/hello.cryo
 
 # Eksplisit native mode
-./cryo.exe --native examples/hello.ar
+./cryo.exe --native examples/hello.cryo
 ```
 
 ### 2. **Interpreter Mode** (Fallback)
@@ -139,7 +139,7 @@ Mode default dengan performa optimal. Menjalankan file Cryo dengan optimized int
 Gunakan jika memerlukan kompatibilitas penuh dengan tree-walking interpreter:
 
 ```bash
-./cryo.exe --interpret examples/hello.ar
+./cryo.exe --interpret examples/hello.cryo
 ```
 
 ### 3. **Bytecode VM Mode** (Benchmark)
@@ -163,7 +163,7 @@ Baseline performa dengan implementasi native Rust (target: 40ms untuk Fib(35)):
 Menghasilkan file LLVM IR (`.ll`) untuk kompilasi native:
 
 ```bash
-./cryo.exe --emit-llvm output.ll source.ar
+./cryo.exe --emit-llvm output.ll source.cryo
 ```
 
 ---
@@ -181,11 +181,11 @@ Script `build.sh` menyediakan workflow lengkap:
 ./build.sh --help
 
 # Kompilasi ke LLVM IR saja
-./build.sh compile examples/fib.ar
+./build.sh compile examples/fib.cryo
 # Output: build/llvm/fib.ll
 
 # Kompilasi ke Native Binary (memerlukan clang)
-./build.sh native examples/fib.ar
+./build.sh native examples/fib.cryo
 # Output: build/bin/fib.exe
 ```
 
@@ -195,7 +195,7 @@ Jika Anda ingin mengontrol proses kompilasi secara manual:
 
 ```bash
 # Step 1: Generate LLVM IR
-./cryo.exe self-host/compiler.ar examples/fib.ar -o fib.ll
+./cryo.exe self-host/compiler.cryo examples/fib.cryo -o fib.ll
 
 # Step 2: Compile ke native binary dengan clang
 clang -O3 -march=native fib.ll -o fib.exe
@@ -297,7 +297,7 @@ docker build -t cryo-bench .
 docker run --rm cryo-bench
 
 # Jalankan perintah custom
-docker run --rm cryo-bench ./build.sh native examples/fib.ar
+docker run --rm cryo-bench ./build.sh native examples/fib.cryo
 ```
 
 ### Dockerfile Overview
@@ -356,10 +356,10 @@ brew install llvm
 
 ```bash
 # Dengan Git Bash
-bash build.sh native examples/fib.ar
+bash build.sh native examples/fib.cryo
 
 # Dengan WSL
-wsl ./build.sh native examples/fib.ar
+wsl ./build.sh native examples/fib.cryo
 ```
 
 ---
@@ -368,12 +368,12 @@ wsl ./build.sh native examples/fib.ar
 
 | Perintah | Deskripsi |
 |----------|-----------|
-| `./cryo.exe file.ar` | Jalankan dengan interpreter |
+| `./cryo.exe file.cryo` | Jalankan dengan interpreter |
 | `./cryo.exe --vm-bench N` | Benchmark bytecode VM |
 | `./cryo.exe --native-bench N` | Benchmark native Rust |
-| `./build.sh run file.ar` | Jalankan file |
-| `./build.sh compile file.ar` | Compile ke LLVM IR |
-| `./build.sh native file.ar` | Compile ke native binary |
+| `./build.sh run file.cryo` | Jalankan file |
+| `./build.sh compile file.cryo` | Compile ke LLVM IR |
+| `./build.sh native file.cryo` | Compile ke native binary |
 | `./build.sh bench N` | Jalankan benchmark |
 | `./build.sh test` | Jalankan test stdlib |
 

@@ -74,8 +74,8 @@ Structs are implemented as **arrays** at runtime:
 
 ## Files Modified
 
-- `self-host/compiler.ar` - Added struct support
-- `examples/test_struct.ar` - Comprehensive test
+- `self-host/compiler.cryo` - Added struct support
+- `examples/test_struct.cryo` - Comprehensive test
 
 ---
 

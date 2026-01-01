@@ -102,9 +102,9 @@ call void @free(i8* %ptr)
 
 ## Standard FFI Bindings
 
-### libc.ar
+### libc.cryo
 ```cryo
-// stdlib/ffi/libc.ar
+// stdlib/ffi/libc.cryo
 extern "C" fn malloc(size: usize) -> *void;
 extern "C" fn free(ptr: *void);
 extern "C" fn memcpy(dst: *void, src: *void, n: usize) -> *void;
@@ -112,9 +112,9 @@ extern "C" fn strlen(s: *i8) -> usize;
 extern "C" fn strcmp(s1: *i8, s2: *i8) -> i32;
 ```
 
-### libm.ar
+### libm.cryo
 ```cryo
-// stdlib/ffi/libm.ar
+// stdlib/ffi/libm.cryo
 extern "C" fn sin(x: f64) -> f64;
 extern "C" fn cos(x: f64) -> f64;
 extern "C" fn tan(x: f64) -> f64;

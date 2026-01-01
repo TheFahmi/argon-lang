@@ -13,11 +13,11 @@ cd my-package
 my-package/
 ├── cryo.toml      # Manifest (WAJIB)
 ├── lib/
-│   └── lib.ar      # Kode library utama
+│   └── lib.cryo      # Kode library utama
 ├── src/
-│   └── main.ar     # Contoh penggunaan (opsional)
+│   └── main.cryo     # Contoh penggunaan (opsional)
 ├── tests/
-│   └── test.ar     # Tests
+│   └── test.cryo     # Tests
 └── README.md       # Dokumentasi
 ```
 
@@ -40,7 +40,7 @@ keywords = ["cryo", "utility"]
 
 ## 4. Tulis Kode Library
 
-**lib/lib.ar:**
+**lib/lib.cryo:**
 ```cryo
 // ============================================
 // My Package - Utility functions

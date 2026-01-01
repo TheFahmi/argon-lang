@@ -82,4 +82,4 @@ With simple `Rc`, reference cycles (A -> B -> A) will cause memory leaks.
 1. Modify `Value` enum in `src/interpreter.rs`.
 2. Update `PartialEq`, `Clone`, and `Debug` implementations.
 3. Update `eval_binop` and built-ins to handle `RefCell`.
-4. Test with `examples/gc_example.ar`.
+4. Test with `examples/gc_example.cryo`.

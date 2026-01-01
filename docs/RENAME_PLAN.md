@@ -16,7 +16,7 @@
 | Item | Old | New |
 |------|-----|-----|
 | Language Name | Argon | Cryo |
-| File Extension | `.ar` | `.cryo` or `.cry` |
+| File Extension | `.cryo` | `.cryo` or `.cry` |
 | CLI Binary | `argon` / `argon.exe` | `cryo` / `cryo.exe` |
 | Version Banner | `Argon Native v3.2.1` | `Cryo v3.2.1` |
 | Package Name (Cargo) | `argon` | `cryo` |
@@ -58,39 +58,39 @@
 
 | File | Changes |
 |------|---------|
-| `stdlib/argonweb.ar` | Rename to `stdlib/cryoweb.cryo` |
-| All `stdlib/*.ar` | Rename to `*.cryo` |
+| `stdlib/argonweb.cryo` | Rename to `stdlib/cryoweb.cryo` |
+| All `stdlib/*.cryo` | Rename to `*.cryo` |
 | All stdlib files | Update internal references |
 
 ### 2.4 Self-Hosted Compiler (`self-host/`)
 
 | File | Changes |
 |------|---------|
-| `self-host/compiler.ar` | Rename to `compiler.cryo`, update references |
-| `self-host/wasm_codegen.ar` | Rename to `wasm_codegen.cryo` |
+| `self-host/compiler.cryo` | Rename to `compiler.cryo`, update references |
+| `self-host/wasm_codegen.cryo` | Rename to `wasm_codegen.cryo` |
 
 ### 2.5 Examples (`examples/`)
 
 | Action | Details |
 |--------|---------|
-| Rename all `.ar` files | To `.cryo` extension |
+| Rename all `.cryo` files | To `.cryo` extension |
 | Update content | Replace "Argon" with "Cryo" in comments |
-| Update `argonweb_demo.ar` | Rename to `cryoweb_demo.cryo` |
+| Update `argonweb_demo.cryo` | Rename to `cryoweb_demo.cryo` |
 
 ### 2.6 Tools (`tools/`)
 
 | File | Changes |
 |------|---------|
-| `tools/argondoc.ar` | Rename to `cryodoc.cryo` |
-| `tools/argonfmt.ar` | Rename to `cryofmt.cryo` |
-| `tools/repl.ar` | Rename to `repl.cryo` |
+| `tools/argondoc.cryo` | Rename to `cryodoc.cryo` |
+| `tools/argonfmt.cryo` | Rename to `cryofmt.cryo` |
+| `tools/repl.cryo` | Rename to `repl.cryo` |
 
 ### 2.7 Documentation (`docs/`)
 
 | Action | Details |
 |--------|---------|
 | All `*.md` files | Search & replace "Argon" → "Cryo" |
-| All `*.md` files | Update `.ar` references to `.cryo` |
+| All `*.md` files | Update `.cryo` references to `.cryo` |
 
 ### 2.8 Build & Config Files
 
@@ -151,7 +151,7 @@ Untuk backward compatibility, interpreter akan tetap mendukung prefix `argon_*` 
 - [ ] Build and test
 
 ### Phase 3: File Renames (Day 1-2)
-- [ ] Create script to rename all `.ar` → `.cryo`
+- [ ] Create script to rename all `.cryo` → `.cryo`
 - [ ] Execute file renames
 - [ ] Update all internal `import` statements
 
@@ -185,7 +185,7 @@ Untuk backward compatibility, interpreter akan tetap mendukung prefix `argon_*` 
 
 ```python
 #!/usr/bin/env python3
-"""Rename all .ar files to .cryo"""
+"""Rename all .cryo files to .cryo"""
 import os
 import re
 
@@ -195,7 +195,7 @@ def rename_files(root_dir):
         dirnames[:] = [d for d in dirnames if not d.startswith('.') and d != 'target']
         
         for filename in filenames:
-            if filename.endswith('.ar'):
+            if filename.endswith('.cryo'):
                 old_path = os.path.join(dirpath, filename)
                 new_path = os.path.join(dirpath, filename[:-3] + '.cryo')
                 os.rename(old_path, new_path)
@@ -217,10 +217,10 @@ REPLACEMENTS = [
     ('Argon', 'Cryo'),
     ('argon', 'cryo'),
     ('ARGON', 'CRYO'),
-    ('.ar"', '.cryo"'),
-    (".ar'", ".cryo'"),
-    ('.ar)', '.cryo)'),
-    ('.ar,', '.cryo,'),
+    ('.cryo"', '.cryo"'),
+    (".cryo'", ".cryo'"),
+    ('.cryo)', '.cryo)'),
+    ('.cryo,', '.cryo,'),
 ]
 
 def process_file(filepath):
@@ -284,8 +284,8 @@ if __name__ == '__main__':
 |---------|-----------|
 | v3.2.1 | Last Argon release |
 | v4.0.0 | First Cryo release (breaking: file extension change) |
-| v4.0.x | Transition period (both `.ar` and `.cryo` supported) |
-| v5.0.0 | Remove `.ar` support |
+| v4.0.x | Transition period (both `.cryo` and `.cryo` supported) |
+| v5.0.0 | Remove `.cryo` support |
 
 ---
 
