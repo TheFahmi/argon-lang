@@ -97,8 +97,8 @@ fn main() {
     print("------------------------------------------");
     let base64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     print("  Base64 charset length: " + len(base64Chars));
-    print("  First char: " + char_at(base64Chars, 0));
-    print("  Last char: " + char_at(base64Chars, 63));
+    print("  First char: " + charAt(base64Chars, 0));
+    print("  Last char: " + charAt(base64Chars, 63));
     print("  [PASS] Base64 charset correct");
     print("");
     

@@ -101,7 +101,7 @@ struct MysqlConnection {
 
 fn mysqlConnect(config: MysqlConfig) -> MysqlConnection {
     let conn = MysqlConnection {
-        id: timestamp_ms() % 1000000,
+        id: timestampMs() % 1000000,
         config: config,
         connected: false,
         inTransaction: false,
@@ -247,7 +247,7 @@ fn mysqlQuery(conn: MysqlConnection, sql: string) -> MysqlResult {
         push(result.rows, row);
     } else if (startsWith(toUpperCase(sql), "INSERT")) {
         result.affectedRows = 1;
-        result.lastInsertId = timestamp_ms() % 10000;
+        result.lastInsertId = timestampMs() % 10000;
         conn.lastInsertId = result.lastInsertId;
     } else if (startsWith(toUpperCase(sql), "UPDATE") || startsWith(toUpperCase(sql), "DELETE")) {
         result.affectedRows = 1;

@@ -1,8 +1,8 @@
-macro say_hello(name) {
+macro sayHello(name) {
     print("Hello, " + $name);
 }
 
-macro check_debug(cond) {
+macro checkDebug(cond) {
      if ($cond) {
          print("Debug Mode ON");
      } else {
@@ -13,13 +13,13 @@ macro check_debug(cond) {
 fn main() {
     print("Macro Test Start");
     
-    say_hello("World");
+    sayHello("World");
     
     let user = "Argon User";
-    say_hello(user);
+    sayHello(user);
     
-    check_debug(true);
-    check_debug(false);
+    checkDebug(true);
+    checkDebug(false);
     
     print("Macro Test End");
 }

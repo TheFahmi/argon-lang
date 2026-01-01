@@ -9,13 +9,13 @@ fn println(msg) {
 }
 
 // Print without newline (if supported by runtime)
-fn print_inline(msg) {
+fn printInline(msg) {
     print(msg);
 }
 
 // Print formatted string (simple placeholder replacement)
-// Usage: print_fmt("Hello, {}!", "World") -> "Hello, World!"
-fn print_fmt(template, arg1) {
+// Usage: printFmt("Hello, {}!", "World") -> "Hello, World!"
+fn printFmt(template, arg1) {
     let result = "";
     let i = 0;
     let n = len(template);
@@ -49,7 +49,7 @@ fn print_fmt(template, arg1) {
 }
 
 // Print with 2 arguments
-fn print_fmt2(template, arg1, arg2) {
+fn printFmt2(template, arg1, arg2) {
     let result = "";
     let i = 0;
     let n = len(template);
@@ -84,7 +84,7 @@ fn print_fmt2(template, arg1, arg2) {
 }
 
 // Print with 3 arguments
-fn print_fmt3(template, arg1, arg2, arg3) {
+fn printFmt3(template, arg1, arg2, arg3) {
     let result = "";
     let i = 0;
     let n = len(template);
@@ -225,7 +225,7 @@ fn separator(char, width) {
 }
 
 // Print table row (simple formatting)
-fn table_row(cols, widths) {
+fn tableRow(cols, widths) {
     let result = "|";
     let i = 0;
     while (i < len(cols)) {
@@ -238,7 +238,7 @@ fn table_row(cols, widths) {
         }
         // Truncate if needed
         if (len(cell) > width) {
-            cell = console_substring(cell, 0, width);
+            cell = consoleSubstring(cell, 0, width);
         }
         
         result = result + " " + cell + " |";
@@ -248,7 +248,7 @@ fn table_row(cols, widths) {
 }
 
 // Print progress bar
-fn progress_bar(current, total, width) {
+fn progressBar(current, total, width) {
     let filled = 0;
     if (total > 0) {
         filled = (current * width) / total;
@@ -271,7 +271,7 @@ fn progress_bar(current, total, width) {
 }
 
 // Helper: substring
-fn console_substring(s, start, end) {
+fn consoleSubstring(s, start, end) {
     let result = "";
     let i = start;
     while (i < end) {

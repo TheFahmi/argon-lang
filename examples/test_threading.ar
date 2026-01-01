@@ -14,24 +14,24 @@ fn main() {
     print("------------------------------------------");
     
     // Spawn 4 threads doing fibonacci
-    let t1 = thread_spawn(30, "fib");
-    let t2 = thread_spawn(31, "fib");
-    let t3 = thread_spawn(32, "fib");
-    let t4 = thread_spawn(33, "fib");
+    let t1 = threadSpawn(30, "fib");
+    let t2 = threadSpawn(31, "fib");
+    let t3 = threadSpawn(32, "fib");
+    let t4 = threadSpawn(33, "fib");
     
     print("  Spawned 4 threads for fib(30-33)");
     print("  Thread IDs: " + t1 + ", " + t2 + ", " + t3 + ", " + t4);
     
     // Check active count
-    let active = thread_active_count();
+    let active = threadActiveCount();
     print("  Active threads: " + active);
     
     // Join and get results
     print("  Waiting for results...");
-    let r1 = thread_join(t1);
-    let r2 = thread_join(t2);
-    let r3 = thread_join(t3);
-    let r4 = thread_join(t4);
+    let r1 = threadJoin(t1);
+    let r2 = threadJoin(t2);
+    let r3 = threadJoin(t3);
+    let r4 = threadJoin(t4);
     
     print("  fib(30) = " + r1);
     print("  fib(31) = " + r2);
@@ -44,15 +44,15 @@ fn main() {
     print("Test 2: Parallel Factorial");
     print("------------------------------------------");
     
-    let f1 = thread_spawn(10, "factorial");
-    let f2 = thread_spawn(12, "factorial");
-    let f3 = thread_spawn(15, "factorial");
+    let f1 = threadSpawn(10, "factorial");
+    let f2 = threadSpawn(12, "factorial");
+    let f3 = threadSpawn(15, "factorial");
     
     print("  Computing 10!, 12!, 15! in parallel...");
     
-    let rf1 = thread_join(f1);
-    let rf2 = thread_join(f2);
-    let rf3 = thread_join(f3);
+    let rf1 = threadJoin(f1);
+    let rf2 = threadJoin(f2);
+    let rf3 = threadJoin(f3);
     
     print("  10! = " + rf1);
     print("  12! = " + rf2);
@@ -64,17 +64,17 @@ fn main() {
     print("Test 3: Thread Status Check");
     print("------------------------------------------");
     
-    let slow = thread_spawn(100, "sleep");
+    let slow = threadSpawn(100, "sleep");
     print("  Spawned sleep(100ms) thread");
     
-    let done1 = thread_is_done(slow);
+    let done1 = threadIsDone(slow);
     print("  Is done immediately: " + done1);
     
     // Wait for it
-    let result = thread_join(slow);
+    let result = threadJoin(slow);
     print("  After join, result: " + result);
     
-    let done2 = thread_is_done(slow);
+    let done2 = threadIsDone(slow);
     print("  Is done after join: " + done2);
     print("  [PASS] Status check works!");
     print("");
@@ -83,19 +83,19 @@ fn main() {
     print("Test 4: Channel Communication");
     print("------------------------------------------");
     
-    let ch = channel_new();
+    let ch = channelNew();
     print("  Created channel: " + ch);
     
     // Send messages
-    channel_send(ch, 42);
-    channel_send(ch, 100);
-    channel_send(ch, 999);
+    channelSend(ch, 42);
+    channelSend(ch, 100);
+    channelSend(ch, 999);
     print("  Sent 3 messages");
     
     // Receive
-    let v1 = channel_recv(ch);
-    let v2 = channel_recv(ch);
-    let v3 = channel_recv(ch);
+    let v1 = channelRecv(ch);
+    let v2 = channelRecv(ch);
+    let v3 = channelRecv(ch);
     
     print("  Received: " + v1 + ", " + v2 + ", " + v3);
     print("  [PASS] Channel communication works!");
@@ -105,17 +105,17 @@ fn main() {
     print("Test 5: Non-blocking Receive");
     print("------------------------------------------");
     
-    let ch2 = channel_new();
+    let ch2 = channelNew();
     
-    let empty = channel_try_recv(ch2);
+    let empty = channelTryRecv(ch2);
     if (empty == null) {
         print("  Empty channel returns null: true");
     } else {
         print("  Empty channel returns null: false");
     }
     
-    channel_send(ch2, 777);
-    let filled = channel_try_recv(ch2);
+    channelSend(ch2, 777);
+    let filled = channelTryRecv(ch2);
     print("  After send, try_recv: " + filled);
     print("  [PASS] Non-blocking receive works!");
     print("");
@@ -124,10 +124,10 @@ fn main() {
     print("Test 6: Receive with Timeout");  
     print("------------------------------------------");
     
-    let ch3 = channel_new();
+    let ch3 = channelNew();
     
     print("  Waiting 50ms for message on empty channel...");
-    let timeout_result = channel_recv_timeout(ch3, 50);
+    let timeout_result = channelRecvTimeout(ch3, 50);
     
     if (timeout_result == null) {
         print("  Timeout correctly returned null");
@@ -141,15 +141,15 @@ fn main() {
     print("Test 7: Channel Close");
     print("------------------------------------------");
     
-    let ch4 = channel_new();
-    channel_send(ch4, 123);
+    let ch4 = channelNew();
+    channelSend(ch4, 123);
     print("  Sent message before close");
     
-    channel_close(ch4);
+    channelClose(ch4);
     print("  Channel closed");
     
     // Sending after close should fail  
-    let send_result = channel_send(ch4, 456);
+    let send_result = channelSend(ch4, 456);
     print("  Send after close: " + send_result);
     print("  [PASS] Channel close works!");
     print("");

@@ -126,13 +126,13 @@ impl Context {
     // Response methods
     fn json(self, data: any) {
         self.status = 200;
-        self.response_body = json_stringify(data);
+        self.response_body = jsonStringify(data);
         self.content_type = "application/json";
     }
     
     fn jsonStatus(self, status: int, data: any) {
         self.status = status;
-        self.response_body = json_stringify(data);
+        self.response_body = jsonStringify(data);
         self.content_type = "application/json";
     }
     
@@ -239,7 +239,7 @@ fn createRoute(method: string, path: string, handler: any) -> Route {
     let i = 0;
     while (i < len(parts)) {
         let part = parts[i];
-        if (len(part) > 0 && char_at(part, 0) == ":") {
+        if (len(part) > 0 && charAt(part, 0) == ":") {
             push(paramNames, substr(part, 1, len(part) - 1));
         }
         i = i + 1;
@@ -394,7 +394,7 @@ fn matchPath(pattern: string, path: string) -> bool {
         }
         
         // Param match (starts with :)
-        if (len(pp) > 0 && char_at(pp, 0) == ":") {
+        if (len(pp) > 0 && charAt(pp, 0) == ":") {
             i = i + 1;
             continue;
         }
@@ -418,7 +418,7 @@ fn extractParams(pattern: string, path: string) -> ParamsMap {
     let i = 0;
     while (i < len(patternParts) && i < len(pathParts)) {
         let pp = patternParts[i];
-        if (len(pp) > 0 && char_at(pp, 0) == ":") {
+        if (len(pp) > 0 && charAt(pp, 0) == ":") {
             let paramName = substr(pp, 1, len(pp) - 1);
             params[paramName] = pathParts[i];
         }
@@ -497,7 +497,7 @@ impl Server {
         print("  Server running on http://localhost:" + self.port);
         print("");
         
-        let listener = argon_listen(self.port);
+        let listener = argonListen(self.port);
         
         if (listener < 0) {
             print("FATAL: Failed to bind to port " + self.port);
@@ -506,17 +506,17 @@ impl Server {
         
         // Event loop
         while (true) {
-            let client = argon_accept(listener);
+            let client = argonAccept(listener);
             
             if (client >= 0) {
-                defer argon_socket_close(client);
+                defer argonSocketClose(client);
                 
-                let req_str = argon_socket_read(client);
+                let req_str = argonSocketRead(client);
                 
                 if (len(req_str) > 0) {
-                    let req = http_parse_request(req_str);
+                    let req = httpParseRequest(req_str);
                     let resp = self.router.handle(req);
-                    argon_socket_write(client, resp);
+                    argonSocketWrite(client, resp);
                 }
             }
         }
@@ -536,7 +536,7 @@ impl Server {
 fn loggerMiddleware(ctx: Context) -> bool {
     let method = ctx.req.method;
     let path = ctx.req.path;
-    print("[" + date_now() + "] " + method + " " + path);
+    print("[" + dateNow() + "] " + method + " " + path);
     return true;
 }
 
@@ -558,7 +558,7 @@ fn corsMiddleware(ctx: Context) -> bool {
 fn jsonBodyParserMiddleware(ctx: Context) -> bool {
     let contentType = ctx.header("Content-Type");
     if (contentType == "application/json" && len(ctx.req.body) > 0) {
-        ctx.locals["body"] = json_parse(ctx.req.body);
+        ctx.locals["body"] = jsonParse(ctx.req.body);
     }
     return true;
 }

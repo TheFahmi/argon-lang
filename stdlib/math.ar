@@ -92,7 +92,7 @@ fn sign(n) {
 }
 
 // Floor division (always rounds down)
-fn floor_div(a, b) {
+fn floorDiv(a, b) {
     let q = a / b;
     if ((a < 0) != (b < 0)) {
         if (a != q * b) {
@@ -152,17 +152,17 @@ fn factorial(n) {
 }
 
 // Check if number is even
-fn is_even(n) {
+fn isEven(n) {
     return mod(n, 2) == 0;
 }
 
 // Check if number is odd
-fn is_odd(n) {
+fn isOdd(n) {
     return mod(n, 2) != 0;
 }
 
 // Check if number is prime
-fn is_prime(n) {
+fn isPrime(n) {
     if (n < 2) {
         return false;
     }
@@ -204,7 +204,7 @@ fn average(arr) {
 }
 
 // Find maximum in array
-fn array_max(arr) {
+fn arrayMax(arr) {
     if (len(arr) == 0) {
         return 0;
     }
@@ -220,7 +220,7 @@ fn array_max(arr) {
 }
 
 // Find minimum in array
-fn array_min(arr) {
+fn arrayMin(arr) {
     if (len(arr) == 0) {
         return 0;
     }

@@ -4,22 +4,22 @@
 // ============================================
 
 // Create new empty array
-fn array_new() {
+fn arrayNew() {
     return [];
 }
 
 // Get array length
-fn array_len(arr) {
+fn arrayLen(arr) {
     return len(arr);
 }
 
 // Check if array is empty
-fn array_is_empty(arr) {
+fn arrayIsEmpty(arr) {
     return len(arr) == 0;
 }
 
 // Get element at index (with bounds check)
-fn array_get(arr, idx) {
+fn arrayGet(arr, idx) {
     if (idx < 0) {
         return null;
     }
@@ -30,7 +30,7 @@ fn array_get(arr, idx) {
 }
 
 // Get first element
-fn array_first(arr) {
+fn arrayFirst(arr) {
     if (len(arr) == 0) {
         return null;
     }
@@ -38,7 +38,7 @@ fn array_first(arr) {
 }
 
 // Get last element
-fn array_last(arr) {
+fn arrayLast(arr) {
     let n = len(arr);
     if (n == 0) {
         return null;
@@ -47,12 +47,12 @@ fn array_last(arr) {
 }
 
 // Append element to array (returns new array)
-fn array_push(arr, elem) {
+fn arrayPush(arr, elem) {
     return push(arr, elem);
 }
 
 // Create array with n copies of value
-fn array_fill(n, value) {
+fn arrayFill(n, value) {
     let result = [];
     let i = 0;
     while (i < n) {
@@ -63,7 +63,7 @@ fn array_fill(n, value) {
 }
 
 // Create range array [start..end)
-fn array_range(start, end) {
+fn arrayRange(start, end) {
     let result = [];
     let i = start;
     while (i < end) {
@@ -74,7 +74,7 @@ fn array_range(start, end) {
 }
 
 // Create range with step
-fn array_range_step(start, end, step) {
+fn arrayRangeStep(start, end, step) {
     let result = [];
     if (step > 0) {
         let i = start;
@@ -93,7 +93,7 @@ fn array_range_step(start, end, step) {
 }
 
 // Find index of element (-1 if not found)
-fn array_index_of(arr, elem) {
+fn arrayIndexOf(arr, elem) {
     let i = 0;
     let n = len(arr);
     while (i < n) {
@@ -106,12 +106,12 @@ fn array_index_of(arr, elem) {
 }
 
 // Check if array contains element
-fn array_contains(arr, elem) {
-    return array_index_of(arr, elem) >= 0;
+fn arrayContains(arr, elem) {
+    return arrayIndexOf(arr, elem) >= 0;
 }
 
 // Count occurrences of element
-fn array_count(arr, elem) {
+fn arrayCount(arr, elem) {
     let count = 0;
     let i = 0;
     let n = len(arr);
@@ -125,7 +125,7 @@ fn array_count(arr, elem) {
 }
 
 // Reverse array (returns new array)
-fn array_reverse(arr) {
+fn arrayReverse(arr) {
     let result = [];
     let i = len(arr) - 1;
     while (i >= 0) {
@@ -136,7 +136,7 @@ fn array_reverse(arr) {
 }
 
 // Slice array [start..end)
-fn array_slice(arr, start, end) {
+fn arraySlice(arr, start, end) {
     let n = len(arr);
     if (start < 0) {
         start = 0;
@@ -155,7 +155,7 @@ fn array_slice(arr, start, end) {
 }
 
 // Concatenate two arrays
-fn array_concat(arr1, arr2) {
+fn arrayConcat(arr1, arr2) {
     let result = [];
     let i = 0;
     while (i < len(arr1)) {
@@ -171,7 +171,7 @@ fn array_concat(arr1, arr2) {
 }
 
 // Flatten nested array (one level)
-fn array_flatten(arr) {
+fn arrayFlatten(arr) {
     let result = [];
     let i = 0;
     while (i < len(arr)) {
@@ -190,11 +190,11 @@ fn array_flatten(arr) {
 }
 
 // Remove duplicates
-fn array_unique(arr) {
+fn arrayUnique(arr) {
     let result = [];
     let i = 0;
     while (i < len(arr)) {
-        if (array_index_of(result, arr[i]) < 0) {
+        if (arrayIndexOf(result, arr[i]) < 0) {
             result = push(result, arr[i]);
         }
         i = i + 1;
@@ -203,20 +203,20 @@ fn array_unique(arr) {
 }
 
 // Take first n elements
-fn array_take(arr, n) {
+fn arrayTake(arr, n) {
     if (n > len(arr)) {
         n = len(arr);
     }
-    return array_slice(arr, 0, n);
+    return arraySlice(arr, 0, n);
 }
 
 // Skip first n elements
-fn array_skip(arr, n) {
-    return array_slice(arr, n, len(arr));
+fn arraySkip(arr, n) {
+    return arraySlice(arr, n, len(arr));
 }
 
 // Sort array (bubble sort - simple but slow)
-fn array_sort(arr) {
+fn arraySort(arr) {
     let result = [];
     let i = 0;
     while (i < len(arr)) {
@@ -232,8 +232,8 @@ fn array_sort(arr) {
         while (i < n - 1) {
             if (result[i] > result[i + 1]) {
                 let temp = result[i];
-                result = array_set(result, i, result[i + 1]);
-                result = array_set(result, i + 1, temp);
+                result = arraySet(result, i, result[i + 1]);
+                result = arraySet(result, i + 1, temp);
                 swapped = true;
             }
             i = i + 1;
@@ -243,7 +243,7 @@ fn array_sort(arr) {
 }
 
 // Set element at index (returns new array)
-fn array_set(arr, idx, value) {
+fn arraySet(arr, idx, value) {
     let result = [];
     let i = 0;
     while (i < len(arr)) {
@@ -258,7 +258,7 @@ fn array_set(arr, idx, value) {
 }
 
 // Insert element at index
-fn array_insert(arr, idx, value) {
+fn arrayInsert(arr, idx, value) {
     let result = [];
     let i = 0;
     let inserted = false;
@@ -277,7 +277,7 @@ fn array_insert(arr, idx, value) {
 }
 
 // Remove element at index
-fn array_remove_at(arr, idx) {
+fn arrayRemoveAt(arr, idx) {
     let result = [];
     let i = 0;
     while (i < len(arr)) {
@@ -290,16 +290,16 @@ fn array_remove_at(arr, idx) {
 }
 
 // Remove first occurrence of element
-fn array_remove(arr, elem) {
-    let idx = array_index_of(arr, elem);
+fn arrayRemove(arr, elem) {
+    let idx = arrayIndexOf(arr, elem);
     if (idx < 0) {
         return arr;
     }
-    return array_remove_at(arr, idx);
+    return arrayRemoveAt(arr, idx);
 }
 
 // Filter array - keep elements equal to value
-fn array_filter_eq(arr, value) {
+fn arrayFilterEq(arr, value) {
     let result = [];
     let i = 0;
     while (i < len(arr)) {
@@ -312,7 +312,7 @@ fn array_filter_eq(arr, value) {
 }
 
 // Filter array - keep elements not equal to value
-fn array_filter_neq(arr, value) {
+fn arrayFilterNeq(arr, value) {
     let result = [];
     let i = 0;
     while (i < len(arr)) {
@@ -325,7 +325,7 @@ fn array_filter_neq(arr, value) {
 }
 
 // Zip two arrays into array of pairs
-fn array_zip(arr1, arr2) {
+fn arrayZip(arr1, arr2) {
     let result = [];
     let min_len = len(arr1);
     if (len(arr2) < min_len) {
@@ -343,7 +343,7 @@ fn array_zip(arr1, arr2) {
 }
 
 // Check if all elements are equal
-fn array_all_equal(arr) {
+fn arrayAllEqual(arr) {
     let n = len(arr);
     if (n <= 1) {
         return true;
@@ -360,7 +360,7 @@ fn array_all_equal(arr) {
 }
 
 // Sum all elements in array
-fn array_sum(arr) {
+fn arraySum(arr) {
     let sum = 0;
     let i = 0;
     let n = len(arr);
@@ -371,13 +371,13 @@ fn array_sum(arr) {
     return sum;
 }
 
-// Note: array_min() and array_max() are provided by math.ar
+// Note: arrayMin() and arrayMax() are provided by math.ar
 
 // Calculate average of array elements
-fn array_avg(arr) {
+fn arrayAvg(arr) {
     let n = len(arr);
     if (n == 0) {
         return 0;
     }
-    return array_sum(arr) / n;
+    return arraySum(arr) / n;
 }

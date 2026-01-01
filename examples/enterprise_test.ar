@@ -34,7 +34,7 @@ fn toHex(n: int) -> string {
     if (num == 0) { return "0"; }
     while (num > 0) {
         let digit = num % 16;
-        hex = char_at(chars, digit) + hex;
+        hex = charAt(chars, digit) + hex;
         num = num / 16;
     }
     return hex;
@@ -45,7 +45,7 @@ fn randomBytes(length: int) -> string {
     let result = "";
     let i = 0;
     while (i < length) {
-        let byte = rand_int(0, 255);
+        let byte = randInt(0, 255);
         if (byte < 16) {
             result = result + "0";
         }

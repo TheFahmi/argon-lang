@@ -39,7 +39,7 @@ fn int32_to_bytes(n) {
     return bytes;
 }
 
-fn bytes_to_int32(bytes, offset) {
+fn bytesToInt32(bytes, offset) {
     let b0 = bytes[offset];
     let b1 = bytes[offset + 1];
     let b2 = bytes[offset + 2];
@@ -47,19 +47,19 @@ fn bytes_to_int32(bytes, offset) {
     return b0 * 16777216 + b1 * 65536 + b2 * 256 + b3;
 }
 
-fn bytes_to_int16(bytes, offset) {
+fn bytesToInt16(bytes, offset) {
     return bytes[offset] * 256 + bytes[offset + 1];
 }
 
-fn string_to_bytes(s) {
-    return @string_to_bytes(s);
+fn stringToBytes(s) {
+    return @stringToBytes(s);
 }
 
-fn bytes_to_string(bytes) {
-    return @bytes_to_string(bytes);
+fn bytesToString(bytes) {
+    return @bytesToString(bytes);
 }
 
-fn append_bytes(dest, src) {
+fn appendBytes(dest, src) {
     let i = 0;
     while (i < len(src)) {
         push(dest, src[i]);
@@ -67,13 +67,13 @@ fn append_bytes(dest, src) {
     }
 }
 
-fn append_string(dest, s) {
-    let bytes = string_to_bytes(s);
-    append_bytes(dest, bytes);
+fn appendString(dest, s) {
+    let bytes = stringToBytes(s);
+    appendBytes(dest, bytes);
 }
 
-fn append_cstring(dest, s) {
-    append_string(dest, s);
+fn appendCstring(dest, s) {
+    appendString(dest, s);
     push(dest, 0);  // null terminator
 }
 
@@ -81,15 +81,15 @@ fn append_cstring(dest, s) {
 // PROTOCOL MESSAGES
 // ============================================
 
-fn build_startup_message(user, database) {
+fn buildStartupMessage(user, database) {
     // Startup message format:
     // Length (4 bytes) + Protocol version (4 bytes) + Parameters + \0\0
     
     let params = [];
-    append_cstring(params, "user");
-    append_cstring(params, user);
-    append_cstring(params, "database");
-    append_cstring(params, database);
+    appendCstring(params, "user");
+    appendCstring(params, user);
+    appendCstring(params, "database");
+    appendCstring(params, database);
     push(params, 0);  // End of parameters
     
     // Protocol version 3.0 = 196608 (0x00030000)
@@ -103,34 +103,34 @@ fn build_startup_message(user, database) {
     let total_len = 4 + 4 + len(params);
     
     let msg = [];
-    append_bytes(msg, int32_to_bytes(total_len));
-    append_bytes(msg, version);
-    append_bytes(msg, params);
+    appendBytes(msg, int32_to_bytes(total_len));
+    appendBytes(msg, version);
+    appendBytes(msg, params);
     
     return msg;
 }
 
-fn build_query_message(query) {
+fn buildQueryMessage(query) {
     // Query message: 'Q' + length (4) + query + \0
     let query_bytes = [];
-    append_string(query_bytes, query);
+    appendString(query_bytes, query);
     push(query_bytes, 0);
     
     let total_len = 4 + len(query_bytes);
     
     let msg = [];
     push(msg, 81);  // 'Q'
-    append_bytes(msg, int32_to_bytes(total_len));
-    append_bytes(msg, query_bytes);
+    appendBytes(msg, int32_to_bytes(total_len));
+    appendBytes(msg, query_bytes);
     
     return msg;
 }
 
-fn build_terminate_message() {
+fn buildTerminateMessage() {
     // Terminate: 'X' + length (4)
     let msg = [];
     push(msg, 88);  // 'X'
-    append_bytes(msg, int32_to_bytes(4));
+    appendBytes(msg, int32_to_bytes(4));
     return msg;
 }
 
@@ -138,10 +138,10 @@ fn build_terminate_message() {
 // CONNECTION
 // ============================================
 
-fn pg_connect(host, port, user, database) {
+fn pgConnect(host, port, user, database) {
     print("[PG] Connecting to " + host + ":" + port + "...");
     
-    let socket = @tcp_connect(host, port);
+    let socket = @tcpConnect(host, port);
     if (socket < 0) {
         print("[PG] Failed to connect!");
         return null;
@@ -150,8 +150,8 @@ fn pg_connect(host, port, user, database) {
     print("[PG] TCP connected, sending startup message...");
     
     // Send startup message
-    let startup = build_startup_message(user, database);
-    @tcp_write_raw(socket, startup);
+    let startup = buildStartupMessage(user, database);
+    @tcpWriteRaw(socket, startup);
     
     // Read response
     let conn = PgConnection {
@@ -166,21 +166,21 @@ fn pg_connect(host, port, user, database) {
     };
     
     // Handle authentication
-    let auth_ok = handle_auth(conn);
+    let auth_ok = handleAuth(conn);
     
     if (auth_ok) {
         conn.connected = true;
         print("[PG] Connected successfully!");
     } else {
         print("[PG] Authentication failed!");
-        @argon_socket_close(socket);
+        @argonSocketClose(socket);
         return null;
     }
     
     return conn;
 }
 
-fn handle_auth(conn) {
+fn handleAuth(conn) {
     // Read messages until ReadyForQuery or error
     let ready = false;
     let max_attempts = 50;  // Increased to handle many parameter status messages
@@ -190,24 +190,24 @@ fn handle_auth(conn) {
         attempts = attempts + 1;
         
         // Read message type (1 byte) + length (4 bytes)
-        let header = @tcp_read_raw(conn.socket, 5);
+        let header = @tcpReadRaw(conn.socket, 5);
         if (len(header) < 5) {
             print("[PG] Failed to read header");
             return false;
         }
         
         let msg_type = header[0];
-        let msg_len = bytes_to_int32(header, 1) - 4;
+        let msg_len = bytesToInt32(header, 1) - 4;
         
         // Read message body
         let body = [];
         if (msg_len > 0) {
-            body = @tcp_read_raw(conn.socket, msg_len);
+            body = @tcpReadRaw(conn.socket, msg_len);
         }
         
         // Handle message types
         if (msg_type == 82) {  // 'R' - Authentication
-            let auth_type = bytes_to_int32(body, 0);
+            let auth_type = bytesToInt32(body, 0);
             if (auth_type == 0) {
                 print("[PG] Authentication OK (trust mode)");
             } else if (auth_type == 3) {
@@ -220,12 +220,12 @@ fn handle_auth(conn) {
                 print("[PG] Unknown auth type: " + auth_type);
             }
         } else if (msg_type == 75) {  // 'K' - BackendKeyData
-            conn.backend_pid = bytes_to_int32(body, 0);
-            conn.backend_key = bytes_to_int32(body, 4);
+            conn.backend_pid = bytesToInt32(body, 0);
+            conn.backend_key = bytesToInt32(body, 4);
             print("[PG] Backend PID: " + conn.backend_pid);
         } else if (msg_type == 83) {  // 'S' - ParameterStatus
             // Parse parameter name and value
-            let param = read_cstring(body, 0);
+            let param = readCstring(body, 0);
             print("[PG] Parameter: " + param);
         } else if (msg_type == 90) {  // 'Z' - ReadyForQuery
             print("[PG] Ready for query!");
@@ -239,21 +239,21 @@ fn handle_auth(conn) {
     return ready;
 }
 
-fn read_cstring(bytes, offset) {
+fn readCstring(bytes, offset) {
     let result = [];
     let i = offset;
     while (i < len(bytes) && bytes[i] != 0) {
         push(result, bytes[i]);
         i = i + 1;
     }
-    return bytes_to_string(result);
+    return bytesToString(result);
 }
 
 // ============================================
 // QUERY EXECUTION
 // ============================================
 
-fn pg_query(conn, sql) {
+fn pgQuery(conn, sql) {
     if (!conn.connected) {
         return PgResult { success: false, rows: [], columns: [], affected: 0, error: "Not connected" };
     }
@@ -261,8 +261,8 @@ fn pg_query(conn, sql) {
     print("[PG] Executing: " + sql);
     
     // Send query
-    let query_msg = build_query_message(sql);
-    @tcp_write_raw(conn.socket, query_msg);
+    let query_msg = buildQueryMessage(sql);
+    @tcpWriteRaw(conn.socket, query_msg);
     
     // Parse response
     let result = PgResult {
@@ -280,33 +280,33 @@ fn pg_query(conn, sql) {
     while (!done && msg_count < max_messages) {
         msg_count = msg_count + 1;
         
-        let header = @tcp_read_raw(conn.socket, 5);
+        let header = @tcpReadRaw(conn.socket, 5);
         if (len(header) < 5) {
             result.error = "Failed to read response";
             return result;
         }
         
         let msg_type = header[0];
-        let msg_len = bytes_to_int32(header, 1) - 4;
+        let msg_len = bytesToInt32(header, 1) - 4;
         
         let body = [];
         if (msg_len > 0) {
-            body = @tcp_read_raw(conn.socket, msg_len);
+            body = @tcpReadRaw(conn.socket, msg_len);
         }
         
         if (msg_type == 84) {  // 'T' - RowDescription
             // Parse column names
-            let num_cols = bytes_to_int16(body, 0);
+            let num_cols = bytesToInt16(body, 0);
             print("[PG] Columns: " + num_cols);
             // Note: Full column parsing would go here
             result.columns = num_cols;
         } else if (msg_type == 68) {  // 'D' - DataRow
-            let num_values = bytes_to_int16(body, 0);
+            let num_values = bytesToInt16(body, 0);
             print("[PG] Row with " + num_values + " values");
             // Note: Full row parsing would go here
             push(result.rows, body);
         } else if (msg_type == 67) {  // 'C' - CommandComplete
-            let tag = read_cstring(body, 0);
+            let tag = readCstring(body, 0);
             print("[PG] Command complete: " + tag);
             result.success = true;
         } else if (msg_type == 90) {  // 'Z' - ReadyForQuery
@@ -324,11 +324,11 @@ fn pg_query(conn, sql) {
 // DISCONNECT
 // ============================================
 
-fn pg_close(conn) {
+fn pgClose(conn) {
     if (conn.connected) {
-        let term = build_terminate_message();
-        @tcp_write_raw(conn.socket, term);
-        @argon_socket_close(conn.socket);
+        let term = buildTerminateMessage();
+        @tcpWriteRaw(conn.socket, term);
+        @argonSocketClose(conn.socket);
         conn.connected = false;
         print("[PG] Connection closed");
     }
@@ -338,7 +338,7 @@ fn pg_close(conn) {
 // CONVENIENCE FUNCTIONS
 // ============================================
 
-fn pg_exec(conn, sql) {
-    let result = pg_query(conn, sql);
+fn pgExec(conn, sql) {
+    let result = pgQuery(conn, sql);
     return result.success;
 }

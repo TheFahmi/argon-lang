@@ -3,7 +3,7 @@
 
 // Define a trait for printable objects
 trait Printable {
-    fn to_string(self) -> string;
+    fn toString(self) -> string;
 }
 
 // Define a trait for comparable objects
@@ -20,7 +20,7 @@ struct Point {
 
 // Implement Printable for Point
 impl Printable for Point {
-    fn to_string(self) -> string {
+    fn toString(self) -> string {
         return "(" + self.x + ", " + self.y + ")";
     }
 }
@@ -40,7 +40,7 @@ impl Comparable for Point {
 
 // Generic function with trait bound
 fn print_item<T: Printable>(item: T) {
-    print(item.to_string());
+    print(item.toString());
 }
 
 // Animal trait
@@ -76,8 +76,8 @@ fn main() {
     let p3 = Point { x: 3, y: 4 };
     
     // Use Printable trait
-    print("Point 1: " + p1.to_string());
-    print("Point 2: " + p2.to_string());
+    print("Point 1: " + p1.toString());
+    print("Point 2: " + p2.toString());
     
     // Use Comparable trait
     let cmp = p1.compare(p2);

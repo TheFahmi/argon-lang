@@ -6,7 +6,7 @@ fn main() {
     print("");
     
     // Get initial stats
-    let stats = gc_stats();
+    let stats = gcStats();
     print("Initial heap size: " + toString(stats[0]));
     
     // Allocate some arrays
@@ -17,16 +17,16 @@ fn main() {
     let arr3 = ["hello", "world"];
     
     // Check stats after allocation
-    let stats2 = gc_stats();
+    let stats2 = gcStats();
     print("After allocation - heap: " + toString(stats2[0]) + ", allocated: " + toString(stats2[1]));
     
     // Force GC
     print("");
     print("Forcing garbage collection...");
-    gc_collect();
+    gcCollect();
     
     // Check stats after GC  
-    let stats3 = gc_stats();
+    let stats3 = gcStats();
     print("After GC - heap: " + toString(stats3[0]) + ", allocated: " + toString(stats3[1]));
     
     // The arrays are still reachable so they shouldn't be collected

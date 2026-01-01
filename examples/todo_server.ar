@@ -3,33 +3,33 @@ import "json"
 
 // --- Handlers ---
 
-fn home_handler(ctx) {
+fn homeHandler(ctx) {
     ctx.html("<h1>Argon Todo App</h1><p>Powered by Argon v2.24.0</p>");
 }
 
-fn api_status(ctx) {
+fn apiStatus(ctx) {
     // Use proper JSON constructors
-    let data = json_object([
-        ["status", json_string("ok")],
-        ["version", json_string("2.24.0")]
+    let data = jsonObject([
+        ["status", jsonString("ok")],
+        ["version", jsonString("2.24.0")]
     ]);
     ctx.json(data);
 }
 
-fn todo_list(ctx) {
-    let t1 = json_object([
-        ["id", json_number(1)], 
-        ["task", json_string("Implement Macros")], 
-        ["done", json_bool(true)]
+fn todoList(ctx) {
+    let t1 = jsonObject([
+        ["id", jsonNumber(1)], 
+        ["task", jsonString("Implement Macros")], 
+        ["done", jsonBool(true)]
     ]);
-    let t2 = json_object([
-        ["id", json_number(2)], 
-        ["task", json_string("Build Web Framework")], 
-        ["done", json_bool(true)]
+    let t2 = jsonObject([
+        ["id", jsonNumber(2)], 
+        ["task", jsonString("Build Web Framework")], 
+        ["done", jsonBool(true)]
     ]);
     
     let todos = [t1, t2];
-    ctx.json(json_array(todos));
+    ctx.json(jsonArray(todos));
 }
 
 // --- Macros ---

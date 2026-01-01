@@ -5,7 +5,7 @@
 
 import "stdlib/string.ar";
 
-fn repl_main() {
+fn replMain() {
     print("Argon REPL v1.0");
     print("Type 'exit' to quit, 'clear' to clear screen.");
     
@@ -23,7 +23,7 @@ fn repl_main() {
         
         // Handle EOF/empty (input returns empty string on EOF/error?)
         // trimmed check
-        if (is_empty(line)) {
+        if (isEmpty(line)) {
             continue;
         }
         
@@ -45,11 +45,11 @@ fn repl_main() {
         
         // Check for definitions (fn, struct, enum, import, let)
         // Simple prefix check
-        if (starts_with(trimmed, "fn ")) { is_statement = true; }
-        if (starts_with(trimmed, "struct ")) { is_statement = true; }
-        if (starts_with(trimmed, "enum ")) { is_statement = true; }
-        if (starts_with(trimmed, "import ")) { is_statement = true; }
-        if (starts_with(trimmed, "let ")) { is_statement = true; }
+        if (startsWith(trimmed, "fn ")) { is_statement = true; }
+        if (startsWith(trimmed, "struct ")) { is_statement = true; }
+        if (startsWith(trimmed, "enum ")) { is_statement = true; }
+        if (startsWith(trimmed, "import ")) { is_statement = true; }
+        if (startsWith(trimmed, "let ")) { is_statement = true; }
         
         if (is_statement) {
             // Append to history and verify compilation
@@ -115,6 +115,6 @@ fn repl_main() {
 }
 
 fn main() {
-    repl_main();
+    replMain();
     return 0;
 }

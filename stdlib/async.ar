@@ -2,33 +2,33 @@
 // Async/await support utilities
 
 // Sleep for ms milliseconds (async-friendly)
-fn async_sleep(ms: int) {
+fn asyncSleep(ms: int) {
     sleep(ms);
 }
 
 // Create a simple promise-like wrapper
 struct Future { value: any, ready: int }
 
-fn future_new() {
+fn futureNew() {
     return Future { value: 0, ready: 0 };
 }
 
-fn future_resolve(f: Future, val: any) {
+fn futureResolve(f: Future, val: any) {
     f.ready = 1;
     f.value = val;
     return f;
 }
 
-fn future_is_ready(f: Future) {
+fn futureIsReady(f: Future) {
     return f.ready;
 }
 
-fn future_get(f: Future) {
+fn futureGet(f: Future) {
     return f.value;
 }
 
 // Run multiple async operations (simplified)
-fn async_all(tasks: any) {
+fn asyncAll(tasks: any) {
     // Just run tasks sequentially for now
     let results = [];
     let i = 0;

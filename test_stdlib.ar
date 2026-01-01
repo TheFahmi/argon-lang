@@ -9,7 +9,7 @@ fn main() {
     print("   abs(-42) = " + toString(abs(-42)));
     print("   max(3, 7) = " + toString(max(3, 7)));
     print("   min(3, 7) = " + toString(min(3, 7)));
-    print("   rand_int(1, 100) = " + toString(rand_int(1, 100)));
+    print("   randInt(1, 100) = " + toString(randInt(1, 100)));
     
     // 2. String Functions
     print("");
@@ -17,14 +17,14 @@ fn main() {
     let s = "  Hello, Argon World!  ";
     print("   original = '" + s + "'");
     print("   trim() = '" + trim(s) + "'");
-    print("   to_upper('hello') = " + to_upper("hello"));
-    print("   to_lower('HELLO') = " + to_lower("HELLO"));
+    print("   toUpper('hello') = " + toUpper("hello"));
+    print("   toLower('HELLO') = " + toLower("HELLO"));
     print("   contains('Argon') = " + toString(contains(s, "Argon")));
-    print("   starts_with('  Hello') = " + toString(starts_with(s, "  Hello")));
-    print("   ends_with('!  ') = " + toString(ends_with(s, "!  ")));
+    print("   startsWith('  Hello') = " + toString(startsWith(s, "  Hello")));
+    print("   endsWith('!  ') = " + toString(endsWith(s, "!  ")));
     print("   replace('Argon', 'Rust') = " + replace(s, "Argon", "Rust"));
-    print("   char_at(2) = " + char_at(s, 2));
-    print("   index_of('Argon') = " + toString(index_of(s, "Argon")));
+    print("   charAt(2) = " + charAt(s, 2));
+    print("   indexOf('Argon') = " + toString(indexOf(s, "Argon")));
     print("   repeat('ab', 3) = " + repeat("ab", 3));
     
     // 3. String Splitting/Joining
@@ -67,7 +67,7 @@ fn main() {
     let fruits = ["apple", "banana", "cherry"];
     print("   contains(fruits, 'banana') = " + toString(contains(fruits, "banana")));
     print("   contains(fruits, 'mango') = " + toString(contains(fruits, "mango")));
-    print("   findIndex(fruits, 'cherry') = " + toString(find_index(fruits, "cherry")));
+    print("   findIndex(fruits, 'cherry') = " + toString(findIndex(fruits, "cherry")));
     
     // 8. Type Functions
     print("");
@@ -77,10 +77,10 @@ fn main() {
     print("   typeof([1,2,3]) = " + typeof([1,2,3]));
     print("   typeof(true) = " + typeof(true));
     print("   typeof(null) = " + typeof(null));
-    print("   is_string('test') = " + toString(is_string("test")));
-    print("   is_int(42) = " + toString(is_int(42)));
-    print("   is_array([1]) = " + toString(is_array([1])));
-    print("   is_null(null) = " + toString(is_null(null)));
+    print("   isString('test') = " + toString(isString("test")));
+    print("   isInt(42) = " + toString(isInt(42)));
+    print("   isArray([1]) = " + toString(isArray([1])));
+    print("   isNull(null) = " + toString(isNull(null)));
     
     // 9. Conversion Functions
     print("");

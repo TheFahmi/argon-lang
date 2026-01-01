@@ -63,31 +63,31 @@ fn parseDocComment(comment: string) -> any {
         let line = trim(lines[i]);
         
         // Skip comment markers
-        if (starts_with(line, "//")) {
+        if (startsWith(line, "//")) {
             line = trim(substr(line, 2, len(line) - 2));
         }
-        if (starts_with(line, "///")) {
+        if (startsWith(line, "///")) {
             line = trim(substr(line, 3, len(line) - 3));
         }
         
         // Parse special tags
-        if (starts_with(line, "@param")) {
+        if (startsWith(line, "@param")) {
             let param = parseParam(substr(line, 6, len(line) - 6));
             push(doc.params, param);
-        } else if (starts_with(line, "@returns") || starts_with(line, "@return")) {
+        } else if (startsWith(line, "@returns") || startsWith(line, "@return")) {
             let offset = 8;
-            if (starts_with(line, "@return ")) { offset = 8; }
+            if (startsWith(line, "@return ")) { offset = 8; }
             doc.returns = trim(substr(line, offset, len(line) - offset));
-        } else if (starts_with(line, "@example")) {
+        } else if (startsWith(line, "@example")) {
             inExample = true;
             currentExample = "";
-        } else if (starts_with(line, "@endexample")) {
+        } else if (startsWith(line, "@endexample")) {
             inExample = false;
             push(doc.examples, currentExample);
             currentExample = "";
-        } else if (starts_with(line, "@deprecated")) {
+        } else if (startsWith(line, "@deprecated")) {
             doc.deprecated = true;
-        } else if (starts_with(line, "@since")) {
+        } else if (startsWith(line, "@since")) {
             doc.since = trim(substr(line, 6, len(line) - 6));
         } else if (inExample) {
             currentExample = currentExample + line + "\n";
@@ -133,7 +133,7 @@ fn parseFunctionSignature(line: string) -> any {
     };
     
     // Find function name (after "fn ")
-    if (starts_with(line, "fn ")) {
+    if (startsWith(line, "fn ")) {
         let rest = substr(line, 3, len(line) - 3);
         let parenIdx = indexOf(rest, "(");
         
@@ -172,7 +172,7 @@ fn parseStructSignature(line: string) -> any {
         fields: []
     };
     
-    if (starts_with(line, "struct ")) {
+    if (startsWith(line, "struct ")) {
         let rest = substr(line, 7, len(line) - 7);
         let braceIdx = indexOf(rest, "{");
         
@@ -211,21 +211,21 @@ fn parseSourceFile(path: string) -> ModuleDoc {
         let trimmed = trim(line);
         
         // Collect doc comments
-        if (starts_with(trimmed, "///") || starts_with(trimmed, "//!")) {
+        if (startsWith(trimmed, "///") || startsWith(trimmed, "//!")) {
             currentComment = currentComment + trimmed + "\n";
-        } else if (starts_with(trimmed, "// ===")) {
+        } else if (startsWith(trimmed, "// ===")) {
             // Section header - could be module description
             if (len(module.description) == 0 && len(currentComment) > 0) {
                 let parsed = parseDocComment(currentComment);
                 module.description = parsed.description;
             }
             currentComment = "";
-        } else if (starts_with(trimmed, "import ")) {
+        } else if (startsWith(trimmed, "import ")) {
             // Track imports
             let importPath = extractImportPath(trimmed);
             push(module.imports, importPath);
             currentComment = "";
-        } else if (starts_with(trimmed, "fn ")) {
+        } else if (startsWith(trimmed, "fn ")) {
             // Function definition
             let sig = parseFunctionSignature(trimmed);
             let docInfo = parseDocComment(currentComment);
@@ -244,7 +244,7 @@ fn parseSourceFile(path: string) -> ModuleDoc {
             
             push(module.entries, entry);
             currentComment = "";
-        } else if (starts_with(trimmed, "struct ")) {
+        } else if (startsWith(trimmed, "struct ")) {
             // Struct definition
             let sig = parseStructSignature(trimmed);
             let docInfo = parseDocComment(currentComment);
@@ -263,7 +263,7 @@ fn parseSourceFile(path: string) -> ModuleDoc {
             
             push(module.entries, entry);
             currentComment = "";
-        } else if (starts_with(trimmed, "let ") && indexOf(trimmed, "=") > 0) {
+        } else if (startsWith(trimmed, "let ") && indexOf(trimmed, "=") > 0) {
             // Constant
             let docInfo = parseDocComment(currentComment);
             let constName = extractConstName(trimmed);
@@ -283,7 +283,7 @@ fn parseSourceFile(path: string) -> ModuleDoc {
                 push(module.entries, entry);
             }
             currentComment = "";
-        } else if (!starts_with(trimmed, "//") && len(trimmed) > 0) {
+        } else if (!startsWith(trimmed, "//") && len(trimmed) > 0) {
             currentComment = "";
         }
         
@@ -298,7 +298,7 @@ fn extractModuleName(path: string) -> string {
     let parts = split(path, "/");
     let filename = parts[len(parts) - 1];
     // Remove .ar extension
-    if (ends_with(filename, ".ar")) {
+    if (endsWith(filename, ".ar")) {
         return substr(filename, 0, len(filename) - 3);
     }
     return filename;
@@ -328,7 +328,7 @@ fn extractConstName(line: string) -> string {
 fn isUpperCase(s: string) -> bool {
     let i = 0;
     while (i < len(s)) {
-        let c = char_at(s, i);
+        let c = charAt(s, i);
         if (c >= "a" && c <= "z") {
             return false;
         }
@@ -351,7 +351,7 @@ fn extractStructBody(lines: [string], startIdx: int) -> string {
         // Count braces
         let j = 0;
         while (j < len(line)) {
-            let c = char_at(line, j);
+            let c = charAt(line, j);
             if (c == "{") { braceCount = braceCount + 1; started = true; }
             if (c == "}") { braceCount = braceCount - 1; }
             j = j + 1;
@@ -685,7 +685,7 @@ fn main() {
     let i = 0;
     while (i < len(files)) {
         let file = files[i];
-        if (ends_with(file, ".ar")) {
+        if (endsWith(file, ".ar")) {
             print("  Processing: " + file);
             let module = parseSourceFile("stdlib/" + file);
             push(modules, module);

@@ -22,12 +22,12 @@ fn main() {
     print("City: " + person.address.city);
     
     // Test 3: Object in function
-    let result = create_user("Bob", 25);
+    let result = createUser("Bob", 25);
     print("Created: " + result.name + ", " + result.age);
     
     print("=== All Tests PASSED! ===");
 }
 
-fn create_user(name, age) {
+fn createUser(name, age) {
     return { name: name, age: age, active: true };
 }

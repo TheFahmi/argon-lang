@@ -12,80 +12,80 @@ let JSON_ARRAY = 4;
 let JSON_OBJECT = 5;
 
 // Create JSON null
-fn json_null() {
+fn jsonNull() {
     let res = [JSON_NULL, null];
     return res;
 }
 
 // Create JSON boolean
-fn json_bool(val) {
+fn jsonBool(val) {
     let res = [JSON_BOOL, val];
     return res;
 }
 
 // Create JSON number
-fn json_number(val) {
+fn jsonNumber(val) {
     let res = [JSON_NUMBER, val];
     return res;
 }
 
 // Create JSON string
-fn json_string(val) {
+fn jsonString(val) {
     let res = [JSON_STRING, val];
     return res;
 }
 
 // Create JSON array
-fn json_array(items) {
+fn jsonArray(items) {
     let res = [JSON_ARRAY, items];
     return res;
 }
 
 // Create JSON object (from list of key-value pairs)
-fn json_object(pairs) {
+fn jsonObject(pairs) {
     let res = [JSON_OBJECT, pairs];
     return res;
 }
 
 // Get JSON value type
-fn json_type(val) {
+fn jsonType(val) {
     return val[0];
 }
 
 // Get JSON inner value
-fn json_value(val) {
+fn jsonValue(val) {
     return val[1];
 }
 
 // Check if JSON is null
-fn json_is_null(val) {
+fn jsonIsNull(val) {
     return val[0] == JSON_NULL;
 }
 
 // Check if JSON is number
-fn json_is_number(val) {
+fn jsonIsNumber(val) {
     return val[0] == JSON_NUMBER;
 }
 
 // Check if JSON is string
-fn json_is_string(val) {
+fn jsonIsString(val) {
     return val[0] == JSON_STRING;
 }
 
 // Check if JSON is array
-fn json_is_array(val) {
+fn jsonIsArray(val) {
     return val[0] == JSON_ARRAY;
 }
 
 // Check if JSON is object
-fn json_is_object(val) {
+fn jsonIsObject(val) {
     return val[0] == JSON_OBJECT;
 }
 
 // Get object property by key
-fn json_get(obj, key) {
+fn jsonGet(obj, key) {
     if (obj[0] != JSON_OBJECT) {
-        return json_null();
+        return jsonNull();
     }
     let pairs = obj[1];
     let i = 0;
@@ -96,26 +96,26 @@ fn json_get(obj, key) {
         }
         i = i + 1;
     }
-    return json_null();
+    return jsonNull();
 }
 
 // Get array element by index
-fn json_get_at(arr, idx) {
+fn jsonGetAt(arr, idx) {
     if (arr[0] != JSON_ARRAY) {
-        return json_null();
+        return jsonNull();
     }
     let items = arr[1];
     if (idx < 0) {
-        return json_null();
+        return jsonNull();
     }
     if (idx >= len(items)) {
-        return json_null();
+        return jsonNull();
     }
     return items[idx];
 }
 
 // Stringify JSON value (simple version)
-fn json_stringify(val) {
+fn jsonStringify(val) {
     let typ = val[0];
     let inner = val[1];
     
@@ -132,7 +132,7 @@ fn json_stringify(val) {
         return "" + inner;
     }
     if (typ == JSON_STRING) {
-        return "\"" + json_escape_string(inner) + "\"";
+        return "\"" + jsonEscapeString(inner) + "\"";
     }
     if (typ == JSON_ARRAY) {
         let result = "[";
@@ -141,7 +141,7 @@ fn json_stringify(val) {
             if (i > 0) {
                 result = result + ",";
             }
-            result = result + json_stringify(inner[i]);
+            result = result + jsonStringify(inner[i]);
             i = i + 1;
         }
         return result + "]";
@@ -154,8 +154,8 @@ fn json_stringify(val) {
                 result = result + ",";
             }
             let pair = inner[i];
-            result = result + "\"" + json_escape_string(pair[0]) + "\":";
-            result = result + json_stringify(pair[1]);
+            result = result + "\"" + jsonEscapeString(pair[0]) + "\":";
+            result = result + jsonStringify(pair[1]);
             i = i + 1;
         }
         return result + "}";
@@ -164,7 +164,7 @@ fn json_stringify(val) {
 }
 
 // Escape string for JSON
-fn json_escape_string(s) {
+fn jsonEscapeString(s) {
     let result = "";
     let i = 0;
     while (i < len(s)) {
@@ -188,11 +188,11 @@ fn json_escape_string(s) {
 }
 
 // Pretty print JSON with indentation
-fn json_pretty(val, indent) {
-    return json_pretty_inner(val, indent, 0);
+fn jsonPretty(val, indent) {
+    return jsonPrettyInner(val, indent, 0);
 }
 
-fn json_pretty_inner(val, indent, level) {
+fn jsonPrettyInner(val, indent, level) {
     let typ = val[0];
     let inner = val[1];
     let prefix = "";
@@ -216,7 +216,7 @@ fn json_pretty_inner(val, indent, level) {
         return "" + inner;
     }
     if (typ == JSON_STRING) {
-        return "\"" + json_escape_string(inner) + "\"";
+        return "\"" + jsonEscapeString(inner) + "\"";
     }
     if (typ == JSON_ARRAY) {
         if (len(inner) == 0) {
@@ -228,7 +228,7 @@ fn json_pretty_inner(val, indent, level) {
             if (i > 0) {
                 result = result + ",\n";
             }
-            result = result + child_prefix + json_pretty_inner(inner[i], indent, level + 1);
+            result = result + child_prefix + jsonPrettyInner(inner[i], indent, level + 1);
             i = i + 1;
         }
         return result + "\n" + prefix + "]";
@@ -244,8 +244,8 @@ fn json_pretty_inner(val, indent, level) {
                 result = result + ",\n";
             }
             let pair = inner[i];
-            result = result + child_prefix + "\"" + json_escape_string(pair[0]) + "\": ";
-            result = result + json_pretty_inner(pair[1], indent, level + 1);
+            result = result + child_prefix + "\"" + jsonEscapeString(pair[0]) + "\": ";
+            result = result + jsonPrettyInner(pair[1], indent, level + 1);
             i = i + 1;
         }
         return result + "\n" + prefix + "}";
@@ -255,12 +255,12 @@ fn json_pretty_inner(val, indent, level) {
 
 // Parse JSON string (simplified parser)
 // Returns [success, value, error_msg]
-fn json_parse(s) {
-    let result = json_parse_value(s, 0);
+fn jsonParse(s) {
+    let result = jsonParseValue(s, 0);
     return result;
 }
 
-fn json_skip_whitespace(s, pos) {
+fn jsonSkipWhitespace(s, pos) {
     let n = len(s);
     while (pos < n) {
         let c = s[pos];
@@ -279,8 +279,8 @@ fn json_skip_whitespace(s, pos) {
     return pos;
 }
 
-fn json_parse_value(s, pos) {
-    pos = json_skip_whitespace(s, pos);
+fn jsonParseValue(s, pos) {
+    pos = jsonSkipWhitespace(s, pos);
     let n = len(s);
     
     if (pos >= n) {
@@ -295,7 +295,7 @@ fn json_parse_value(s, pos) {
             if (s[pos + 1] == "u") {
                 if (s[pos + 2] == "l") {
                     if (s[pos + 3] == "l") {
-                        return [true, json_null(), pos + 4, ""];
+                        return [true, jsonNull(), pos + 4, ""];
                     }
                 }
             }
@@ -309,7 +309,7 @@ fn json_parse_value(s, pos) {
             if (s[pos + 1] == "r") {
                 if (s[pos + 2] == "u") {
                     if (s[pos + 3] == "e") {
-                        return [true, json_bool(true), pos + 4, ""];
+                        return [true, jsonBool(true), pos + 4, ""];
                     }
                 }
             }
@@ -324,7 +324,7 @@ fn json_parse_value(s, pos) {
                 if (s[pos + 2] == "l") {
                     if (s[pos + 3] == "s") {
                         if (s[pos + 4] == "e") {
-                            return [true, json_bool(false), pos + 5, ""];
+                            return [true, jsonBool(false), pos + 5, ""];
                         }
                     }
                 }
@@ -335,32 +335,32 @@ fn json_parse_value(s, pos) {
     
     // string
     if (c == "\"") {
-        return json_parse_string(s, pos);
+        return jsonParseString(s, pos);
     }
     
     // array
     if (c == "[") {
-        return json_parse_array(s, pos);
+        return jsonParseArray(s, pos);
     }
     
     // object
     if (c == "{") {
-        return json_parse_object(s, pos);
+        return jsonParseObject(s, pos);
     }
     
     // number
-    let code = char_code_at(s, pos);
+    let code = charCodeAt(s, pos);
     if ((code >= 48) == (code <= 57)) {  // 0-9
-        return json_parse_number(s, pos);
+        return jsonParseNumber(s, pos);
     }
     if (c == "-") {
-        return json_parse_number(s, pos);
+        return jsonParseNumber(s, pos);
     }
     
     return [false, null, pos, "Unexpected character: " + c];
 }
 
-fn json_parse_string(s, pos) {
+fn jsonParseString(s, pos) {
     let n = len(s);
     if (s[pos] != "\"") {
         return [false, null, pos, "Expected quote"];
@@ -371,7 +371,7 @@ fn json_parse_string(s, pos) {
     while (pos < n) {
         let c = s[pos];
         if (c == "\"") {
-            return [true, json_string(result), pos + 1, ""];
+            return [true, jsonString(result), pos + 1, ""];
         }
         if (c == "\\") {
             pos = pos + 1;
@@ -400,7 +400,7 @@ fn json_parse_string(s, pos) {
     return [false, null, pos, "Unterminated string"];
 }
 
-fn json_parse_number(s, pos) {
+fn jsonParseNumber(s, pos) {
     let n = len(s);
     let start = pos;
     
@@ -411,7 +411,7 @@ fn json_parse_number(s, pos) {
     
     // Digits
     while (pos < n) {
-        let code = char_code_at(s, pos);
+        let code = charCodeAt(s, pos);
         if ((code >= 48) == (code <= 57)) {  // 0-9
             pos = pos + 1;
         } else {
@@ -422,8 +422,8 @@ fn json_parse_number(s, pos) {
                 num_str = num_str + s[i];
                 i = i + 1;
             }
-            let num = parse_int(num_str);
-            return [true, json_number(num), pos, ""];
+            let num = parseInt(num_str);
+            return [true, jsonNumber(num), pos, ""];
         }
     }
     
@@ -434,11 +434,11 @@ fn json_parse_number(s, pos) {
         num_str = num_str + s[i];
         i = i + 1;
     }
-    let num = parse_int(num_str);
-    return [true, json_number(num), pos, ""];
+    let num = parseInt(num_str);
+    return [true, jsonNumber(num), pos, ""];
 }
 
-fn json_parse_array(s, pos) {
+fn jsonParseArray(s, pos) {
     let n = len(s);
     if (s[pos] != "[") {
         return [false, null, pos, "Expected ["];
@@ -446,31 +446,31 @@ fn json_parse_array(s, pos) {
     pos = pos + 1;
     
     let items = [];
-    pos = json_skip_whitespace(s, pos);
+    pos = jsonSkipWhitespace(s, pos);
     
     // Empty array
     if (pos < n) {
         if (s[pos] == "]") {
-            return [true, json_array(items), pos + 1, ""];
+            return [true, jsonArray(items), pos + 1, ""];
         }
     }
     
     // Parse items
     while (pos < n) {
-        let result = json_parse_value(s, pos);
+        let result = jsonParseValue(s, pos);
         if (result[0] == false) {
             return result;
         }
         items = push(items, result[1]);
         pos = result[2];
         
-        pos = json_skip_whitespace(s, pos);
+        pos = jsonSkipWhitespace(s, pos);
         if (pos >= n) {
             return [false, null, pos, "Unexpected end of array"];
         }
         
         if (s[pos] == "]") {
-            return [true, json_array(items), pos + 1, ""];
+            return [true, jsonArray(items), pos + 1, ""];
         }
         if (s[pos] == ",") {
             pos = pos + 1;
@@ -481,7 +481,7 @@ fn json_parse_array(s, pos) {
     return [false, null, pos, "Unterminated array"];
 }
 
-fn json_parse_object(s, pos) {
+fn jsonParseObject(s, pos) {
     let n = len(s);
     if (s[pos] != "{") {
         return [false, null, pos, "Expected {"];
@@ -489,23 +489,23 @@ fn json_parse_object(s, pos) {
     pos = pos + 1;
     
     let pairs = [];
-    pos = json_skip_whitespace(s, pos);
+    pos = jsonSkipWhitespace(s, pos);
     
     // Empty object
     if (pos < n) {
         if (s[pos] == "}") {
-            return [true, json_object(pairs), pos + 1, ""];
+            return [true, jsonObject(pairs), pos + 1, ""];
         }
     }
     
     // Parse pairs
     while (pos < n) {
         // Parse key
-        pos = json_skip_whitespace(s, pos);
+        pos = jsonSkipWhitespace(s, pos);
         if (s[pos] != "\"") {
             return [false, null, pos, "Expected string key"];
         }
-        let key_result = json_parse_string(s, pos);
+        let key_result = jsonParseString(s, pos);
         if (key_result[0] == false) {
             return key_result;
         }
@@ -513,7 +513,7 @@ fn json_parse_object(s, pos) {
         pos = key_result[2];
         
         // Expect colon
-        pos = json_skip_whitespace(s, pos);
+        pos = jsonSkipWhitespace(s, pos);
         if (pos >= n) {
             return [false, null, pos, "Expected :"];
         }
@@ -523,7 +523,7 @@ fn json_parse_object(s, pos) {
         pos = pos + 1;
         
         // Parse value
-        let val_result = json_parse_value(s, pos);
+        let val_result = jsonParseValue(s, pos);
         if (val_result[0] == false) {
             return val_result;
         }
@@ -531,13 +531,13 @@ fn json_parse_object(s, pos) {
         pairs = push(pairs, pair);
         pos = val_result[2];
         
-        pos = json_skip_whitespace(s, pos);
+        pos = jsonSkipWhitespace(s, pos);
         if (pos >= n) {
             return [false, null, pos, "Unexpected end of object"];
         }
         
         if (s[pos] == "}") {
-            return [true, json_object(pairs), pos + 1, ""];
+            return [true, jsonObject(pairs), pos + 1, ""];
         }
         if (s[pos] == ",") {
             pos = pos + 1;

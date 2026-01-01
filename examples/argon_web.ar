@@ -25,7 +25,7 @@ impl Context {
 
     fn json(self, data) {
         self.status = 200;
-        self.response_body = json_stringify(data);
+        self.response_body = jsonStringify(data);
         self.content_type = "application/json";
     }
     
@@ -69,10 +69,10 @@ impl Router {
         if (handler != null) {
             let ctx = Context::new(raw_req);
             handler(ctx); 
-            return http_response(ctx.status, ctx.content_type, ctx.response_body);
+            return httpResponse(ctx.status, ctx.content_type, ctx.response_body);
         }
         
-        return http_error(404, "Not Found (ArgonWeb)");
+        return httpError(404, "Not Found (ArgonWeb)");
     }
 }
 
@@ -89,7 +89,7 @@ impl Server {
     
     fn start(self) {
         print("ArgonWeb Server running on port " + self.port);
-        let listener = argon_listen(self.port);
+        let listener = argonListen(self.port);
         
         if (listener < 0) {
             print("FATAL: Failed to bind to port " + self.port);
@@ -97,17 +97,17 @@ impl Server {
         }
         
         while (true) {
-            let client = argon_accept(listener);
+            let client = argonAccept(listener);
             
             if (client >= 0) {
-                defer argon_socket_close(client);
+                defer argonSocketClose(client);
                 
-                let req_str = argon_socket_read(client);
+                let req_str = argonSocketRead(client);
                 
                 if (len(req_str) > 0) {
-                    let req = http_parse_request(req_str);
+                    let req = httpParseRequest(req_str);
                     let resp = self.router.handle(req);
-                    argon_socket_write(client, resp);
+                    argonSocketWrite(client, resp);
                 }
             }
         }

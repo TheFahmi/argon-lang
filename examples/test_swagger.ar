@@ -11,91 +11,91 @@ fn main() {
     print("");
     
     // Create API specification
-    let api = swagger_new("User Management API", "1.0.0");
+    let api = swaggerNew("User Management API", "1.0.0");
     
     // Set API info
-    swagger_set_description(api, "A REST API built with ArgonWeb");
-    swagger_set_contact(api, "API Support", "support@example.com");
-    swagger_set_license(api, "MIT", "https://opensource.org/licenses/MIT");
+    swaggerSetDescription(api, "A REST API built with ArgonWeb");
+    swaggerSetContact(api, "API Support", "support@example.com");
+    swaggerSetLicense(api, "MIT", "https://opensource.org/licenses/MIT");
     
     // Add servers
-    swagger_add_server(api, "http://localhost:8080", "Development server");
-    swagger_add_server(api, "https://api.example.com", "Production server");
+    swaggerAddServer(api, "http://localhost:8080", "Development server");
+    swaggerAddServer(api, "https://api.example.com", "Production server");
     
     // Add tags
-    swagger_add_tag(api, "Users", "User management operations");
-    swagger_add_tag(api, "Auth", "Authentication operations");
-    swagger_add_tag(api, "Health", "Health check endpoints");
+    swaggerAddTag(api, "Users", "User management operations");
+    swaggerAddTag(api, "Auth", "Authentication operations");
+    swaggerAddTag(api, "Health", "Health check endpoints");
     
     // ============================================
     // Define endpoints
     // ============================================
     
     // Health check
-    let health = endpoint_new("GET", "/health", "Health check");
-    endpoint_description(health, "Returns the health status of the API");
-    endpoint_tag(health, "Health");
-    endpoint_response(health, 200, "API is healthy", "application/json");
-    swagger_add_endpoint(api, health);
+    let health = endpointNew("GET", "/health", "Health check");
+    endpointDescription(health, "Returns the health status of the API");
+    endpointTag(health, "Health");
+    endpointResponse(health, 200, "API is healthy", "application/json");
+    swaggerAddEndpoint(api, health);
     
     // List users
-    let list_users = endpoint_new("GET", "/api/users", "List all users");
-    endpoint_description(list_users, "Retrieves a paginated list of all users");
-    endpoint_tag(list_users, "Users");
-    endpoint_param_query(list_users, "page", "Page number", "integer", false);
-    endpoint_param_query(list_users, "limit", "Items per page", "integer", false);
-    endpoint_response(list_users, 200, "List of users", "application/json");
-    swagger_add_endpoint(api, list_users);
+    let list_users = endpointNew("GET", "/api/users", "List all users");
+    endpointDescription(list_users, "Retrieves a paginated list of all users");
+    endpointTag(list_users, "Users");
+    endpointParamQuery(list_users, "page", "Page number", "integer", false);
+    endpointParamQuery(list_users, "limit", "Items per page", "integer", false);
+    endpointResponse(list_users, 200, "List of users", "application/json");
+    swaggerAddEndpoint(api, list_users);
     
     // Get user by ID
-    let get_user = endpoint_new("GET", "/api/users/{id}", "Get user by ID");
-    endpoint_description(get_user, "Retrieves a specific user by ID");
-    endpoint_tag(get_user, "Users");
-    endpoint_param_path(get_user, "id", "User ID", "integer");
-    endpoint_response(get_user, 200, "User found", "application/json");
-    endpoint_response(get_user, 404, "User not found", "application/json");
-    swagger_add_endpoint(api, get_user);
+    let get_user = endpointNew("GET", "/api/users/{id}", "Get user by ID");
+    endpointDescription(get_user, "Retrieves a specific user by ID");
+    endpointTag(get_user, "Users");
+    endpointParamPath(get_user, "id", "User ID", "integer");
+    endpointResponse(get_user, 200, "User found", "application/json");
+    endpointResponse(get_user, 404, "User not found", "application/json");
+    swaggerAddEndpoint(api, get_user);
     
     // Create user
-    let create_user = endpoint_new("POST", "/api/users", "Create new user");
-    endpoint_description(create_user, "Creates a new user account");
-    endpoint_tag(create_user, "Users");
-    endpoint_response(create_user, 201, "User created", "application/json");
-    endpoint_response(create_user, 400, "Invalid input", "application/json");
-    swagger_add_endpoint(api, create_user);
+    let create_user = endpointNew("POST", "/api/users", "Create new user");
+    endpointDescription(create_user, "Creates a new user account");
+    endpointTag(create_user, "Users");
+    endpointResponse(create_user, 201, "User created", "application/json");
+    endpointResponse(create_user, 400, "Invalid input", "application/json");
+    swaggerAddEndpoint(api, create_user);
     
     // Update user
-    let update_user = endpoint_new("PUT", "/api/users/{id}", "Update user");
-    endpoint_description(update_user, "Updates an existing user");
-    endpoint_tag(update_user, "Users");
-    endpoint_param_path(update_user, "id", "User ID", "integer");
-    endpoint_response(update_user, 200, "User updated", "application/json");
-    endpoint_response(update_user, 404, "User not found", "application/json");
-    swagger_add_endpoint(api, update_user);
+    let update_user = endpointNew("PUT", "/api/users/{id}", "Update user");
+    endpointDescription(update_user, "Updates an existing user");
+    endpointTag(update_user, "Users");
+    endpointParamPath(update_user, "id", "User ID", "integer");
+    endpointResponse(update_user, 200, "User updated", "application/json");
+    endpointResponse(update_user, 404, "User not found", "application/json");
+    swaggerAddEndpoint(api, update_user);
     
     // Delete user
-    let delete_user = endpoint_new("DELETE", "/api/users/{id}", "Delete user");
-    endpoint_description(delete_user, "Deletes a user account");
-    endpoint_tag(delete_user, "Users");
-    endpoint_param_path(delete_user, "id", "User ID", "integer");
-    endpoint_response(delete_user, 204, "User deleted", "application/json");
-    endpoint_response(delete_user, 404, "User not found", "application/json");
-    swagger_add_endpoint(api, delete_user);
+    let delete_user = endpointNew("DELETE", "/api/users/{id}", "Delete user");
+    endpointDescription(delete_user, "Deletes a user account");
+    endpointTag(delete_user, "Users");
+    endpointParamPath(delete_user, "id", "User ID", "integer");
+    endpointResponse(delete_user, 204, "User deleted", "application/json");
+    endpointResponse(delete_user, 404, "User not found", "application/json");
+    swaggerAddEndpoint(api, delete_user);
     
     // Login
-    let login = endpoint_new("POST", "/api/auth/login", "User login");
-    endpoint_description(login, "Authenticates a user and returns a JWT token");
-    endpoint_tag(login, "Auth");
-    endpoint_response(login, 200, "Login successful", "application/json");
-    endpoint_response(login, 401, "Invalid credentials", "application/json");
-    swagger_add_endpoint(api, login);
+    let login = endpointNew("POST", "/api/auth/login", "User login");
+    endpointDescription(login, "Authenticates a user and returns a JWT token");
+    endpointTag(login, "Auth");
+    endpointResponse(login, 200, "Login successful", "application/json");
+    endpointResponse(login, 401, "Invalid credentials", "application/json");
+    swaggerAddEndpoint(api, login);
     
     // ============================================
     // Generate output
     // ============================================
     
     print("[1] Generating OpenAPI JSON...");
-    let json = swagger_to_json(api);
+    let json = swaggerToJson(api);
     print("    Generated " + len(json) + " bytes");
     print("");
     

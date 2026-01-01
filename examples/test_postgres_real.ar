@@ -14,7 +14,7 @@ fn main() {
     
     // Connect to PostgreSQL
     // Default docker-compose credentials: argon/argon123/argondb
-    let conn = pg_connect("127.0.0.1", 5432, "argon", "argondb");
+    let conn = pgConnect("127.0.0.1", 5432, "argon", "argondb");
     
     if (conn == null) {
         print("");
@@ -32,8 +32,8 @@ fn main() {
     
     // Test 1: Create table
     print("[1] Creating test table...");
-    let result1 = pg_query(conn, "DROP TABLE IF EXISTS argon_test");
-    let result2 = pg_query(conn, "CREATE TABLE argon_test (id SERIAL PRIMARY KEY, name TEXT, value INT)");
+    let result1 = pgQuery(conn, "DROP TABLE IF EXISTS argon_test");
+    let result2 = pgQuery(conn, "CREATE TABLE argonTest(id SERIAL PRIMARY KEY, name TEXT, value INT)");
     if (result2.success) {
         print("    [PASS] Table created!");
     } else {
@@ -43,9 +43,9 @@ fn main() {
     
     // Test 2: Insert data
     print("[2] Inserting data...");
-    let ins1 = pg_query(conn, "INSERT INTO argon_test (name, value) VALUES ('hello', 42)");
-    let ins2 = pg_query(conn, "INSERT INTO argon_test (name, value) VALUES ('world', 100)");
-    let ins3 = pg_query(conn, "INSERT INTO argon_test (name, value) VALUES ('argon', 2024)");
+    let ins1 = pgQuery(conn, "INSERT INTO argonTest(name, value) VALUES ('hello', 42)");
+    let ins2 = pgQuery(conn, "INSERT INTO argonTest(name, value) VALUES ('world', 100)");
+    let ins3 = pgQuery(conn, "INSERT INTO argonTest(name, value) VALUES ('argon', 2024)");
     if (ins1.success && ins2.success && ins3.success) {
         print("    [PASS] 3 rows inserted!");
     }
@@ -53,7 +53,7 @@ fn main() {
     
     // Test 3: Select data
     print("[3] Selecting data...");
-    let sel = pg_query(conn, "SELECT * FROM argon_test");
+    let sel = pgQuery(conn, "SELECT * FROM argon_test");
     if (sel.success) {
         print("    [PASS] Query returned " + len(sel.rows) + " rows");
     }
@@ -61,7 +61,7 @@ fn main() {
     
     // Test 4: Update data
     print("[4] Updating data...");
-    let upd = pg_query(conn, "UPDATE argon_test SET value = 999 WHERE name = 'hello'");
+    let upd = pgQuery(conn, "UPDATE argon_test SET value = 999 WHERE name = 'hello'");
     if (upd.success) {
         print("    [PASS] Data updated!");
     }
@@ -69,7 +69,7 @@ fn main() {
     
     // Test 5: Delete data
     print("[5] Deleting data...");
-    let del = pg_query(conn, "DELETE FROM argon_test WHERE name = 'world'");
+    let del = pgQuery(conn, "DELETE FROM argon_test WHERE name = 'world'");
     if (del.success) {
         print("    [PASS] Data deleted!");
     }
@@ -77,12 +77,12 @@ fn main() {
     
     // Cleanup
     print("[6] Cleanup...");
-    pg_query(conn, "DROP TABLE argon_test");
+    pgQuery(conn, "DROP TABLE argon_test");
     print("    [PASS] Table dropped");
     print("");
     
     // Close connection
-    pg_close(conn);
+    pgClose(conn);
     
     print("==========================================");
     print("    ALL POSTGRESQL TESTS PASSED!");

@@ -16,7 +16,7 @@ struct Match {
 }
 
 // Create a match result
-fn match_new(found, start, end_pos, text) {
+fn matchNew(found, start, end_pos, text) {
     return Match {
         found: found,
         start: start,
@@ -26,7 +26,7 @@ fn match_new(found, start, end_pos, text) {
 }
 
 // Empty match (no match found)
-fn match_none() {
+fn matchNone() {
     return Match {
         found: false,
         start: 0 - 1,
@@ -40,16 +40,16 @@ fn match_none() {
 // ============================================
 
 // Find first occurrence of pattern (returns Match with position info)
-fn find_first(s, pattern) {
+fn findFirst(s, pattern) {
     let n = len(s);
     let m = len(pattern);
     
     if (m > n) {
-        return match_none();
+        return matchNone();
     }
     
     if (m == 0) {
-        return match_new(true, 0, 0, "");
+        return matchNew(true, 0, 0, "");
     }
     
     let i = 0;
@@ -65,16 +65,16 @@ fn find_first(s, pattern) {
             }
         }
         if (found) {
-            return match_new(true, i, i + m, pattern);
+            return matchNew(true, i, i + m, pattern);
         }
         i = i + 1;
     }
     
-    return match_none();
+    return matchNone();
 }
 
 // Count occurrences of pattern in string
-fn count_matches(s, pattern) {
+fn countMatches(s, pattern) {
     let count = 0;
     let n = len(s);
     let m = len(pattern);
@@ -111,7 +111,7 @@ fn count_matches(s, pattern) {
 // ============================================
 
 // Match with wildcards: * (any chars) and ? (single char)
-fn glob_match(s, pattern) {
+fn globMatch(s, pattern) {
     return _glob_match_helper(s, 0, pattern, 0);
 }
 
@@ -167,8 +167,8 @@ fn _glob_match_helper(s, si, pattern, pi) {
 // ============================================
 
 // Check if char is digit (0-9)
-fn is_digit(c) {
-    let code = char_code_at(c, 0);
+fn isDigit(c) {
+    let code = charCodeAt(c, 0);
     if (code >= 48) {
         if (code <= 57) {
             return true;
@@ -178,8 +178,8 @@ fn is_digit(c) {
 }
 
 // Check if char is lowercase letter (a-z)
-fn is_lower(c) {
-    let code = char_code_at(c, 0);
+fn isLower(c) {
+    let code = charCodeAt(c, 0);
     if (code >= 97) {
         if (code <= 122) {
             return true;
@@ -189,8 +189,8 @@ fn is_lower(c) {
 }
 
 // Check if char is uppercase letter (A-Z)
-fn is_upper(c) {
-    let code = char_code_at(c, 0);
+fn isUpper(c) {
+    let code = charCodeAt(c, 0);
     if (code >= 65) {
         if (code <= 90) {
             return true;
@@ -200,30 +200,30 @@ fn is_upper(c) {
 }
 
 // Check if char is letter (a-z, A-Z)
-fn is_alpha(c) {
-    if (is_lower(c)) {
+fn isAlpha(c) {
+    if (isLower(c)) {
         return true;
     }
-    if (is_upper(c)) {
+    if (isUpper(c)) {
         return true;
     }
     return false;
 }
 
 // Check if char is alphanumeric
-fn is_alnum(c) {
-    if (is_alpha(c)) {
+fn isAlnum(c) {
+    if (isAlpha(c)) {
         return true;
     }
-    if (is_digit(c)) {
+    if (isDigit(c)) {
         return true;
     }
     return false;
 }
 
 // Check if char is whitespace
-fn is_space(c) {
-    let code = char_code_at(c, 0);
+fn isSpace(c) {
+    let code = charCodeAt(c, 0);
     // Space = 32, tab = 9, newline = 10, carriage return = 13
     if (code == 32) {
         return true;
@@ -245,9 +245,9 @@ fn is_space(c) {
 // ============================================
 
 // Validate email (simplified)
-fn is_email(s) {
+fn isEmail(s) {
     // Must have exactly one @
-    let at_count = count_matches(s, "@");
+    let at_count = countMatches(s, "@");
     if (at_count != 1) {
         return false;
     }
@@ -291,20 +291,20 @@ fn _find_char_pos(s, c) {
 }
 
 // Validate URL (simplified)
-fn is_url(s) {
-    if (starts_with(s, "http://")) {
+fn isUrl(s) {
+    if (startsWith(s, "http://")) {
         return true;
     }
-    if (starts_with(s, "https://")) {
+    if (startsWith(s, "https://")) {
         return true;
     }
     return false;
 }
 
 // Validate IP address (simplified IPv4)
-fn is_ipv4(s) {
+fn isIpv4(s) {
     // Count dots
-    if (count_matches(s, ".") != 3) {
+    if (countMatches(s, ".") != 3) {
         return false;
     }
     // Should have only digits and dots
@@ -312,7 +312,7 @@ fn is_ipv4(s) {
     while (i < len(s)) {
         let c = s[i];
         if (c != ".") {
-            if (!is_digit(c)) {
+            if (!isDigit(c)) {
                 return false;
             }
         }
@@ -326,7 +326,7 @@ fn is_ipv4(s) {
 // ============================================
 
 // Replace first occurrence using regex-style matching
-fn regex_replace_first(s, pattern, replacement) {
+fn regexReplaceFirst(s, pattern, replacement) {
     let pos = _find_pattern_pos(s, pattern);
     if (pos < 0) {
         return s;
@@ -376,14 +376,14 @@ fn _find_pattern_pos(s, pattern) {
 // ============================================
 
 // Extract substring between two patterns
-fn extract_between(s, start_pat, end_pat) {
-    let start_match = find_first(s, start_pat);
+fn extractBetween(s, start_pat, end_pat) {
+    let start_match = findFirst(s, start_pat);
     if (!start_match.found) {
         return "";
     }
     
     let after_start = substring(s, start_match.end_pos, len(s));
-    let end_match = find_first(after_start, end_pat);
+    let end_match = findFirst(after_start, end_pat);
     if (!end_match.found) {
         return "";
     }
@@ -392,7 +392,7 @@ fn extract_between(s, start_pat, end_pat) {
 }
 
 // Check if pattern matches at specific position
-fn match_at(s, pos, pattern) {
+fn matchAt(s, pos, pattern) {
     let m = len(pattern);
     if (pos + m > len(s)) {
         return false;

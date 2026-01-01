@@ -15,7 +15,7 @@ struct ProcessResult {
 }
 
 // Create a successful result
-fn process_ok(code, out, err) {
+fn processOk(code, out, err) {
     return ProcessResult {
         exit_code: code,
         stdout: out,
@@ -25,7 +25,7 @@ fn process_ok(code, out, err) {
 }
 
 // Create a failed result
-fn process_error(code, err_msg) {
+fn processError(code, err_msg) {
     return ProcessResult {
         exit_code: code,
         stdout: "",
@@ -53,7 +53,7 @@ fn _empty_args() {
 }
 
 // Create a new command
-fn command_new(program) {
+fn commandNew(program) {
     return Command {
         program: program,
         args_str: "",
@@ -65,7 +65,7 @@ fn command_new(program) {
 }
 
 // Add argument to command (stores as delimited string)
-fn command_arg(cmd, arg) {
+fn commandArg(cmd, arg) {
     let new_args = cmd.args_str;
     if (cmd.arg_count > 0) {
         new_args = new_args + "\x00" + arg;
@@ -83,7 +83,7 @@ fn command_arg(cmd, arg) {
 }
 
 // Set working directory
-fn command_cwd(cmd, dir) {
+fn commandCwd(cmd, dir) {
     return Command {
         program: cmd.program,
         args_str: cmd.args_str,
@@ -95,7 +95,7 @@ fn command_cwd(cmd, dir) {
 }
 
 // Set environment variable
-fn command_env(cmd, key, value) {
+fn commandEnv(cmd, key, value) {
     let env_pair = key + "=" + value;
     let new_envs = cmd.env_str;
     if (len(cmd.env_str) > 0) {
@@ -114,7 +114,7 @@ fn command_env(cmd, key, value) {
 }
 
 // Set timeout in milliseconds
-fn command_timeout(cmd, ms) {
+fn commandTimeout(cmd, ms) {
     return Command {
         program: cmd.program,
         args_str: cmd.args_str,
@@ -126,7 +126,7 @@ fn command_timeout(cmd, ms) {
 }
 
 // Build command string for display
-fn command_to_string(cmd) {
+fn commandToString(cmd) {
     let result = cmd.program;
     if (cmd.arg_count > 0) {
         // Replace null separators with spaces for display
@@ -149,14 +149,14 @@ fn command_to_string(cmd) {
 }
 
 // Execute command (placeholder - needs runtime support)
-fn command_run(cmd) {
+fn commandRun(cmd) {
     // This would need runtime intrinsics like:
-    // argon_exec(program, args_str, cwd, env_str, timeout)
+    // argonExec(program, args_str, cwd, env_str, timeout)
     // For now, return a placeholder
-    let cmd_str = command_to_string(cmd);
+    let cmd_str = commandToString(cmd);
     
     // Placeholder until runtime support is added
-    return process_error(0 - 1, "Process execution requires runtime support");
+    return processError(0 - 1, "Process execution requires runtime support");
 }
 
 // ============================================
@@ -167,10 +167,10 @@ fn command_run(cmd) {
 fn shell(command_str) {
     // Would use system shell
     // Unix: sh -c "command"
-    let cmd = command_new("sh");
-    cmd = command_arg(cmd, "-c");
-    cmd = command_arg(cmd, command_str);
-    return command_run(cmd);
+    let cmd = commandNew("sh");
+    cmd = commandArg(cmd, "-c");
+    cmd = commandArg(cmd, command_str);
+    return commandRun(cmd);
 }
 
 // ============================================
@@ -178,7 +178,7 @@ fn shell(command_str) {
 // ============================================
 
 // Get all environment as string (placeholder)
-fn process_env_dump() {
+fn processEnvDump() {
     // Would iterate through all env vars
     return "ENV_DUMP_NOT_IMPLEMENTED";
 }
@@ -194,8 +194,8 @@ struct ProcessInfo {
 }
 
 // Get current process info (placeholder)
-fn process_current() {
-    // Would need: argon_getpid(), argon_getppid()
+fn processCurrent() {
+    // Would need: argonGetpid(), argonGetppid()
     return ProcessInfo {
         pid: 0,
         parent_pid: 0,
@@ -208,19 +208,19 @@ fn process_current() {
 // ============================================
 
 // Exit with code (placeholder - needs runtime)
-fn process_exit(code) {
-    // Would call: argon_exit(code)
+fn processExit(code) {
+    // Would call: argonExit(code)
     print("EXIT: " + code);
 }
 
 // Exit successfully
-fn exit_ok() {
-    process_exit(0);
+fn exitOk() {
+    processExit(0);
 }
 
 // Exit with error
-fn exit_error() {
-    process_exit(1);
+fn exitError() {
+    processExit(1);
 }
 
 // ============================================
@@ -233,13 +233,13 @@ let SIGTERM = 15;
 let SIGKILL = 9;
 
 // Register signal handler (placeholder)
-fn on_signal(signal, handler_fn) {
+fn onSignal(signal, handler_fn) {
     // Would need runtime support for signal handling
     print("Signal handling not yet implemented");
 }
 
 // Send signal to process (placeholder)
-fn process_kill(pid, signal) {
-    // Would call: argon_kill(pid, signal)
+fn processKill(pid, signal) {
+    // Would call: argonKill(pid, signal)
     return false;
 }

@@ -12,11 +12,11 @@ fn main() {
     print("");
     
     // Build API specification
-    let api = build_api_spec();
+    let api = buildApiSpec();
     
     // Generate JSON and HTML
-    let spec_json = swagger_to_json(api);
-    let html = swagger_ui_html(spec_json, "User Management API");
+    let spec_json = swaggerToJson(api);
+    let html = swaggerUiHtml(spec_json, "User Management API");
     
     // Start HTTP server
     let port = 8888;
@@ -27,7 +27,7 @@ fn main() {
     print("Press Ctrl+C to stop");
     print("");
     
-    let server = @argon_listen(port);
+    let server = @argonListen(port);
     if (server < 0) {
         print("[ERROR] Failed to start server on port " + port);
         return 1;
@@ -36,138 +36,138 @@ fn main() {
     print("[*] Server running...");
     
     while (true) {
-        let client = @argon_accept(server);
+        let client = @argonAccept(server);
         if (client >= 0) {
-            handle_request(client, spec_json, html);
+            handleRequest(client, spec_json, html);
         }
     }
     
     return 0;
 }
 
-fn build_api_spec() {
-    let api = swagger_new("User Management API", "1.0.0");
+fn buildApiSpec() {
+    let api = swaggerNew("User Management API", "1.0.0");
     
-    swagger_set_description(api, "A complete REST API for user management built with ArgonWeb. This API provides endpoints for user CRUD operations and authentication.");
-    swagger_set_contact(api, "API Support", "support@argon.dev");
-    swagger_set_license(api, "MIT", "https://opensource.org/licenses/MIT");
+    swaggerSetDescription(api, "A complete REST API for user management built with ArgonWeb. This API provides endpoints for user CRUD operations and authentication.");
+    swaggerSetContact(api, "API Support", "support@argon.dev");
+    swaggerSetLicense(api, "MIT", "https://opensource.org/licenses/MIT");
     
-    swagger_add_server(api, "http://localhost:8888", "Development server");
-    swagger_add_server(api, "https://api.argon.dev", "Production server");
+    swaggerAddServer(api, "http://localhost:8888", "Development server");
+    swaggerAddServer(api, "https://api.argon.dev", "Production server");
     
-    swagger_add_tag(api, "Users", "User management operations");
-    swagger_add_tag(api, "Auth", "Authentication endpoints");
-    swagger_add_tag(api, "Health", "Health check endpoints");
+    swaggerAddTag(api, "Users", "User management operations");
+    swaggerAddTag(api, "Auth", "Authentication endpoints");
+    swaggerAddTag(api, "Health", "Health check endpoints");
     
     // Health check
-    let health = endpoint_new("GET", "/health", "Health check");
-    endpoint_description(health, "Returns the health status of the API");
-    endpoint_tag(health, "Health");
-    endpoint_response(health, 200, "API is healthy", "application/json");
-    swagger_add_endpoint(api, health);
+    let health = endpointNew("GET", "/health", "Health check");
+    endpointDescription(health, "Returns the health status of the API");
+    endpointTag(health, "Health");
+    endpointResponse(health, 200, "API is healthy", "application/json");
+    swaggerAddEndpoint(api, health);
     
     // List users
-    let list_users = endpoint_new("GET", "/api/users", "List all users");
-    endpoint_description(list_users, "Retrieves a paginated list of all users. Supports filtering and pagination.");
-    endpoint_tag(list_users, "Users");
-    endpoint_param_query(list_users, "page", "Page number (default: 1)", "integer", false);
-    endpoint_param_query(list_users, "limit", "Items per page (default: 10, max: 100)", "integer", false);
-    endpoint_param_query(list_users, "search", "Search by name or email", "string", false);
-    endpoint_param_query(list_users, "sort", "Sort field (name, email, created_at)", "string", false);
-    endpoint_response(list_users, 200, "List of users with pagination info", "application/json");
-    swagger_add_endpoint(api, list_users);
+    let list_users = endpointNew("GET", "/api/users", "List all users");
+    endpointDescription(list_users, "Retrieves a paginated list of all users. Supports filtering and pagination.");
+    endpointTag(list_users, "Users");
+    endpointParamQuery(list_users, "page", "Page number (default: 1)", "integer", false);
+    endpointParamQuery(list_users, "limit", "Items per page (default: 10, max: 100)", "integer", false);
+    endpointParamQuery(list_users, "search", "Search by name or email", "string", false);
+    endpointParamQuery(list_users, "sort", "Sort field (name, email, created_at)", "string", false);
+    endpointResponse(list_users, 200, "List of users with pagination info", "application/json");
+    swaggerAddEndpoint(api, list_users);
     
     // Get user
-    let get_user = endpoint_new("GET", "/api/users/{id}", "Get user by ID");
-    endpoint_description(get_user, "Retrieves a specific user by their unique identifier");
-    endpoint_tag(get_user, "Users");
-    endpoint_param_path(get_user, "id", "User ID", "integer");
-    endpoint_response(get_user, 200, "User details", "application/json");
-    endpoint_response(get_user, 404, "User not found", "application/json");
-    swagger_add_endpoint(api, get_user);
+    let get_user = endpointNew("GET", "/api/users/{id}", "Get user by ID");
+    endpointDescription(get_user, "Retrieves a specific user by their unique identifier");
+    endpointTag(get_user, "Users");
+    endpointParamPath(get_user, "id", "User ID", "integer");
+    endpointResponse(get_user, 200, "User details", "application/json");
+    endpointResponse(get_user, 404, "User not found", "application/json");
+    swaggerAddEndpoint(api, get_user);
     
     // Create user
-    let create_user = endpoint_new("POST", "/api/users", "Create new user");
-    endpoint_description(create_user, "Creates a new user account. Email must be unique.");
-    endpoint_tag(create_user, "Users");
-    endpoint_response(create_user, 201, "User created successfully", "application/json");
-    endpoint_response(create_user, 400, "Invalid input data", "application/json");
-    endpoint_response(create_user, 409, "Email already exists", "application/json");
-    swagger_add_endpoint(api, create_user);
+    let create_user = endpointNew("POST", "/api/users", "Create new user");
+    endpointDescription(create_user, "Creates a new user account. Email must be unique.");
+    endpointTag(create_user, "Users");
+    endpointResponse(create_user, 201, "User created successfully", "application/json");
+    endpointResponse(create_user, 400, "Invalid input data", "application/json");
+    endpointResponse(create_user, 409, "Email already exists", "application/json");
+    swaggerAddEndpoint(api, create_user);
     
     // Update user
-    let update_user = endpoint_new("PUT", "/api/users/{id}", "Update user");
-    endpoint_description(update_user, "Updates an existing user account");
-    endpoint_tag(update_user, "Users");
-    endpoint_param_path(update_user, "id", "User ID", "integer");
-    endpoint_response(update_user, 200, "User updated successfully", "application/json");
-    endpoint_response(update_user, 400, "Invalid input data", "application/json");
-    endpoint_response(update_user, 404, "User not found", "application/json");
-    swagger_add_endpoint(api, update_user);
+    let update_user = endpointNew("PUT", "/api/users/{id}", "Update user");
+    endpointDescription(update_user, "Updates an existing user account");
+    endpointTag(update_user, "Users");
+    endpointParamPath(update_user, "id", "User ID", "integer");
+    endpointResponse(update_user, 200, "User updated successfully", "application/json");
+    endpointResponse(update_user, 400, "Invalid input data", "application/json");
+    endpointResponse(update_user, 404, "User not found", "application/json");
+    swaggerAddEndpoint(api, update_user);
     
     // Delete user
-    let delete_user = endpoint_new("DELETE", "/api/users/{id}", "Delete user");
-    endpoint_description(delete_user, "Permanently deletes a user account");
-    endpoint_tag(delete_user, "Users");
-    endpoint_param_path(delete_user, "id", "User ID", "integer");
-    endpoint_response(delete_user, 204, "User deleted successfully", "application/json");
-    endpoint_response(delete_user, 404, "User not found", "application/json");
-    swagger_add_endpoint(api, delete_user);
+    let delete_user = endpointNew("DELETE", "/api/users/{id}", "Delete user");
+    endpointDescription(delete_user, "Permanently deletes a user account");
+    endpointTag(delete_user, "Users");
+    endpointParamPath(delete_user, "id", "User ID", "integer");
+    endpointResponse(delete_user, 204, "User deleted successfully", "application/json");
+    endpointResponse(delete_user, 404, "User not found", "application/json");
+    swaggerAddEndpoint(api, delete_user);
     
     // Login
-    let login = endpoint_new("POST", "/api/auth/login", "User login");
-    endpoint_description(login, "Authenticates a user with email and password. Returns a JWT token.");
-    endpoint_tag(login, "Auth");
-    endpoint_response(login, 200, "Login successful, returns JWT token", "application/json");
-    endpoint_response(login, 401, "Invalid email or password", "application/json");
-    swagger_add_endpoint(api, login);
+    let login = endpointNew("POST", "/api/auth/login", "User login");
+    endpointDescription(login, "Authenticates a user with email and password. Returns a JWT token.");
+    endpointTag(login, "Auth");
+    endpointResponse(login, 200, "Login successful, returns JWT token", "application/json");
+    endpointResponse(login, 401, "Invalid email or password", "application/json");
+    swaggerAddEndpoint(api, login);
     
     // Register
-    let register = endpoint_new("POST", "/api/auth/register", "User registration");
-    endpoint_description(register, "Creates a new user account and returns a JWT token");
-    endpoint_tag(register, "Auth");
-    endpoint_response(register, 201, "Registration successful", "application/json");
-    endpoint_response(register, 400, "Invalid input data", "application/json");
-    endpoint_response(register, 409, "Email already registered", "application/json");
-    swagger_add_endpoint(api, register);
+    let register = endpointNew("POST", "/api/auth/register", "User registration");
+    endpointDescription(register, "Creates a new user account and returns a JWT token");
+    endpointTag(register, "Auth");
+    endpointResponse(register, 201, "Registration successful", "application/json");
+    endpointResponse(register, 400, "Invalid input data", "application/json");
+    endpointResponse(register, 409, "Email already registered", "application/json");
+    swaggerAddEndpoint(api, register);
     
     // Logout
-    let logout = endpoint_new("POST", "/api/auth/logout", "User logout");
-    endpoint_description(logout, "Invalidates the current JWT token");
-    endpoint_tag(logout, "Auth");
-    endpoint_response(logout, 200, "Logout successful", "application/json");
-    swagger_add_endpoint(api, logout);
+    let logout = endpointNew("POST", "/api/auth/logout", "User logout");
+    endpointDescription(logout, "Invalidates the current JWT token");
+    endpointTag(logout, "Auth");
+    endpointResponse(logout, 200, "Logout successful", "application/json");
+    swaggerAddEndpoint(api, logout);
     
     return api;
 }
 
-fn handle_request(client, spec_json, html) {
+fn handleRequest(client, spec_json, html) {
     // Read request
-    let request = @argon_socket_read(client);
+    let request = @argonSocketRead(client);
     if (len(request) == 0) {
-        @argon_socket_close(client);
+        @argonSocketClose(client);
         return;
     }
     
     // Parse path from request
-    let path = parse_path(request);
+    let path = parsePath(request);
     print("[" + now() + "] " + path);
     
     // Route request
     if (path == "/docs" || path == "/docs/" || path == "/") {
-        send_html(client, html);
+        sendHtml(client, html);
     } else if (path == "/openapi.json") {
-        send_json(client, spec_json);
+        sendJson(client, spec_json);
     } else if (path == "/health") {
-        send_json(client, "{\"status\":\"ok\",\"version\":\"1.0.0\"}");
+        sendJson(client, "{\"status\":\"ok\",\"version\":\"1.0.0\"}");
     } else {
-        send_not_found(client);
+        sendNotFound(client);
     }
     
-    @argon_socket_close(client);
+    @argonSocketClose(client);
 }
 
-fn parse_path(request) {
+fn parsePath(request) {
     // Simple path extraction from "GET /path HTTP/1.1"
     let i = 0;
     let start = -1;
@@ -190,17 +190,17 @@ fn parse_path(request) {
     return "/";
 }
 
-fn send_html(client, html) {
+fn sendHtml(client, html) {
     let response = "HTTP/1.1 200 OK\r\n";
     response = response + "Content-Type: text/html; charset=utf-8\r\n";
     response = response + "Content-Length: " + len(html) + "\r\n";
     response = response + "Connection: close\r\n";
     response = response + "\r\n";
     response = response + html;
-    @argon_socket_write(client, response);
+    @argonSocketWrite(client, response);
 }
 
-fn send_json(client, json) {
+fn sendJson(client, json) {
     let response = "HTTP/1.1 200 OK\r\n";
     response = response + "Content-Type: application/json\r\n";
     response = response + "Access-Control-Allow-Origin: *\r\n";
@@ -208,10 +208,10 @@ fn send_json(client, json) {
     response = response + "Connection: close\r\n";
     response = response + "\r\n";
     response = response + json;
-    @argon_socket_write(client, response);
+    @argonSocketWrite(client, response);
 }
 
-fn send_not_found(client) {
+fn sendNotFound(client) {
     let body = "{\"error\":\"Not Found\",\"message\":\"The requested resource was not found\"}";
     let response = "HTTP/1.1 404 Not Found\r\n";
     response = response + "Content-Type: application/json\r\n";
@@ -219,7 +219,7 @@ fn send_not_found(client) {
     response = response + "Connection: close\r\n";
     response = response + "\r\n";
     response = response + body;
-    @argon_socket_write(client, response);
+    @argonSocketWrite(client, response);
 }
 
 fn now() {

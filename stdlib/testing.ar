@@ -10,7 +10,7 @@ let _test_failed = 0;
 let _test_current_name = "";
 
 // Start a test suite
-fn test_suite(name) {
+fn testSuite(name) {
     print("");
     print("========================================");
     print("  TEST SUITE: " + name);
@@ -39,7 +39,7 @@ fn assert(condition, msg) {
 }
 
 // Assert equality
-fn assert_eq(actual, expected, msg) {
+fn assertEq(actual, expected, msg) {
     if (actual == expected) {
         _test_passed = _test_passed + 1;
         print("  [PASS] " + _test_current_name + ": " + msg);
@@ -53,7 +53,7 @@ fn assert_eq(actual, expected, msg) {
 }
 
 // Assert not equal
-fn assert_neq(actual, not_expected, msg) {
+fn assertNeq(actual, not_expected, msg) {
     if (actual != not_expected) {
         _test_passed = _test_passed + 1;
         print("  [PASS] " + _test_current_name + ": " + msg);
@@ -66,17 +66,17 @@ fn assert_neq(actual, not_expected, msg) {
 }
 
 // Assert true
-fn assert_true(condition, msg) {
+fn assertTrue(condition, msg) {
     return assert(condition, msg);
 }
 
 // Assert false
-fn assert_false(condition, msg) {
+fn assertFalse(condition, msg) {
     return assert(condition == false, msg);
 }
 
 // Assert null
-fn assert_null(value, msg) {
+fn assertNull(value, msg) {
     if (value == null) {
         _test_passed = _test_passed + 1;
         print("  [PASS] " + _test_current_name + ": " + msg);
@@ -89,7 +89,7 @@ fn assert_null(value, msg) {
 }
 
 // Assert not null
-fn assert_not_null(value, msg) {
+fn assertNotNull(value, msg) {
     if (value != null) {
         _test_passed = _test_passed + 1;
         print("  [PASS] " + _test_current_name + ": " + msg);
@@ -102,7 +102,7 @@ fn assert_not_null(value, msg) {
 }
 
 // Assert greater than
-fn assert_gt(actual, threshold, msg) {
+fn assertGt(actual, threshold, msg) {
     if (actual > threshold) {
         _test_passed = _test_passed + 1;
         print("  [PASS] " + _test_current_name + ": " + msg);
@@ -115,7 +115,7 @@ fn assert_gt(actual, threshold, msg) {
 }
 
 // Assert less than
-fn assert_lt(actual, threshold, msg) {
+fn assertLt(actual, threshold, msg) {
     if (actual < threshold) {
         _test_passed = _test_passed + 1;
         print("  [PASS] " + _test_current_name + ": " + msg);
@@ -128,7 +128,7 @@ fn assert_lt(actual, threshold, msg) {
 }
 
 // Assert greater than or equal
-fn assert_gte(actual, threshold, msg) {
+fn assertGte(actual, threshold, msg) {
     if (actual >= threshold) {
         _test_passed = _test_passed + 1;
         print("  [PASS] " + _test_current_name + ": " + msg);
@@ -141,7 +141,7 @@ fn assert_gte(actual, threshold, msg) {
 }
 
 // Assert less than or equal
-fn assert_lte(actual, threshold, msg) {
+fn assertLte(actual, threshold, msg) {
     if (actual <= threshold) {
         _test_passed = _test_passed + 1;
         print("  [PASS] " + _test_current_name + ": " + msg);
@@ -154,7 +154,7 @@ fn assert_lte(actual, threshold, msg) {
 }
 
 // Assert string contains
-fn assert_contains(haystack, needle, msg) {
+fn assertContains(haystack, needle, msg) {
     let i = 0;
     let h_len = len(haystack);
     let n_len = len(needle);
@@ -192,7 +192,7 @@ fn assert_contains(haystack, needle, msg) {
 }
 
 // End test suite and print summary
-fn test_summary() {
+fn testSummary() {
     print("");
     print("========================================");
     print("  RESULTS");
@@ -214,11 +214,11 @@ fn test_summary() {
 }
 
 // Skip a test
-fn test_skip(name, reason) {
+fn testSkip(name, reason) {
     print("  [SKIP] " + name + ": " + reason);
 }
 
 // Mark test as TODO
-fn test_todo(name) {
+fn testTodo(name) {
     print("  [TODO] " + name);
 }

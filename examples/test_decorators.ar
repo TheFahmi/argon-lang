@@ -24,7 +24,7 @@ impl UsersController {
 }
 
 @Get("/profile")
-fn get_profile() -> String {
+fn getProfile() -> String {
     return "User Profile";
 }
 
@@ -35,5 +35,5 @@ fn main() {
     
     print(controller.create());
     
-    print(get_profile());
+    print(getProfile());
 }

@@ -4,17 +4,17 @@
 // ============================================
 
 // Get string length
-fn str_len(s) {
+fn strLen(s) {
     return len(s);
 }
 
 // Check if string is empty
-fn is_empty(s) {
+fn isEmpty(s) {
     return len(s) == 0;
 }
 
 // Get character at index (returns single-char string)
-fn char_at(s, idx) {
+fn charAt(s, idx) {
     if (idx < 0) {
         return "";
     }
@@ -25,12 +25,12 @@ fn char_at(s, idx) {
 }
 
 // Get character code at index
-fn code_at(s, idx) {
-    return char_code_at(s, idx);
+fn codeAt(s, idx) {
+    return charCodeAt(s, idx);
 }
 
 // Check if string starts with prefix
-fn starts_with(s, prefix) {
+fn startsWith(s, prefix) {
     let prefix_len = len(prefix);
     if (prefix_len > len(s)) {
         return false;
@@ -46,7 +46,7 @@ fn starts_with(s, prefix) {
 }
 
 // Check if string ends with suffix
-fn ends_with(s, suffix) {
+fn endsWith(s, suffix) {
     let s_len = len(s);
     let suffix_len = len(suffix);
     if (suffix_len > s_len) {
@@ -65,11 +65,11 @@ fn ends_with(s, suffix) {
 
 // Check if string contains substring
 fn contains(s, sub) {
-    return index_of(s, sub) >= 0;
+    return indexOf(s, sub) >= 0;
 }
 
 // Find index of substring (returns -1 if not found)
-fn index_of(s, sub) {
+fn indexOf(s, sub) {
     let s_len = len(s);
     let sub_len = len(sub);
     if (sub_len == 0) {
@@ -100,7 +100,7 @@ fn index_of(s, sub) {
 }
 
 // Find last index of substring
-fn last_index_of(s, sub) {
+fn lastIndexOf(s, sub) {
     let s_len = len(s);
     let sub_len = len(sub);
     if (sub_len == 0) {
@@ -184,11 +184,11 @@ fn reverse(s) {
 
 // Trim whitespace from both ends
 fn trim(s) {
-    return trim_end(trim_start(s));
+    return trimEnd(trimStart(s));
 }
 
 // Trim whitespace from start
-fn trim_start(s) {
+fn trimStart(s) {
     let i = 0;
     let n = len(s);
     while (i < n) {
@@ -209,7 +209,7 @@ fn trim_start(s) {
 }
 
 // Trim whitespace from end
-fn trim_end(s) {
+fn trimEnd(s) {
     let n = len(s);
     let i = n - 1;
     while (i >= 0) {
@@ -229,7 +229,7 @@ fn trim_end(s) {
 }
 
 // Pad string on left to reach length
-fn pad_start(s, target_len, pad_char) {
+fn padStart(s, target_len, pad_char) {
     let current_len = len(s);
     if (current_len >= target_len) {
         return s;
@@ -239,7 +239,7 @@ fn pad_start(s, target_len, pad_char) {
 }
 
 // Pad string on right to reach length
-fn pad_end(s, target_len, pad_char) {
+fn padEnd(s, target_len, pad_char) {
     let current_len = len(s);
     if (current_len >= target_len) {
         return s;
@@ -307,7 +307,7 @@ fn join(arr, sep) {
 
 // Replace first occurrence of old with new
 fn replace(s, old, new) {
-    let idx = index_of(s, old);
+    let idx = indexOf(s, old);
     if (idx < 0) {
         return s;
     }
@@ -317,7 +317,7 @@ fn replace(s, old, new) {
 }
 
 // Replace all occurrences of old with new
-fn replace_all(s, old, new) {
+fn replaceAll(s, old, new) {
     let old_len = len(old);
     if (old_len == 0) {
         return s;
@@ -355,7 +355,7 @@ fn replace_all(s, old, new) {
 }
 
 // Convert to uppercase (ASCII only)
-fn to_upper(s) {
+fn toUpper(s) {
     let result = "";
     let i = 0;
     let n = len(s);
@@ -395,7 +395,7 @@ fn to_upper(s) {
 }
 
 // Convert to lowercase (ASCII only)  
-fn to_lower(s) {
+fn toLower(s) {
     let result = "";
     let i = 0;
     let n = len(s);
@@ -435,7 +435,7 @@ fn to_lower(s) {
 }
 
 // Check if string is numeric
-fn is_numeric(s) {
+fn isNumeric(s) {
     let n = len(s);
     if (n == 0) {
         return false;
@@ -449,7 +449,7 @@ fn is_numeric(s) {
         i = 1;
     }
     while (i < n) {
-        let code = char_code_at(s, i);
+        let code = charCodeAt(s, i);
         // 0-9: 48-57
         if (code < 48) {
             return false;

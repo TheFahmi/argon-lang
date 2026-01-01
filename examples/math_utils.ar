@@ -1,13 +1,13 @@
 // Math Utilities Module
 
-fn math_add(a, b) {
+fn mathAdd(a, b) {
     return a + b;
 }
 
-fn math_mul(a, b) {
+fn mathMul(a, b) {
     return a * b;
 }
 
-fn math_square(x) {
+fn mathSquare(x) {
     return x * x;
 }

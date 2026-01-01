@@ -60,7 +60,7 @@ fn createWorker() -> Worker {
 
 // Generate unique worker ID
 fn generateWorkerId() -> string {
-    return "worker_" + toString(rand_int(100000, 999999)) + "_" + toString(time());
+    return "worker_" + toString(randInt(100000, 999999)) + "_" + toString(time());
 }
 
 // ============================================
@@ -392,10 +392,10 @@ fn sleep(ms: int) {
 
 // Get current time in ms
 fn time() -> int {
-    return @time_ms();
+    return @timeMs();
 }
 
 // Convert int to string
 fn toString(n: int) -> string {
-    return @to_string(n);
+    return @toString(n);
 }

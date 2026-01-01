@@ -186,11 +186,11 @@ fn stripComments(template: string) -> string {
     
     while (i < len_t) {
         // Check for comment start {#
-        if (i + 1 < len_t && char_at(template, i) == "{" && char_at(template, i + 1) == "#") {
+        if (i + 1 < len_t && charAt(template, i) == "{" && charAt(template, i + 1) == "#") {
             // Find comment end #}
             let j = i + 2;
             while (j + 1 < len_t) {
-                if (char_at(template, j) == "#" && char_at(template, j + 1) == "}") {
+                if (charAt(template, j) == "#" && charAt(template, j + 1) == "}") {
                     i = j + 2;
                     break;
                 }
@@ -200,7 +200,7 @@ fn stripComments(template: string) -> string {
                 i = len_t;
             }
         } else {
-            result = result + char_at(template, i);
+            result = result + charAt(template, i);
             i = i + 1;
         }
     }
@@ -219,11 +219,11 @@ fn processVariables(template: string, ctx: TemplateContext) -> string {
     
     while (i < len_t) {
         // Check for {{ 
-        if (i + 1 < len_t && char_at(template, i) == "{" && char_at(template, i + 1) == "{") {
+        if (i + 1 < len_t && charAt(template, i) == "{" && charAt(template, i + 1) == "{") {
             // Find }}
             let j = i + 2;
             while (j + 1 < len_t) {
-                if (char_at(template, j) == "}" && char_at(template, j + 1) == "}") {
+                if (charAt(template, j) == "}" && charAt(template, j + 1) == "}") {
                     break;
                 }
                 j = j + 1;
@@ -238,7 +238,7 @@ fn processVariables(template: string, ctx: TemplateContext) -> string {
             
             i = j + 2;
         } else {
-            result = result + char_at(template, i);
+            result = result + charAt(template, i);
             i = i + 1;
         }
     }
@@ -511,8 +511,8 @@ fn evaluateCondition(expr: string, ctx: TemplateContext) -> bool {
 
 fn trimQuotes(s: string) -> string {
     if (len(s) >= 2) {
-        let first = char_at(s, 0);
-        let last = char_at(s, len(s) - 1);
+        let first = charAt(s, 0);
+        let last = charAt(s, len(s) - 1);
         if ((first == "\"" && last == "\"") || (first == "'" && last == "'")) {
             return substr(s, 1, len(s) - 2);
         }
@@ -752,14 +752,14 @@ fn extractBlocks(template: string) -> any {
 
 fn capitalize(s: string) -> string {
     if (len(s) == 0) { return s; }
-    return toUpperCase(char_at(s, 0)) + toLowerCase(substr(s, 1, len(s) - 1));
+    return toUpperCase(charAt(s, 0)) + toLowerCase(substr(s, 1, len(s) - 1));
 }
 
 fn reverseString(s: string) -> string {
     let result = "";
     let i = len(s) - 1;
     while (i >= 0) {
-        result = result + char_at(s, i);
+        result = result + charAt(s, i);
         i = i - 1;
     }
     return result;
@@ -779,7 +779,7 @@ fn urlEncode(s: string) -> string {
     let result = "";
     let i = 0;
     while (i < len(s)) {
-        let c = char_at(s, i);
+        let c = charAt(s, i);
         if (isAlphanumeric(c) || c == "-" || c == "_" || c == "." || c == "~") {
             result = result + c;
         } else if (c == " ") {
@@ -798,7 +798,7 @@ fn isAlphanumeric(c: string) -> bool {
 
 fn toHex(n: int) -> string {
     let hex = "0123456789ABCDEF";
-    return char_at(hex, (n / 16) % 16) + char_at(hex, n % 16);
+    return charAt(hex, (n / 16) % 16) + charAt(hex, n % 16);
 }
 
 fn ord(c: string) -> int {

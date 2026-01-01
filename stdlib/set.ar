@@ -6,17 +6,17 @@
 // Set is represented as array with unique elements
 
 // Create empty set
-fn set_new() {
+fn setNew() {
     let s = [];
     return s;
 }
 
 // Create set from array (removes duplicates)
-fn set_from(arr) {
+fn setFrom(arr) {
     let result = [];
     let i = 0;
     while (i < len(arr)) {
-        if (set_has(result, arr[i]) == false) {
+        if (setHas(result, arr[i]) == false) {
             result = push(result, arr[i]);
         }
         i = i + 1;
@@ -25,17 +25,17 @@ fn set_from(arr) {
 }
 
 // Get set size
-fn set_size(s) {
+fn setSize(s) {
     return len(s);
 }
 
 // Check if set is empty
-fn set_is_empty(s) {
+fn setIsEmpty(s) {
     return len(s) == 0;
 }
 
 // Check if element exists in set
-fn set_has(s, elem) {
+fn setHas(s, elem) {
     let i = 0;
     while (i < len(s)) {
         if (s[i] == elem) {
@@ -47,15 +47,15 @@ fn set_has(s, elem) {
 }
 
 // Add element to set (returns new set)
-fn set_add(s, elem) {
-    if (set_has(s, elem)) {
+fn setAdd(s, elem) {
+    if (setHas(s, elem)) {
         return s;
     }
     return push(s, elem);
 }
 
 // Remove element from set (returns new set)
-fn set_remove(s, elem) {
+fn setRemove(s, elem) {
     let result = [];
     let i = 0;
     while (i < len(s)) {
@@ -68,11 +68,11 @@ fn set_remove(s, elem) {
 }
 
 // Union of two sets (A + B)
-fn set_union(s1, s2) {
+fn setUnion(s1, s2) {
     let result = s1;
     let i = 0;
     while (i < len(s2)) {
-        if (set_has(result, s2[i]) == false) {
+        if (setHas(result, s2[i]) == false) {
             result = push(result, s2[i]);
         }
         i = i + 1;
@@ -81,11 +81,11 @@ fn set_union(s1, s2) {
 }
 
 // Intersection of two sets (A & B)
-fn set_intersection(s1, s2) {
+fn setIntersection(s1, s2) {
     let result = [];
     let i = 0;
     while (i < len(s1)) {
-        if (set_has(s2, s1[i])) {
+        if (setHas(s2, s1[i])) {
             result = push(result, s1[i]);
         }
         i = i + 1;
@@ -94,11 +94,11 @@ fn set_intersection(s1, s2) {
 }
 
 // Difference of two sets (A - B)
-fn set_difference(s1, s2) {
+fn setDifference(s1, s2) {
     let result = [];
     let i = 0;
     while (i < len(s1)) {
-        if (set_has(s2, s1[i]) == false) {
+        if (setHas(s2, s1[i]) == false) {
             result = push(result, s1[i]);
         }
         i = i + 1;
@@ -107,17 +107,17 @@ fn set_difference(s1, s2) {
 }
 
 // Symmetric difference (A xor B)
-fn set_symmetric_difference(s1, s2) {
-    let diff1 = set_difference(s1, s2);
-    let diff2 = set_difference(s2, s1);
-    return set_union(diff1, diff2);
+fn setSymmetricDifference(s1, s2) {
+    let diff1 = setDifference(s1, s2);
+    let diff2 = setDifference(s2, s1);
+    return setUnion(diff1, diff2);
 }
 
 // Check if s1 is subset of s2
-fn set_is_subset(s1, s2) {
+fn setIsSubset(s1, s2) {
     let i = 0;
     while (i < len(s1)) {
-        if (set_has(s2, s1[i]) == false) {
+        if (setHas(s2, s1[i]) == false) {
             return false;
         }
         i = i + 1;
@@ -126,31 +126,31 @@ fn set_is_subset(s1, s2) {
 }
 
 // Check if s1 is proper subset of s2
-fn set_is_proper_subset(s1, s2) {
+fn setIsProperSubset(s1, s2) {
     if (len(s1) >= len(s2)) {
         return false;
     }
-    return set_is_subset(s1, s2);
+    return setIsSubset(s1, s2);
 }
 
 // Check if s1 is superset of s2
-fn set_is_superset(s1, s2) {
-    return set_is_subset(s2, s1);
+fn setIsSuperset(s1, s2) {
+    return setIsSubset(s2, s1);
 }
 
 // Check if two sets are equal
-fn set_equals(s1, s2) {
+fn setEquals(s1, s2) {
     if (len(s1) != len(s2)) {
         return false;
     }
-    return set_is_subset(s1, s2);
+    return setIsSubset(s1, s2);
 }
 
 // Check if two sets are disjoint
-fn set_is_disjoint(s1, s2) {
+fn setIsDisjoint(s1, s2) {
     let i = 0;
     while (i < len(s1)) {
-        if (set_has(s2, s1[i])) {
+        if (setHas(s2, s1[i])) {
             return false;
         }
         i = i + 1;
@@ -159,18 +159,18 @@ fn set_is_disjoint(s1, s2) {
 }
 
 // Clear set
-fn set_clear() {
+fn setClear() {
     let s = [];
     return s;
 }
 
 // Convert set to array
-fn set_to_array(s) {
+fn setToArray(s) {
     return s;
 }
 
 // Get first element (or null if empty)
-fn set_first(s) {
+fn setFirst(s) {
     if (len(s) == 0) {
         return null;
     }
@@ -178,7 +178,7 @@ fn set_first(s) {
 }
 
 // Convert set to string
-fn set_to_string(s) {
+fn setToString(s) {
     let result = "{";
     let i = 0;
     while (i < len(s)) {

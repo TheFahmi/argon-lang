@@ -1,16 +1,16 @@
 // Async/Await Demo (v2.15 compatible version)
 // Uses threads to simulate async behavior
 
-fn slow_operation() {
+fn slowOperation() {
     print("Starting slow operation...");
-    argon_sleep(500);
+    argonSleep(500);
     print("Slow operation complete!");
     return 42;
 }
 
-fn fetch_data(id: int) {
+fn fetchData(id: int) {
     print("Fetching data for ID: " + id);
-    argon_sleep(300);
+    argonSleep(300);
     return id * 10;
 }
 
@@ -19,15 +19,15 @@ fn main() {
     print("");
     
     // Simulate async - in full v2.18, this would be:
-    // let result = await slow_operation();
-    let result = slow_operation();
+    // let result = await slowOperation();
+    let result = slowOperation();
     print("Result: " + result);
     print("");
     
     // Multiple async calls - in full v2.18, would run concurrently
-    let data1 = fetch_data(1);
-    let data2 = fetch_data(2);
-    let data3 = fetch_data(3);
+    let data1 = fetchData(1);
+    let data2 = fetchData(2);
+    let data3 = fetchData(3);
     
     print("Data 1: " + data1);
     print("Data 2: " + data2);

@@ -29,12 +29,12 @@ fn Err(error) {
 }
 
 // Check if result is Ok
-fn is_ok(result) {
+fn isOk(result) {
     return result[0] == RESULT_OK;
 }
 
 // Check if result is Err
-fn is_err(result) {
+fn isErr(result) {
     return result[0] == RESULT_ERR;
 }
 
@@ -48,7 +48,7 @@ fn unwrap(result) {
 }
 
 // Unwrap with default value
-fn unwrap_or(result, default_val) {
+fn unwrapOr(result, default_val) {
     if (result[0] == RESULT_ERR) {
         return default_val;
     }
@@ -56,7 +56,7 @@ fn unwrap_or(result, default_val) {
 }
 
 // Get error value
-fn unwrap_err(result) {
+fn unwrapErr(result) {
     if (result[0] == RESULT_OK) {
         print("Error: unwrap_err called on Ok");
         return null;
@@ -65,7 +65,7 @@ fn unwrap_err(result) {
 }
 
 // Map Ok value, keep Err unchanged
-fn result_map(result, value) {
+fn resultMap(result, value) {
     if (result[0] == RESULT_OK) {
         return Ok(value);
     }
@@ -73,7 +73,7 @@ fn result_map(result, value) {
 }
 
 // Map Err value, keep Ok unchanged
-fn result_map_err(result, error) {
+fn resultMapErr(result, error) {
     if (result[0] == RESULT_ERR) {
         return Err(error);
     }
@@ -81,7 +81,7 @@ fn result_map_err(result, error) {
 }
 
 // Convert Result to Option (Err becomes None)
-fn result_ok(result) {
+fn resultOk(result) {
     if (result[0] == RESULT_OK) {
         return Some(result[1]);
     }
@@ -106,17 +106,17 @@ fn None() {
 }
 
 // Check if option is Some
-fn is_some(option) {
+fn isSome(option) {
     return option[0] == OPTION_SOME;
 }
 
 // Check if option is None
-fn is_none(option) {
+fn isNone(option) {
     return option[0] == OPTION_NONE;
 }
 
 // Unwrap option value (panics if None)
-fn option_unwrap(option) {
+fn optionUnwrap(option) {
     if (option[0] == OPTION_NONE) {
         print("Error: unwrap called on None");
         return null;
@@ -125,7 +125,7 @@ fn option_unwrap(option) {
 }
 
 // Unwrap with default value
-fn option_unwrap_or(option, default_val) {
+fn optionUnwrapOr(option, default_val) {
     if (option[0] == OPTION_NONE) {
         return default_val;
     }
@@ -133,7 +133,7 @@ fn option_unwrap_or(option, default_val) {
 }
 
 // Map Some value, keep None unchanged
-fn option_map(option, value) {
+fn optionMap(option, value) {
     if (option[0] == OPTION_SOME) {
         return Some(value);
     }
@@ -141,7 +141,7 @@ fn option_map(option, value) {
 }
 
 // Convert Option to Result
-fn option_ok_or(option, error) {
+fn optionOkOr(option, error) {
     if (option[0] == OPTION_SOME) {
         return Ok(option[1]);
     }
@@ -149,7 +149,7 @@ fn option_ok_or(option, error) {
 }
 
 // Flatten nested Option
-fn option_flatten(option) {
+fn optionFlatten(option) {
     if (option[0] == OPTION_NONE) {
         return None();
     }
@@ -169,7 +169,7 @@ fn option_flatten(option) {
 
 // Try: wrap potentially failing operation
 // Returns Ok(value) or Err(error_msg)
-fn try_parse_int(s) {
+fn tryParseInt(s) {
     let n = len(s);
     if (n == 0) {
         return Err("empty string");
@@ -184,7 +184,7 @@ fn try_parse_int(s) {
     
     let result = 0;
     while (i < n) {
-        let code = char_code_at(s, i);
+        let code = charCodeAt(s, i);
         if (code < 48) {
             return Err("invalid character: " + s[i]);
         }
@@ -202,9 +202,9 @@ fn try_parse_int(s) {
 }
 
 // Assert with result
-fn assert_ok(result, msg) {
-    if (is_err(result)) {
-        print("Assertion failed: " + msg + " - " + unwrap_err(result));
+fn assertOk(result, msg) {
+    if (isErr(result)) {
+        print("Assertion failed: " + msg + " - " + unwrapErr(result));
         return false;
     }
     return true;

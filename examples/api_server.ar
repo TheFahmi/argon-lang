@@ -43,27 +43,27 @@ let sessions = [];
 // Response Helpers
 // ============================================
 
-fn response_ok(data) {
-    return json_object([
-        ["success", json_bool(true)],
+fn responseOk(data) {
+    return jsonObject([
+        ["success", jsonBool(true)],
         ["data", data]
     ]);
 }
 
-fn response_created(data) {
-    return json_object([
-        ["success", json_bool(true)],
-        ["message", json_string("Created successfully")],
+fn responseCreated(data) {
+    return jsonObject([
+        ["success", jsonBool(true)],
+        ["message", jsonString("Created successfully")],
         ["data", data]
     ]);
 }
 
-fn response_error(message, code) {
-    return json_object([
-        ["success", json_bool(false)],
-        ["error", json_object([
-            ["message", json_string(message)],
-            ["code", json_number(code)]
+fn responseError(message, code) {
+    return jsonObject([
+        ["success", jsonBool(false)],
+        ["error", jsonObject([
+            ["message", jsonString(message)],
+            ["code", jsonNumber(code)]
         ])]
     ]);
 }
@@ -72,22 +72,22 @@ fn response_error(message, code) {
 // Entity Serializers
 // ============================================
 
-fn user_to_json(id, email, name, role) {
-    return json_object([
-        ["id", json_number(id)],
-        ["email", json_string(email)],
-        ["name", json_string(name)],
-        ["role", json_string(role)]
+fn userToJson(id, email, name, role) {
+    return jsonObject([
+        ["id", jsonNumber(id)],
+        ["email", jsonString(email)],
+        ["name", jsonString(name)],
+        ["role", jsonString(role)]
     ]);
 }
 
-fn todo_to_json(id, title, description, completed, user_id) {
-    return json_object([
-        ["id", json_number(id)],
-        ["title", json_string(title)],
-        ["description", json_string(description)],
-        ["completed", json_bool(completed)],
-        ["userId", json_number(user_id)]
+fn todoToJson(id, title, description, completed, user_id) {
+    return jsonObject([
+        ["id", jsonNumber(id)],
+        ["title", jsonString(title)],
+        ["description", jsonString(description)],
+        ["completed", jsonBool(completed)],
+        ["userId", jsonNumber(user_id)]
     ]);
 }
 
@@ -95,13 +95,13 @@ fn todo_to_json(id, title, description, completed, user_id) {
 // Database Seed
 // ============================================
 
-fn seed_database() {
+fn seedDatabase() {
     print("[DB] Seeding database...");
     
     // Users
-    users = push(users, [1, "admin@example.com", "Admin User", bcrypt_hash("admin123"), "admin"]);
-    users = push(users, [2, "john@example.com", "John Doe", bcrypt_hash("john123"), "user"]);
-    users = push(users, [3, "jane@example.com", "Jane Smith", bcrypt_hash("jane123"), "user"]);
+    users = push(users, [1, "admin@example.com", "Admin User", bcryptHash("admin123"), "admin"]);
+    users = push(users, [2, "john@example.com", "John Doe", bcryptHash("john123"), "user"]);
+    users = push(users, [3, "jane@example.com", "Jane Smith", bcryptHash("jane123"), "user"]);
     next_user_id = 4;
     
     // Todos
@@ -119,7 +119,7 @@ fn seed_database() {
 // Auth Service
 // ============================================
 
-fn find_user_by_email(email) {
+fn findUserByEmail(email) {
     let i = 0;
     while (i < len(users)) {
         if (users[i][1] == email) {
@@ -130,7 +130,7 @@ fn find_user_by_email(email) {
     return null;
 }
 
-fn find_user_by_id(id) {
+fn findUserById(id) {
     let i = 0;
     while (i < len(users)) {
         if (users[i][0] == id) {
@@ -141,46 +141,46 @@ fn find_user_by_id(id) {
     return null;
 }
 
-fn auth_login(email, password) {
-    let user = find_user_by_email(email);
+fn authLogin(email, password) {
+    let user = findUserByEmail(email);
     if (user == null) {
         return null;
     }
     
     // Verify password
-    if (!bcrypt_verify(password, user[3])) {
+    if (!bcryptVerify(password, user[3])) {
         return null;
     }
     
     // Generate JWT
     let payload = "{\"userId\":" + user[0] + ",\"email\":\"" + user[1] + "\"}";
-    let token = jwt_sign(payload, JWT_SECRET);
+    let token = jwtSign(payload, JWT_SECRET);
     
-    return json_object([
-        ["token", json_string(token)],
-        ["user", user_to_json(user[0], user[1], user[2], user[4])],
-        ["expiresIn", json_number(3600)]
+    return jsonObject([
+        ["token", jsonString(token)],
+        ["user", userToJson(user[0], user[1], user[2], user[4])],
+        ["expiresIn", jsonNumber(3600)]
     ]);
 }
 
-fn auth_register(email, name, password) {
+fn authRegister(email, name, password) {
     // Check if exists
-    if (find_user_by_email(email) != null) {
+    if (findUserByEmail(email) != null) {
         return null;
     }
     
     let id = next_user_id;
     next_user_id = next_user_id + 1;
     
-    let hashed = bcrypt_hash(password);
+    let hashed = bcryptHash(password);
     users = push(users, [id, email, name, hashed, "user"]);
     
     let payload = "{\"userId\":" + id + ",\"email\":\"" + email + "\"}";
-    let token = jwt_sign(payload, JWT_SECRET);
+    let token = jwtSign(payload, JWT_SECRET);
     
-    return json_object([
-        ["token", json_string(token)],
-        ["user", user_to_json(id, email, name, "user")]
+    return jsonObject([
+        ["token", jsonString(token)],
+        ["user", userToJson(id, email, name, "user")]
     ]);
 }
 
@@ -188,86 +188,86 @@ fn auth_register(email, name, password) {
 // Users Service
 // ============================================
 
-fn get_all_users() {
+fn getAllUsers() {
     let result = [];
     let i = 0;
     while (i < len(users)) {
         let u = users[i];
-        result = push(result, user_to_json(u[0], u[1], u[2], u[4]));
+        result = push(result, userToJson(u[0], u[1], u[2], u[4]));
         i = i + 1;
     }
-    return json_array(result);
+    return jsonArray(result);
 }
 
-fn get_user(id) {
-    let user = find_user_by_id(id);
+fn getUser(id) {
+    let user = findUserById(id);
     if (user == null) {
         return null;
     }
-    return user_to_json(user[0], user[1], user[2], user[4]);
+    return userToJson(user[0], user[1], user[2], user[4]);
 }
 
 // ============================================
 // Todos Service
 // ============================================
 
-fn get_all_todos() {
+fn getAllTodos() {
     let result = [];
     let i = 0;
     while (i < len(todos)) {
         let t = todos[i];
-        result = push(result, todo_to_json(t[0], t[1], t[2], t[3], t[4]));
+        result = push(result, todoToJson(t[0], t[1], t[2], t[3], t[4]));
         i = i + 1;
     }
-    return json_array(result);
+    return jsonArray(result);
 }
 
-fn get_todo(id) {
+fn getTodo(id) {
     let i = 0;
     while (i < len(todos)) {
         if (todos[i][0] == id) {
             let t = todos[i];
-            return todo_to_json(t[0], t[1], t[2], t[3], t[4]);
+            return todoToJson(t[0], t[1], t[2], t[3], t[4]);
         }
         i = i + 1;
     }
     return null;
 }
 
-fn get_todos_by_user(user_id) {
+fn getTodosByUser(user_id) {
     let result = [];
     let i = 0;
     while (i < len(todos)) {
         if (todos[i][4] == user_id) {
             let t = todos[i];
-            result = push(result, todo_to_json(t[0], t[1], t[2], t[3], t[4]));
+            result = push(result, todoToJson(t[0], t[1], t[2], t[3], t[4]));
         }
         i = i + 1;
     }
-    return json_array(result);
+    return jsonArray(result);
 }
 
-fn create_todo(title, description, user_id) {
+fn createTodo(title, description, user_id) {
     let id = next_todo_id;
     next_todo_id = next_todo_id + 1;
     todos = push(todos, [id, title, description, false, user_id]);
-    return todo_to_json(id, title, description, false, user_id);
+    return todoToJson(id, title, description, false, user_id);
 }
 
-fn toggle_todo_status(id) {
+fn toggleTodoStatus(id) {
     let i = 0;
     while (i < len(todos)) {
         if (todos[i][0] == id) {
             todos[i][3] = !todos[i][3];
             let t = todos[i];
-            return todo_to_json(t[0], t[1], t[2], t[3], t[4]);
+            return todoToJson(t[0], t[1], t[2], t[3], t[4]);
         }
         i = i + 1;
     }
     return null;
 }
 
-fn get_todo_stats() {
+fn getTodoStats() {
     let total = len(todos);
     let completed = 0;
     let i = 0;
@@ -277,10 +277,10 @@ fn get_todo_stats() {
         }
         i = i + 1;
     }
-    return json_object([
-        ["total", json_number(total)],
-        ["completed", json_number(completed)],
-        ["pending", json_number(total - completed)]
+    return jsonObject([
+        ["total", jsonNumber(total)],
+        ["completed", jsonNumber(completed)],
+        ["pending", jsonNumber(total - completed)]
     ]);
 }
 
@@ -289,122 +289,122 @@ fn get_todo_stats() {
 // ============================================
 
 // Root
-fn handle_root(ctx) {
+fn handleRoot(ctx) {
     ctx.html("<h1>ArgonWeb REST API</h1><p>Visit <a href='/api'>/api</a> for endpoints</p>");
 }
 
-fn handle_health(ctx) {
-    ctx.json(json_object([
-        ["status", json_string("healthy")],
-        ["timestamp", json_number(now())]
+fn handleHealth(ctx) {
+    ctx.json(jsonObject([
+        ["status", jsonString("healthy")],
+        ["timestamp", jsonNumber(now())]
     ]));
 }
 
-fn handle_api_info(ctx) {
-    ctx.json(json_object([
-        ["name", json_string("ArgonWeb REST API")],
-        ["version", json_string("1.0.0")],
-        ["endpoints", json_array([
-            json_string("POST /api/auth/login"),
-            json_string("POST /api/auth/register"),
-            json_string("GET  /api/users"),
-            json_string("GET  /api/users/:id"),
-            json_string("GET  /api/todos"),
-            json_string("GET  /api/todos/stats"),
-            json_string("GET  /api/todos/:id"),
-            json_string("POST /api/todos")
+fn handleApiInfo(ctx) {
+    ctx.json(jsonObject([
+        ["name", jsonString("ArgonWeb REST API")],
+        ["version", jsonString("1.0.0")],
+        ["endpoints", jsonArray([
+            jsonString("POST /api/auth/login"),
+            jsonString("POST /api/auth/register"),
+            jsonString("GET  /api/users"),
+            jsonString("GET  /api/users/:id"),
+            jsonString("GET  /api/todos"),
+            jsonString("GET  /api/todos/stats"),
+            jsonString("GET  /api/todos/:id"),
+            jsonString("POST /api/todos")
         ])]
     ]));
 }
 
 // Auth handlers
-fn handle_login(ctx) {
+fn handleLogin(ctx) {
     // Demo: use fixed credentials for demo
-    let result = auth_login("admin@example.com", "admin123");
+    let result = authLogin("admin@example.com", "admin123");
     if (result == null) {
-        ctx.json(response_error("Invalid credentials", 401));
+        ctx.json(responseError("Invalid credentials", 401));
         return;
     }
-    ctx.json(response_ok(result));
+    ctx.json(responseOk(result));
 }
 
-fn handle_register(ctx) {
+fn handleRegister(ctx) {
     // Demo: use generated credentials
     let email = "user" + random() + "@example.com";
-    let result = auth_register(email, "New User", "password123");
+    let result = authRegister(email, "New User", "password123");
     if (result == null) {
-        ctx.json(response_error("Email already exists", 400));
+        ctx.json(responseError("Email already exists", 400));
         return;
     }
-    ctx.json(response_created(result));
+    ctx.json(responseCreated(result));
 }
 
 // User handlers
-fn handle_get_users(ctx) {
-    ctx.json(response_ok(get_all_users()));
+fn handleGetUsers(ctx) {
+    ctx.json(responseOk(getAllUsers()));
 }
 
-fn handle_get_user_1(ctx) {
-    let user = get_user(1);
+fn handleGetUser1(ctx) {
+    let user = getUser(1);
     if (user == null) {
-        ctx.json(response_error("User not found", 404));
+        ctx.json(responseError("User not found", 404));
         return;
     }
-    ctx.json(response_ok(user));
+    ctx.json(responseOk(user));
 }
 
-fn handle_get_user_2(ctx) {
-    let user = get_user(2);
+fn handleGetUser2(ctx) {
+    let user = getUser(2);
     if (user == null) {
-        ctx.json(response_error("User not found", 404));
+        ctx.json(responseError("User not found", 404));
         return;
     }
-    ctx.json(response_ok(user));
+    ctx.json(responseOk(user));
 }
 
 // Todo handlers
-fn handle_get_todos(ctx) {
-    ctx.json(response_ok(get_all_todos()));
+fn handleGetTodos(ctx) {
+    ctx.json(responseOk(getAllTodos()));
 }
 
-fn handle_get_todo_stats(ctx) {
-    ctx.json(response_ok(get_todo_stats()));
+fn handleGetTodoStats(ctx) {
+    ctx.json(responseOk(getTodoStats()));
 }
 
-fn handle_get_todo_1(ctx) {
-    let todo = get_todo(1);
+fn handleGetTodo1(ctx) {
+    let todo = getTodo(1);
     if (todo == null) {
-        ctx.json(response_error("Todo not found", 404));
+        ctx.json(responseError("Todo not found", 404));
         return;
     }
-    ctx.json(response_ok(todo));
+    ctx.json(responseOk(todo));
 }
 
-fn handle_get_todo_2(ctx) {
-    let todo = get_todo(2);
+fn handleGetTodo2(ctx) {
+    let todo = getTodo(2);
     if (todo == null) {
-        ctx.json(response_error("Todo not found", 404));
+        ctx.json(responseError("Todo not found", 404));
         return;
     }
-    ctx.json(response_ok(todo));
+    ctx.json(responseOk(todo));
 }
 
-fn handle_get_todos_user_1(ctx) {
-    ctx.json(response_ok(get_todos_by_user(1)));
+fn handleGetTodosUser1(ctx) {
+    ctx.json(responseOk(getTodosByUser(1)));
 }
 
-fn handle_create_todo(ctx) {
-    let todo = create_todo("New Task " + random(), "Created via API", 1);
-    ctx.json(response_created(todo));
+fn handleCreateTodo(ctx) {
+    let todo = createTodo("New Task " + random(), "Created via API", 1);
+    ctx.json(responseCreated(todo));
 }
 
-fn handle_toggle_todo_1(ctx) {
-    let todo = toggle_todo_status(1);
+fn handleToggleTodo1(ctx) {
+    let todo = toggleTodoStatus(1);
     if (todo == null) {
-        ctx.json(response_error("Todo not found", 404));
+        ctx.json(responseError("Todo not found", 404));
         return;
     }
-    ctx.json(response_ok(todo));
+    ctx.json(responseOk(todo));
 }
 
 // ============================================
@@ -427,7 +427,7 @@ fn main() {
     print("");
     
     // Seed database
-    seed_database();
+    seedDatabase();
     
     // Create server
     let app = Server::new(APP_PORT);

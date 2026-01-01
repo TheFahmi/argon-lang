@@ -126,7 +126,7 @@ fn pgConnectUrl(url: string) -> PgConnection {
 }
 
 fn generateConnectionId() -> int {
-    return timestamp_ms() % 1000000;
+    return timestampMs() % 1000000;
 }
 
 impl PgConnection {
@@ -254,7 +254,7 @@ fn pgQuery(conn: PgConnection, sql: string) -> PgResult {
         push(result.rows, row);
     } else if (startsWith(toUpperCase(sql), "INSERT")) {
         result.affectedRows = 1;
-        result.lastInsertId = timestamp_ms() % 10000;
+        result.lastInsertId = timestampMs() % 10000;
     } else if (startsWith(toUpperCase(sql), "UPDATE") || startsWith(toUpperCase(sql), "DELETE")) {
         result.affectedRows = 1;
     }

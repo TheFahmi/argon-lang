@@ -125,7 +125,7 @@ impl WebSocketConnection {
             return false;
         }
         let frame = encodeFrame(createTextMessage(message));
-        argon_socket_write(self.socketId, frame);
+        argonSocketWrite(self.socketId, frame);
         return true;
     }
     
@@ -134,14 +134,14 @@ impl WebSocketConnection {
             return false;
         }
         let frame = encodeFrame(createBinaryMessage(data));
-        argon_socket_write(self.socketId, frame);
+        argonSocketWrite(self.socketId, frame);
         return true;
     }
     
     fn ping(self) {
         if (self.readyState == WS_OPEN) {
             let frame = encodeFrame(createPingMessage());
-            argon_socket_write(self.socketId, frame);
+            argonSocketWrite(self.socketId, frame);
         }
     }
     
@@ -149,7 +149,7 @@ impl WebSocketConnection {
         if (self.readyState == WS_OPEN) {
             self.readyState = WS_CLOSING;
             let frame = encodeFrame(createCloseMessage(code, reason));
-            argon_socket_write(self.socketId, frame);
+            argonSocketWrite(self.socketId, frame);
             self.readyState = WS_CLOSED;
         }
     }
@@ -237,7 +237,7 @@ impl WebSocketServer {
         print("  Listening on ws://localhost:" + self.port);
         print("");
         
-        let listener = argon_listen(self.port);
+        let listener = argonListen(self.port);
         
         if (listener < 0) {
             print("FATAL: Failed to bind to port " + self.port);
@@ -245,17 +245,17 @@ impl WebSocketServer {
         }
         
         while (true) {
-            let client = argon_accept(listener);
+            let client = argonAccept(listener);
             
             if (client >= 0) {
-                let reqStr = argon_socket_read(client);
+                let reqStr = argonSocketRead(client);
                 
                 if (len(reqStr) > 0) {
                     // Check if WebSocket upgrade request
                     if (isUpgradeRequest(reqStr)) {
                         // Perform handshake
                         let response = performHandshake(reqStr);
-                        argon_socket_write(client, response);
+                        argonSocketWrite(client, response);
                         
                         // Create connection
                         let conn = createConnection(client);
@@ -277,8 +277,8 @@ impl WebSocketServer {
                         let httpResp = "HTTP/1.1 426 Upgrade Required\r\n";
                         httpResp = httpResp + "Upgrade: websocket\r\n";
                         httpResp = httpResp + "Connection: Upgrade\r\n\r\n";
-                        argon_socket_write(client, httpResp);
-                        argon_socket_close(client);
+                        argonSocketWrite(client, httpResp);
+                        argonSocketClose(client);
                     }
                 }
             }
@@ -287,7 +287,7 @@ impl WebSocketServer {
     
     fn handleConnection(self, conn: WebSocketConnection) {
         while (conn.isOpen()) {
-            let data = argon_socket_read(conn.socketId);
+            let data = argonSocketRead(conn.socketId);
             
             if (len(data) == 0) {
                 // Connection closed
@@ -420,7 +420,7 @@ fn base64Encode(input: string) -> string {
 }
 
 fn charCodeAt(s: string, i: int) -> int {
-    let c = char_at(s, i);
+    let c = charAt(s, i);
     // Return ASCII code
     return ord(c);
 }
@@ -532,7 +532,7 @@ fn chr(code: int) -> string {
     // Built-in would be better
     let chars = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
     if (code >= 32 && code <= 126) {
-        return char_at(chars, code - 32);
+        return charAt(chars, code - 32);
     }
     return "?";
 }
@@ -581,7 +581,7 @@ impl WebSocketClient {
         }
         let frame = encodeFrame(createTextMessage(message));
         // Add mask for client -> server
-        argon_socket_write(self.socketId, frame);
+        argonSocketWrite(self.socketId, frame);
         return true;
     }
     
@@ -589,7 +589,7 @@ impl WebSocketClient {
         if (self.readyState == WS_OPEN) {
             self.readyState = WS_CLOSING;
             let frame = encodeFrame(createCloseMessage(WS_CLOSE_NORMAL, ""));
-            argon_socket_write(self.socketId, frame);
+            argonSocketWrite(self.socketId, frame);
             self.readyState = WS_CLOSED;
         }
     }

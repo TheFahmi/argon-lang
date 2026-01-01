@@ -109,7 +109,7 @@ fn tokenize(source: string) -> [Token] {
     let srcLen = len(source);
     
     while (i < srcLen) {
-        let c = char_at(source, i);
+        let c = charAt(source, i);
         
         // Newline
         if (c == "\n") {
@@ -124,7 +124,7 @@ fn tokenize(source: string) -> [Token] {
         if (c == " " || c == "\t" || c == "\r") {
             let start = i;
             while (i < srcLen) {
-                let ch = char_at(source, i);
+                let ch = charAt(source, i);
                 if (ch != " " && ch != "\t" && ch != "\r") {
                     break;
                 }
@@ -137,11 +137,11 @@ fn tokenize(source: string) -> [Token] {
         
         // Comments
         if (c == "/" && i + 1 < srcLen) {
-            let next = char_at(source, i + 1);
+            let next = charAt(source, i + 1);
             if (next == "/") {
                 // Line comment
                 let start = i;
-                while (i < srcLen && char_at(source, i) != "\n") {
+                while (i < srcLen && charAt(source, i) != "\n") {
                     i = i + 1;
                 }
                 push(tokens, Token { type: TOK_COMMENT, value: substr(source, start, i - start), line: line, col: col });
@@ -154,7 +154,7 @@ fn tokenize(source: string) -> [Token] {
             let start = i;
             i = i + 1;
             while (i < srcLen) {
-                let ch = char_at(source, i);
+                let ch = charAt(source, i);
                 if (ch == "\\") {
                     i = i + 2; // Skip escape
                     continue;
@@ -173,7 +173,7 @@ fn tokenize(source: string) -> [Token] {
         // Number
         if (isDigit(c)) {
             let start = i;
-            while (i < srcLen && (isDigit(char_at(source, i)) || char_at(source, i) == ".")) {
+            while (i < srcLen && (isDigit(charAt(source, i)) || charAt(source, i) == ".")) {
                 i = i + 1;
             }
             push(tokens, Token { type: TOK_NUMBER, value: substr(source, start, i - start), line: line, col: col });
@@ -185,7 +185,7 @@ fn tokenize(source: string) -> [Token] {
         if (isAlpha(c) || c == "_") {
             let start = i;
             while (i < srcLen) {
-                let ch = char_at(source, i);
+                let ch = charAt(source, i);
                 if (!isAlphaNum(ch) && ch != "_") {
                     break;
                 }
@@ -202,7 +202,7 @@ fn tokenize(source: string) -> [Token] {
         }
         
         // Arrow ->
-        if (c == "-" && i + 1 < srcLen && char_at(source, i + 1) == ">") {
+        if (c == "-" && i + 1 < srcLen && charAt(source, i + 1) == ">") {
             push(tokens, Token { type: TOK_ARROW, value: "->", line: line, col: col });
             i = i + 2;
             col = col + 2;
@@ -316,7 +316,7 @@ fn format(source: string, config: FormatConfig) -> string {
     }
     
     // Final newline
-    if (config.insertFinalNewline && !ends_with(result, "\n")) {
+    if (config.insertFinalNewline && !endsWith(result, "\n")) {
         result = result + "\n";
     }
     
@@ -462,7 +462,7 @@ fn formatDirectory(dir: string, config: FormatConfig, inPlace: bool) -> int {
     let i = 0;
     while (i < len(files)) {
         let file = files[i];
-        if (ends_with(file, ".ar")) {
+        if (endsWith(file, ".ar")) {
             let path = dir + "/" + file;
             if (formatFile(path, config, inPlace)) {
                 count = count + 1;
@@ -497,7 +497,7 @@ fn checkDirectory(dir: string, config: FormatConfig) -> int {
     let i = 0;
     while (i < len(files)) {
         let file = files[i];
-        if (ends_with(file, ".ar")) {
+        if (endsWith(file, ".ar")) {
             let path = dir + "/" + file;
             if (!checkFile(path, config)) {
                 needsFormat = needsFormat + 1;
@@ -607,7 +607,7 @@ fn main() {
         } else if (arg == "--indent" && i + 1 < len(args)) {
             i = i + 1;
             config.indentSize = parseInt(args[i]);
-        } else if (!starts_with(arg, "-")) {
+        } else if (!startsWith(arg, "-")) {
             push(targets, arg);
         }
         
@@ -635,7 +635,7 @@ fn main() {
                 let files = listDir(target);
                 let j = 0;
                 while (j < len(files)) {
-                    if (ends_with(files[j], ".ar")) {
+                    if (endsWith(files[j], ".ar")) {
                         diffFile(target + "/" + files[j], config);
                         totalFiles = totalFiles + 1;
                     }

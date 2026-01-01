@@ -14,7 +14,7 @@ fn main() {
     
     // Connect to MySQL
     // Docker-compose: port 3307, user argon, password argon123
-    let conn = mysql_connect("127.0.0.1", 3307, "argon", "argon123", "argondb");
+    let conn = mysqlConnect("127.0.0.1", 3307, "argon", "argon123", "argondb");
     
     if (conn == null) {
         print("");
@@ -32,7 +32,7 @@ fn main() {
     
     // Select database first
     print("[0] Selecting database...");
-    let use_db = mysql_query(conn, "USE argondb");
+    let use_db = mysqlQuery(conn, "USE argondb");
     if (use_db.success) {
         print("    [PASS] Database selected!");
     } else {
@@ -42,8 +42,8 @@ fn main() {
     
     // Test 1: Create table
     print("[1] Creating test table...");
-    let result1 = mysql_query(conn, "DROP TABLE IF EXISTS argon_test");
-    let result2 = mysql_query(conn, "CREATE TABLE argon_test (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), value INT)");
+    let result1 = mysqlQuery(conn, "DROP TABLE IF EXISTS argon_test");
+    let result2 = mysqlQuery(conn, "CREATE TABLE argonTest(id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), value INT)");
     if (result2.success) {
         print("    [PASS] Table created!");
     } else {
@@ -53,9 +53,9 @@ fn main() {
     
     // Test 2: Insert data
     print("[2] Inserting data...");
-    let ins1 = mysql_query(conn, "INSERT INTO argon_test (name, value) VALUES ('hello', 42)");
-    let ins2 = mysql_query(conn, "INSERT INTO argon_test (name, value) VALUES ('world', 100)");
-    let ins3 = mysql_query(conn, "INSERT INTO argon_test (name, value) VALUES ('argon', 2024)");
+    let ins1 = mysqlQuery(conn, "INSERT INTO argonTest(name, value) VALUES ('hello', 42)");
+    let ins2 = mysqlQuery(conn, "INSERT INTO argonTest(name, value) VALUES ('world', 100)");
+    let ins3 = mysqlQuery(conn, "INSERT INTO argonTest(name, value) VALUES ('argon', 2024)");
     if (ins1.success && ins2.success && ins3.success) {
         print("    [PASS] 3 rows inserted!");
     }
@@ -63,7 +63,7 @@ fn main() {
     
     // Test 3: Select data
     print("[3] Selecting data...");
-    let sel = mysql_query(conn, "SELECT * FROM argon_test");
+    let sel = mysqlQuery(conn, "SELECT * FROM argon_test");
     if (sel.success) {
         print("    [PASS] Query executed");
     }
@@ -71,7 +71,7 @@ fn main() {
     
     // Test 4: Update data
     print("[4] Updating data...");
-    let upd = mysql_query(conn, "UPDATE argon_test SET value = 999 WHERE name = 'hello'");
+    let upd = mysqlQuery(conn, "UPDATE argon_test SET value = 999 WHERE name = 'hello'");
     if (upd.success) {
         print("    [PASS] Data updated!");
     }
@@ -79,7 +79,7 @@ fn main() {
     
     // Test 5: Delete data
     print("[5] Deleting data...");
-    let del = mysql_query(conn, "DELETE FROM argon_test WHERE name = 'world'");
+    let del = mysqlQuery(conn, "DELETE FROM argon_test WHERE name = 'world'");
     if (del.success) {
         print("    [PASS] Data deleted!");
     }
@@ -87,12 +87,12 @@ fn main() {
     
     // Cleanup
     print("[6] Cleanup...");
-    mysql_query(conn, "DROP TABLE argon_test");
+    mysqlQuery(conn, "DROP TABLE argon_test");
     print("    [PASS] Table dropped");
     print("");
     
     // Close connection
-    mysql_close(conn);
+    mysqlClose(conn);
     
     print("==========================================");
     print("    ALL MYSQL TESTS PASSED!");

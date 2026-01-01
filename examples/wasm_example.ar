@@ -43,7 +43,7 @@ fn fibonacci(n: int) {
 }
 
 // Check if number is prime
-fn is_prime(n: int) {
+fn isPrime(n: int) {
     if (n < 2) {
         return 0;
     }
@@ -106,8 +106,8 @@ fn main() {
     print("");
     
     // Prime check
-    print("Is 17 prime? " + is_prime(17));
-    print("Is 18 prime? " + is_prime(18));
+    print("Is 17 prime? " + isPrime(17));
+    print("Is 18 prime? " + isPrime(18));
     print("");
     
     // GCD

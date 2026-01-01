@@ -8,7 +8,7 @@ fn main() {
     // Try to load msvcrt on Windows (standard C library)
     print("Attempting to load C library...");
     
-    let loaded = ffi_load("msvcrt");
+    let loaded = ffiLoad("msvcrt");
     if (loaded) {
         print("✓ Library loaded successfully!");
         

@@ -9,7 +9,7 @@ use crate::gc::GarbageCollector;
 use crate::threading::{ThreadManager, ThreadValue};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
-use std::io::{Read, Write, BufRead};
+use std::io::{Read, Write};
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::net::{TcpListener, TcpStream};
@@ -565,7 +565,7 @@ impl Interpreter {
                 }
                 return Ok(Value::String("".to_string()));
             }
-            "tcp_write" | "argon_tcp_write" => {
+            "tcp_write" | "argon_tcp_write" | "tcpWrite" => {
                 // Write string with newline
                 if args.len() >= 2 {
                     if let (Value::Int(id), Value::String(s)) = (&args[0], &args[1]) {
@@ -580,7 +580,7 @@ impl Interpreter {
                 }
                 return Ok(Value::Bool(false));
             }
-            "tcp_read_bytes" | "argon_socket_read_bytes" => {
+            "tcp_read_bytes" | "argon_socket_read_bytes" | "tcpReadBytes" => {
                 // Read exact number of bytes
                 if args.len() >= 2 {
                     if let (Value::Int(id), Value::Int(count)) = (&args[0], &args[1]) {
@@ -594,7 +594,7 @@ impl Interpreter {
                 }
                 return Ok(Value::String("".to_string()));
             }
-            "tcp_write_raw" | "socket_write_raw" => {
+            "tcp_write_raw" | "socket_write_raw" | "tcpWriteRaw" => {
                 // Write raw bytes (from array of ints)
                 if args.len() >= 2 {
                     if let (Value::Int(id), Value::Array(arr)) = (&args[0], &args[1]) {
@@ -611,7 +611,7 @@ impl Interpreter {
                 }
                 return Ok(Value::Bool(false));
             }
-            "tcp_read_raw" | "socket_read_raw" => {
+            "tcp_read_raw" | "socket_read_raw" | "tcpReadRaw" => {
                 // Read bytes as array of ints
                 if args.len() >= 2 {
                     if let (Value::Int(id), Value::Int(count)) = (&args[0], &args[1]) {
@@ -626,7 +626,7 @@ impl Interpreter {
                 }
                 return Ok(Value::Array(Rc::new(RefCell::new(Vec::new()))));
             }
-            "tcp_read_available" | "socket_read_available" => {
+            "tcp_read_available" | "socket_read_available" | "tcpReadAvailable" => {
                 // Read all available bytes (non-blocking style with timeout)
                 if let Some(Value::Int(id)) = args.first() {
                     if let Some(stream) = self.sockets.get_mut(id) {
@@ -663,7 +663,7 @@ impl Interpreter {
                 }
                 return Ok(Value::Int(0));
             }
-            "bytes_to_string" => {
+            "bytes_to_string" | "bytesToString" => {
                 // Convert byte array to string
                 if let Some(Value::Array(arr)) = args.first() {
                     let bytes: Vec<u8> = arr.borrow().iter().filter_map(|v| {
@@ -673,7 +673,7 @@ impl Interpreter {
                 }
                 return Ok(Value::String("".to_string()));
             }
-            "string_to_bytes" => {
+            "string_to_bytes" | "stringToBytes" => {
                 // Convert string to byte array
                 if let Some(Value::String(s)) = args.first() {
                     let arr: Vec<Value> = s.bytes().map(|b| Value::Int(b as i64)).collect();
@@ -681,7 +681,7 @@ impl Interpreter {
                 }
                 return Ok(Value::Array(Rc::new(RefCell::new(Vec::new()))));
             }
-            "sha1" | "sha1_hash" => {
+            "sha1" | "sha1_hash" | "sha1Hash" => {
                 // SHA1 hash - returns hex string
                 if let Some(Value::String(s)) = args.first() {
                     let hash = sha1_digest(s.as_bytes());
@@ -690,7 +690,7 @@ impl Interpreter {
                 }
                 return Ok(Value::String("".to_string()));
             }
-            "sha1_bytes" => {
+            "sha1_bytes" | "sha1Bytes" => {
                 // SHA1 hash - returns byte array (20 bytes)
                 if let Some(Value::Array(arr)) = args.first() {
                     let bytes: Vec<u8> = arr.borrow().iter().filter_map(|v| {
@@ -708,7 +708,7 @@ impl Interpreter {
                 }
                 return Ok(Value::Array(Rc::new(RefCell::new(Vec::new()))));
             }
-            "xor_bytes" => {
+            "xor_bytes" | "xorBytes" => {
                 // XOR two byte arrays
                 if args.len() >= 2 {
                     if let (Value::Array(a), Value::Array(b)) = (&args[0], &args[1]) {
@@ -725,7 +725,7 @@ impl Interpreter {
                 }
                 return Ok(Value::Array(Rc::new(RefCell::new(Vec::new()))));
             }
-            "concat_bytes" => {
+            "concat_bytes" | "concatBytes" => {
                 // Concatenate two byte arrays
                 if args.len() >= 2 {
                     if let (Value::Array(a), Value::Array(b)) = (&args[0], &args[1]) {
@@ -801,7 +801,7 @@ impl Interpreter {
             // ============================================
             // Crypto Built-ins (simplified for demo)
             // ============================================
-            "bcrypt_hash" => {
+            "bcrypt_hash" | "bcryptHash" => {
                 if let Some(Value::String(password)) = args.first() {
                     // Simplified hash: in production use actual bcrypt
                     let hash = format!("$2b$12${}", base64_simple(password));
@@ -809,7 +809,7 @@ impl Interpreter {
                 }
                 return Ok(Value::Null);
             }
-            "bcrypt_verify" => {
+            "bcrypt_verify" | "bcryptVerify" => {
                 if args.len() >= 2 {
                     if let (Value::String(password), Value::String(hash)) = (&args[0], &args[1]) {
                         // Simplified verify
@@ -819,7 +819,7 @@ impl Interpreter {
                 }
                 return Ok(Value::Bool(false));
             }
-            "jwt_sign" => {
+            "jwt_sign" | "jwtSign" => {
                 // jwt_sign(payload_json, secret) -> token string
                 if args.len() >= 2 {
                     if let (Value::String(payload), Value::String(secret)) = (&args[0], &args[1]) {
@@ -832,7 +832,7 @@ impl Interpreter {
                 }
                 return Ok(Value::Null);
             }
-            "jwt_verify" => {
+            "jwt_verify" | "jwtVerify" => {
                 // jwt_verify(token, secret) -> payload string or null
                 if args.len() >= 2 {
                     if let (Value::String(token), Value::String(_secret)) = (&args[0], &args[1]) {
@@ -852,12 +852,12 @@ impl Interpreter {
                 let duration = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default();
                 return Ok(Value::Int(duration.as_secs() as i64));
             }
-            "timestamp_ms" => {
+            "timestamp_ms" | "timestampMs" => {
                 use std::time::{SystemTime, UNIX_EPOCH};
                 let duration = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default();
                 return Ok(Value::Int(duration.as_millis() as i64));
             }
-            "date_now" => {
+            "date_now" | "dateNow" => {
                 // Returns ISO date string
                 use std::time::{SystemTime, UNIX_EPOCH};
                 let secs = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs();
@@ -870,7 +870,7 @@ impl Interpreter {
                 let date = format!("{:04}-{:02}-{:02}", years, month.min(12), day.min(31));
                 return Ok(Value::String(date));
             }
-            "uuid" | "generate_id" => {
+            "generate_id" | "uuid" | "generateId" => {
                 // Simple pseudo-random ID
                 use std::time::{SystemTime, UNIX_EPOCH};
                 let ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_nanos();
@@ -908,7 +908,7 @@ impl Interpreter {
                 }
                 return Ok(Value::Int(0));
             }
-            "rand_int" => {
+            "rand_int" | "randInt" => {
                 if args.len() >= 2 {
                     use std::time::{SystemTime, UNIX_EPOCH};
                     if let (Value::Int(min_val), Value::Int(max_val)) = (&args[0], &args[1]) {
@@ -951,13 +951,13 @@ impl Interpreter {
                 }
                 return Ok(Value::String(String::new()));
             }
-            "to_upper" | "toUpperCase" | "upper" => {
+            "to_upper" | "toUpperCase" | "upper" | "toUpper" => {
                 if let Some(Value::String(s)) = args.first() {
                     return Ok(Value::String(s.to_uppercase()));
                 }
                 return Ok(Value::String(String::new()));
             }
-            "to_lower" | "toLowerCase" | "lower" => {
+            "to_lower" | "toLowerCase" | "lower" | "toLower" => {
                 if let Some(Value::String(s)) = args.first() {
                     return Ok(Value::String(s.to_lowercase()));
                 }
@@ -1011,7 +1011,7 @@ impl Interpreter {
                 }
                 return Ok(Value::String(String::new()));
             }
-            "index_of" | "indexOf" => {
+            "index_of" | "indexOf" | "indexof" => {
                 if args.len() >= 2 {
                     if let (Value::String(s), Value::String(sub)) = (&args[0], &args[1]) {
                         if let Some(idx) = s.find(sub.as_str()) {
@@ -1105,7 +1105,7 @@ impl Interpreter {
                 }
                 return Ok(Value::Array(Rc::new(RefCell::new(vec![]))));
             }
-            "find_index" | "findIndex" => {
+            "find_index" | "findIndex" | "findindex" => {
                 if args.len() >= 2 {
                     if let (Value::Array(arr), val) = (&args[0], &args[1]) {
                         for (i, v) in arr.borrow().iter().enumerate() {
@@ -1135,25 +1135,25 @@ impl Interpreter {
                 }
                 return Ok(Value::String("unknown".to_string()));
             }
-            "is_null" | "isNull" => {
+            "is_null" | "isNull" | "isnull" => {
                 if let Some(val) = args.first() {
                     return Ok(Value::Bool(matches!(val, Value::Null)));
                 }
                 return Ok(Value::Bool(true));
             }
-            "is_array" | "isArray" => {
+            "is_array" | "isArray" | "isarray" => {
                 if let Some(val) = args.first() {
                     return Ok(Value::Bool(matches!(val, Value::Array(_))));
                 }
                 return Ok(Value::Bool(false));
             }
-            "is_string" | "isString" => {
+            "is_string" | "isString" | "isstring" => {
                 if let Some(val) = args.first() {
                     return Ok(Value::Bool(matches!(val, Value::String(_))));
                 }
                 return Ok(Value::Bool(false));
             }
-            "is_int" | "isInt" | "is_number" | "isNumber" => {
+            "is_int" | "isInt" | "is_number" | "isNumber" | "isint" => {
                 if let Some(val) = args.first() {
                     return Ok(Value::Bool(matches!(val, Value::Int(_))));
                 }
@@ -1263,12 +1263,12 @@ impl Interpreter {
             // ============================================
             // GC Built-ins
             // ============================================
-            "gc_collect" => {
+            "gc_collect" | "gcCollect" => {
                 // Force garbage collection
                 self.gc.collect();
                 return Ok(Value::Null);
             }
-            "gc_stats" => {
+            "gc_stats" | "gcStats" => {
                 // Return heap statistics [heap_size, allocated_since_last_gc]
                 let (heap_size, allocated) = self.gc.stats();
                 let stats = vec![
@@ -1280,7 +1280,7 @@ impl Interpreter {
             // ============================================
             // Threading Built-ins (True Parallelism)
             // ============================================
-            "thread_spawn" | "spawn_thread" => {
+            "thread_spawn" | "spawn_thread" | "threadSpawn" | "spawnThread" => {
                 // spawn_thread(value, "operation") -> worker_id
                 // Operations: "double", "square", "factorial", "fib", "sleep"
                 if args.len() >= 2 {
@@ -1291,7 +1291,7 @@ impl Interpreter {
                 }
                 return Ok(Value::Int(-1));
             }
-            "thread_join" | "join_thread" => {
+            "thread_join" | "join_thread" | "threadJoin" | "joinThread" => {
                 // join_thread(worker_id) -> result value
                 if let Some(Value::Int(worker_id)) = args.first() {
                     if let Some(result) = self.threads.join_worker(*worker_id) {
@@ -1300,23 +1300,23 @@ impl Interpreter {
                 }
                 return Ok(Value::Null);
             }
-            "thread_is_done" | "is_thread_done" => {
+            "thread_is_done" | "is_thread_done" | "threadIsDone" | "isThreadDone" => {
                 // is_thread_done(worker_id) -> bool
                 if let Some(Value::Int(worker_id)) = args.first() {
                     return Ok(Value::Bool(self.threads.is_worker_finished(*worker_id)));
                 }
                 return Ok(Value::Bool(true));
             }
-            "thread_active_count" => {
+            "thread_active_count" | "threadActiveCount" => {
                 // thread_active_count() -> number of running threads
                 return Ok(Value::Int(self.threads.active_workers() as i64));
             }
-            "channel_new" | "channel_create" => {
+            "channel_new" | "channel_create" | "channelNew" | "channelCreate" => {
                 // channel_new() -> channel_id
                 let channel_id = self.threads.create_channel();
                 return Ok(Value::Int(channel_id));
             }
-            "channel_send" => {
+            "channel_send" | "channelSend" => {
                 // channel_send(channel_id, value) -> bool
                 if args.len() >= 2 {
                     if let Value::Int(channel_id) = &args[0] {
@@ -1327,7 +1327,7 @@ impl Interpreter {
                 }
                 return Ok(Value::Bool(false));
             }
-            "channel_recv" => {
+            "channel_recv" | "channelRecv" => {
                 // channel_recv(channel_id) -> value (blocks until message)
                 if let Some(Value::Int(channel_id)) = args.first() {
                     if let Some(result) = self.threads.channel_recv(*channel_id) {
@@ -1336,7 +1336,7 @@ impl Interpreter {
                 }
                 return Ok(Value::Null);
             }
-            "channel_try_recv" => {
+            "channel_try_recv" | "channelTryRecv" => {
                 // channel_try_recv(channel_id) -> value or null (non-blocking)
                 if let Some(Value::Int(channel_id)) = args.first() {
                     if let Some(result) = self.threads.channel_try_recv(*channel_id) {

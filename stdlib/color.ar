@@ -48,23 +48,23 @@ fn black(text) {
 }
 
 // Bright versions
-fn bright_red(text) {
+fn brightRed(text) {
     return "[BRIGHT_RED]" + text + "[/BRIGHT_RED]";
 }
 
-fn bright_green(text) {
+fn brightGreen(text) {
     return "[BRIGHT_GREEN]" + text + "[/BRIGHT_GREEN]";
 }
 
-fn bright_yellow(text) {
+fn brightYellow(text) {
     return "[BRIGHT_YELLOW]" + text + "[/BRIGHT_YELLOW]";
 }
 
-fn bright_blue(text) {
+fn brightBlue(text) {
     return "[BRIGHT_BLUE]" + text + "[/BRIGHT_BLUE]";
 }
 
-fn bright_cyan(text) {
+fn brightCyan(text) {
     return "[BRIGHT_CYAN]" + text + "[/BRIGHT_CYAN]";
 }
 
@@ -90,19 +90,19 @@ fn strikethrough(text) {
 }
 
 // Combined styles
-fn bold_red(text) {
+fn boldRed(text) {
     return "[BOLD][RED]" + text + "[/RED][/BOLD]";
 }
 
-fn bold_green(text) {
+fn boldGreen(text) {
     return "[BOLD][GREEN]" + text + "[/GREEN][/BOLD]";
 }
 
-fn bold_yellow(text) {
+fn boldYellow(text) {
     return "[BOLD][YELLOW]" + text + "[/YELLOW][/BOLD]";
 }
 
-fn bold_blue(text) {
+fn boldBlue(text) {
     return "[BOLD][BLUE]" + text + "[/BLUE][/BOLD]";
 }
 
@@ -110,23 +110,23 @@ fn bold_blue(text) {
 // Semantic colors
 // ============================================
 
-fn color_success(text) {
+fn colorSuccess(text) {
     return "[SUCCESS] " + text;
 }
 
-fn color_error(text) {
+fn colorError(text) {
     return "[ERROR] " + text;
 }
 
-fn color_warning(text) {
+fn colorWarning(text) {
     return "[WARNING] " + text;
 }
 
-fn color_info(text) {
+fn colorInfo(text) {
     return "[INFO] " + text;
 }
 
-fn color_debug(text) {
+fn colorDebug(text) {
     return "[DEBUG] " + text;
 }
 
@@ -138,23 +138,23 @@ fn highlight(text) {
 // Print helpers
 // ============================================
 
-fn print_success(msg) {
+fn printSuccess(msg) {
     print("[SUCCESS] " + msg);
 }
 
-fn print_error(msg) {
+fn printError(msg) {
     print("[ERROR] " + msg);
 }
 
-fn print_warning(msg) {
+fn printWarning(msg) {
     print("[WARNING] " + msg);
 }
 
-fn print_info(msg) {
+fn printInfo(msg) {
     print("[INFO] " + msg);
 }
 
-fn print_debug(msg) {
+fn printDebug(msg) {
     print("[DEBUG] " + msg);
 }
 
@@ -162,18 +162,18 @@ fn print_debug(msg) {
 // Box drawing
 // ============================================
 
-fn print_box(title, content) {
+fn printBox(title, content) {
     let width = 40;
-    let top = "+" + repeat_char("-", width - 2) + "+";
+    let top = "+" + repeatChar("-", width - 2) + "+";
     
     print(top);
-    print("| " + pad_right(title, width - 4) + " |");
-    print("+" + repeat_char("-", width - 2) + "+");
-    print("| " + pad_right(content, width - 4) + " |");
+    print("| " + padRight(title, width - 4) + " |");
+    print("+" + repeatChar("-", width - 2) + "+");
+    print("| " + padRight(content, width - 4) + " |");
     print(top);
 }
 
-fn repeat_char(c, n) {
+fn repeatChar(c, n) {
     let result = "";
     let i = 0;
     while (i < n) {
@@ -183,7 +183,7 @@ fn repeat_char(c, n) {
     return result;
 }
 
-fn pad_right(s, width) {
+fn padRight(s, width) {
     let result = s;
     while (len(result) < width) {
         result = result + " ";

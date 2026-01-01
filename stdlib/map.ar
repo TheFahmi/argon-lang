@@ -15,23 +15,23 @@ fn _map_pair(k, v) {
 }
 
 // Create empty map
-fn map_new() {
+fn mapNew() {
     let m = [];
     return m;
 }
 
 // Get number of entries
-fn map_size(m) {
+fn mapSize(m) {
     return len(m);
 }
 
 // Check if map is empty
-fn map_is_empty(m) {
+fn mapIsEmpty(m) {
     return len(m) == 0;
 }
 
 // Check if key exists
-fn map_has(m, key) {
+fn mapHas(m, key) {
     let i = 0;
     while (i < len(m)) {
         let entry = m[i];
@@ -44,7 +44,7 @@ fn map_has(m, key) {
 }
 
 // Get value by key (returns null if not found)
-fn map_get(m, key) {
+fn mapGet(m, key) {
     let i = 0;
     while (i < len(m)) {
         let entry = m[i];
@@ -57,7 +57,7 @@ fn map_get(m, key) {
 }
 
 // Get value by key with default
-fn map_get_or(m, key, default_val) {
+fn mapGetOr(m, key, default_val) {
     let i = 0;
     while (i < len(m)) {
         let entry = m[i];
@@ -70,7 +70,7 @@ fn map_get_or(m, key, default_val) {
 }
 
 // Set key-value pair (returns new map)
-fn map_set(m, key, value) {
+fn mapSet(m, key, value) {
     let result = [];
     let found = false;
     let i = 0;
@@ -96,7 +96,7 @@ fn map_set(m, key, value) {
 }
 
 // Remove key (returns new map)
-fn map_remove(m, key) {
+fn mapRemove(m, key) {
     let result = [];
     let i = 0;
     while (i < len(m)) {
@@ -110,7 +110,7 @@ fn map_remove(m, key) {
 }
 
 // Get all keys
-fn map_keys(m) {
+fn mapKeys(m) {
     let result = [];
     let i = 0;
     while (i < len(m)) {
@@ -122,7 +122,7 @@ fn map_keys(m) {
 }
 
 // Get all values
-fn map_values(m) {
+fn mapValues(m) {
     let result = [];
     let i = 0;
     while (i < len(m)) {
@@ -134,30 +134,30 @@ fn map_values(m) {
 }
 
 // Get all entries
-fn map_entries(m) {
+fn mapEntries(m) {
     return m;
 }
 
 // Clear map
-fn map_clear() {
+fn mapClear() {
     let m = [];
     return m;
 }
 
 // Merge two maps (second overwrites first)
-fn map_merge(m1, m2) {
+fn mapMerge(m1, m2) {
     let result = m1;
     let i = 0;
     while (i < len(m2)) {
         let entry = m2[i];
-        result = map_set(result, entry[0], entry[1]);
+        result = mapSet(result, entry[0], entry[1]);
         i = i + 1;
     }
     return result;
 }
 
 // Create map from arrays of keys and values
-fn map_from_arrays(keys, values) {
+fn mapFromArrays(keys, values) {
     let result = [];
     let i = 0;
     let n = len(keys);
@@ -173,7 +173,7 @@ fn map_from_arrays(keys, values) {
 }
 
 // Filter map entries by value
-fn map_filter_by_value(m, value) {
+fn mapFilterByValue(m, value) {
     let result = [];
     let i = 0;
     while (i < len(m)) {
@@ -187,7 +187,7 @@ fn map_filter_by_value(m, value) {
 }
 
 // Invert map (swap keys and values)
-fn map_invert(m) {
+fn mapInvert(m) {
     let result = [];
     let i = 0;
     while (i < len(m)) {
@@ -200,20 +200,20 @@ fn map_invert(m) {
 }
 
 // Count occurrences in array
-fn map_count(arr) {
+fn mapCount(arr) {
     let result = [];
     let i = 0;
     while (i < len(arr)) {
         let key = arr[i];
-        let count = map_get_or(result, key, 0);
-        result = map_set(result, key, count + 1);
+        let count = mapGetOr(result, key, 0);
+        result = mapSet(result, key, count + 1);
         i = i + 1;
     }
     return result;
 }
 
 // Convert map to string
-fn map_to_string(m) {
+fn mapToString(m) {
     let result = "{";
     let i = 0;
     while (i < len(m)) {

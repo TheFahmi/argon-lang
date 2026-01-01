@@ -5,9 +5,9 @@ fn fib(n) {
 
 fn main() {
     print("Argon: Starting Fib(35)...");
-    let start = timestamp_ms();
+    let start = timestampMs();
     let res = fib(35);
-    let end = timestamp_ms();
+    let end = timestampMs();
     print("Argon: Result = " + res);
     print("Argon: Time = " + (end - start) + "ms");
 }

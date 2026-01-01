@@ -66,7 +66,7 @@ struct SwaggerSpec {
 // SWAGGER BUILDER
 // ============================================
 
-fn swagger_new(title, version) {
+fn swaggerNew(title, version) {
     return SwaggerSpec {
         info: ApiInfo {
             title: title,
@@ -83,29 +83,29 @@ fn swagger_new(title, version) {
     };
 }
 
-fn swagger_set_description(spec, description) {
+fn swaggerSetDescription(spec, description) {
     spec.info.description = description;
     return spec;
 }
 
-fn swagger_set_contact(spec, name, email) {
+fn swaggerSetContact(spec, name, email) {
     spec.info.contact_name = name;
     spec.info.contact_email = email;
     return spec;
 }
 
-fn swagger_set_license(spec, name, url) {
+fn swaggerSetLicense(spec, name, url) {
     spec.info.license_name = name;
     spec.info.license_url = url;
     return spec;
 }
 
-fn swagger_add_server(spec, url, description) {
+fn swaggerAddServer(spec, url, description) {
     push(spec.servers, ApiServer { url: url, description: description });
     return spec;
 }
 
-fn swagger_add_tag(spec, name, description) {
+fn swaggerAddTag(spec, name, description) {
     push(spec.tags, ApiTag { name: name, description: description });
     return spec;
 }
@@ -114,7 +114,7 @@ fn swagger_add_tag(spec, name, description) {
 // ENDPOINT BUILDER
 // ============================================
 
-fn endpoint_new(method, path, summary) {
+fn endpointNew(method, path, summary) {
     return ApiEndpoint {
         path: path,
         method: method,
@@ -126,17 +126,17 @@ fn endpoint_new(method, path, summary) {
     };
 }
 
-fn endpoint_description(ep, desc) {
+fn endpointDescription(ep, desc) {
     ep.description = desc;
     return ep;
 }
 
-fn endpoint_tag(ep, tag) {
+fn endpointTag(ep, tag) {
     push(ep.tags, tag);
     return ep;
 }
 
-fn endpoint_param_path(ep, name, description, schema_type) {
+fn endpointParamPath(ep, name, description, schema_type) {
     push(ep.parameters, ApiParameter {
         name: name,
         location: "path",
@@ -147,7 +147,7 @@ fn endpoint_param_path(ep, name, description, schema_type) {
     return ep;
 }
 
-fn endpoint_param_query(ep, name, description, schema_type, required) {
+fn endpointParamQuery(ep, name, description, schema_type, required) {
     push(ep.parameters, ApiParameter {
         name: name,
         location: "query",
@@ -158,7 +158,7 @@ fn endpoint_param_query(ep, name, description, schema_type, required) {
     return ep;
 }
 
-fn endpoint_response(ep, status_code, description, content_type) {
+fn endpointResponse(ep, status_code, description, content_type) {
     push(ep.responses, ApiResponse {
         status_code: status_code,
         description: description,
@@ -167,7 +167,7 @@ fn endpoint_response(ep, status_code, description, content_type) {
     return ep;
 }
 
-fn swagger_add_endpoint(spec, ep) {
+fn swaggerAddEndpoint(spec, ep) {
     push(spec.endpoints, ep);
     return spec;
 }
@@ -176,7 +176,7 @@ fn swagger_add_endpoint(spec, ep) {
 // JSON GENERATION
 // ============================================
 
-fn swagger_to_json(spec) {
+fn swaggerToJson(spec) {
     let json = "{\n";
     json = json + "  \"openapi\": \"" + OPENAPI_VERSION + "\",\n";
     
@@ -184,7 +184,7 @@ fn swagger_to_json(spec) {
     json = json + "  \"info\": {\n";
     json = json + "    \"title\": \"" + spec.info.title + "\",\n";
     json = json + "    \"version\": \"" + spec.info.version + "\",\n";
-    json = json + "    \"description\": \"" + escape_json(spec.info.description) + "\"";
+    json = json + "    \"description\": \"" + escapeJson(spec.info.description) + "\"";
     if (spec.info.contact_name != "") {
         json = json + ",\n    \"contact\": {\n";
         json = json + "      \"name\": \"" + spec.info.contact_name + "\",\n";
@@ -242,7 +242,7 @@ fn swagger_to_json(spec) {
     i = 0;
     while (i < len(spec.endpoints)) {
         let ep = spec.endpoints[i];
-        json = json + generate_endpoint_json(ep);
+        json = json + generateEndpointJson(ep);
         if (i < len(spec.endpoints) - 1) {
             json = json + ",\n";
         } else {
@@ -256,13 +256,13 @@ fn swagger_to_json(spec) {
     return json;
 }
 
-fn generate_endpoint_json(ep) {
+fn generateEndpointJson(ep) {
     let json = "    \"" + ep.path + "\": {\n";
     json = json + "      \"" + lowercase(ep.method) + "\": {\n";
-    json = json + "        \"summary\": \"" + escape_json(ep.summary) + "\",\n";
+    json = json + "        \"summary\": \"" + escapeJson(ep.summary) + "\",\n";
     
     if (ep.description != "") {
-        json = json + "        \"description\": \"" + escape_json(ep.description) + "\",\n";
+        json = json + "        \"description\": \"" + escapeJson(ep.description) + "\",\n";
     }
     
     // Tags
@@ -288,8 +288,8 @@ fn generate_endpoint_json(ep) {
             json = json + "          {\n";
             json = json + "            \"name\": \"" + param.name + "\",\n";
             json = json + "            \"in\": \"" + param.location + "\",\n";
-            json = json + "            \"description\": \"" + escape_json(param.description) + "\",\n";
-            json = json + "            \"required\": " + bool_to_string(param.required) + ",\n";
+            json = json + "            \"description\": \"" + escapeJson(param.description) + "\",\n";
+            json = json + "            \"required\": " + boolToString(param.required) + ",\n";
             json = json + "            \"schema\": { \"type\": \"" + param.schema_type + "\" }\n";
             json = json + "          }";
             if (i < len(ep.parameters) - 1) {
@@ -308,7 +308,7 @@ fn generate_endpoint_json(ep) {
         while (i < len(ep.responses)) {
             let resp = ep.responses[i];
             json = json + "          \"" + resp.status_code + "\": {\n";
-            json = json + "            \"description\": \"" + escape_json(resp.description) + "\"\n";
+            json = json + "            \"description\": \"" + escapeJson(resp.description) + "\"\n";
             json = json + "          }";
             if (i < len(ep.responses) - 1) {
                 json = json + ",";
@@ -329,7 +329,7 @@ fn generate_endpoint_json(ep) {
     return json;
 }
 
-fn escape_json(s) {
+fn escapeJson(s) {
     let result = "";
     let i = 0;
     while (i < len(s)) {
@@ -346,7 +346,7 @@ fn escape_json(s) {
     return result;
 }
 
-fn bool_to_string(b) {
+fn boolToString(b) {
     if (b) {
         return "true";
     }
@@ -366,7 +366,7 @@ fn lowercase(s) {
 // SWAGGER UI HTML
 // ============================================
 
-fn swagger_ui_html(spec_json, title) {
+fn swaggerUiHtml(spec_json, title) {
     return "<!DOCTYPE html>
 <html>
 <head>

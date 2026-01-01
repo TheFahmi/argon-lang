@@ -91,7 +91,7 @@ struct RedisConnection {
 
 fn redisConnect(config: RedisConfig) -> RedisConnection {
     let conn = RedisConnection {
-        id: timestamp_ms() % 1000000,
+        id: timestampMs() % 1000000,
         config: config,
         connected: false,
         lastError: ""
@@ -163,7 +163,7 @@ fn redisGet(conn: RedisConnection, key: string) -> string {
     
     // Check expiry
     let exp = redisExpiry[key];
-    if (exp != null && exp > 0 && exp < timestamp_ms()) {
+    if (exp != null && exp > 0 && exp < timestampMs()) {
         redisStore[key] = null;
         redisExpiry[key] = null;
         return "";
@@ -183,14 +183,14 @@ fn redisSet(conn: RedisConnection, key: string, value: string) -> bool {
 fn redisSetEx(conn: RedisConnection, key: string, seconds: int, value: string) -> bool {
     if (!conn.connected) { return false; }
     redisStore[key] = value;
-    redisExpiry[key] = timestamp_ms() + (seconds * 1000);
+    redisExpiry[key] = timestampMs() + (seconds * 1000);
     return true;
 }
 
 fn redisPSetEx(conn: RedisConnection, key: string, milliseconds: int, value: string) -> bool {
     if (!conn.connected) { return false; }
     redisStore[key] = value;
-    redisExpiry[key] = timestamp_ms() + milliseconds;
+    redisExpiry[key] = timestampMs() + milliseconds;
     return true;
 }
 
@@ -280,7 +280,7 @@ fn redisExists(conn: RedisConnection, key: string) -> bool {
 fn redisExpire(conn: RedisConnection, key: string, seconds: int) -> bool {
     if (!conn.connected) { return false; }
     if (redisStore[key] == null) { return false; }
-    redisExpiry[key] = timestamp_ms() + (seconds * 1000);
+    redisExpiry[key] = timestampMs() + (seconds * 1000);
     return true;
 }
 
@@ -291,7 +291,7 @@ fn redisTtl(conn: RedisConnection, key: string) -> int {
     let exp = redisExpiry[key];
     if (exp == null || exp == 0) { return -1; }
     
-    let remaining = (exp - timestamp_ms()) / 1000;
+    let remaining = (exp - timestampMs()) / 1000;
     if (remaining < 0) {
         redisStore[key] = null;
         return -2;

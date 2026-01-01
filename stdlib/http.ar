@@ -115,7 +115,7 @@ fn response(status: int, body: string) -> Response {
 
 // Create JSON response
 fn jsonResponse(status: int, data: any) -> Response {
-    let res = response(status, json_stringify(data));
+    let res = response(status, jsonStringify(data));
     res.headers["Content-Type"] = CONTENT_TYPE_JSON;
     return res;
 }
@@ -303,7 +303,7 @@ fn parsePath(pattern: string, path: string) -> any {
     while (i < len(patternParts)) {
         let pp = patternParts[i];
         if (len(pp) > 0) {
-            if (char_at(pp, 0) == ":") {
+            if (charAt(pp, 0) == ":") {
                 let paramName = substr(pp, 1, len(pp) - 1);
                 params[paramName] = pathParts[i];
             } else if (pp != pathParts[i]) {
@@ -436,7 +436,7 @@ fn replace(s: string, from: string, to: string) -> string {
         let match = true;
         let j = 0;
         while (j < len(from) && i + j < len(s)) {
-            if (char_at(s, i + j) != char_at(from, j)) {
+            if (charAt(s, i + j) != charAt(from, j)) {
                 match = false;
             }
             j = j + 1;
@@ -445,7 +445,7 @@ fn replace(s: string, from: string, to: string) -> string {
             result = result + to;
             i = i + len(from);
         } else {
-            result = result + char_at(s, i);
+            result = result + charAt(s, i);
             i = i + 1;
         }
     }

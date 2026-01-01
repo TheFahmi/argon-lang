@@ -324,7 +324,7 @@ fn handleGetUserTodos(ctx: Context) {
 // ============================================
 
 fn requestTimerMiddleware(ctx: Context) -> bool {
-    ctx.locals["startTime"] = timestamp_ms();
+    ctx.locals["startTime"] = timestampMs();
     return true;
 }
 
