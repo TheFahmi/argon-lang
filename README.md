@@ -1,7 +1,7 @@
 # Cryo Programming Language
 
 <p align="center">
-  <img src="logo.png" alt="Cryo Logo" width="150" height="auto">
+  <img src="logo.svg" alt="Cryo Logo" width="150" height="auto">
 </p>
 
 <p align="center">
