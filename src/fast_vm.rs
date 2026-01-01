@@ -1,8 +1,8 @@
-// Argon Fast VM - Ultra-optimized execution for numeric code
+// Cryo Fast VM - Ultra-optimized execution for numeric code
 // Uses flat i64 stack and direct recursion for maximum speed
 
 /// Ultra-fast fibonacci calculation using native recursion
-/// This is what a properly compiled Argon program would look like
+/// This is what a properly compiled Cryo program would look like
 #[inline(never)]
 pub fn native_fib(n: i64) -> i64 {
     if n < 2 { return n; }

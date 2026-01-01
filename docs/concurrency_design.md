@@ -1,4 +1,4 @@
-# Argon Concurrency Design (True Multithreading)
+# Cryo Concurrency Design (True Multithreading)
 
 ## The Challenge
 Current architecture uses `Rc<RefCell<T>>` which is strictly single-threaded.

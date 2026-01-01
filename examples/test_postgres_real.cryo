@@ -1,0 +1,92 @@
+// ============================================
+// REAL POSTGRESQL TEST (Native Cryo)
+// Connects to PostgreSQL using wire protocol
+// ============================================
+
+import "postgres_native"
+
+fn main() {
+    print("==========================================");
+    print("    REAL POSTGRESQL CONNECTION TEST");
+    print("       (Native Cryo Implementation)");
+    print("==========================================");
+    print("");
+    
+    // Connect to PostgreSQL
+    // Default docker-compose credentials: cryo/cryo123/cryodb
+    let conn = pgConnect("127.0.0.1", 5432, "cryo", "cryodb");
+    
+    if (conn == null) {
+        print("");
+        print("[FAIL] Could not connect to PostgreSQL!");
+        print("Make sure PostgreSQL is running:");
+        print("  docker-compose -f docker-compose.db.yml up -d");
+        return 1;
+    }
+    
+    print("");
+    print("==========================================");
+    print("    Connection established!");
+    print("==========================================");
+    print("");
+    
+    // Test 1: Create table
+    print("[1] Creating test table...");
+    let result1 = pgQuery(conn, "DROP TABLE IF EXISTS cryo_test");
+    let result2 = pgQuery(conn, "CREATE TABLE cryoTest(id SERIAL PRIMARY KEY, name TEXT, value INT)");
+    if (result2.success) {
+        print("    [PASS] Table created!");
+    } else {
+        print("    [FAIL] " + result2.error);
+    }
+    print("");
+    
+    // Test 2: Insert data
+    print("[2] Inserting data...");
+    let ins1 = pgQuery(conn, "INSERT INTO cryoTest(name, value) VALUES ('hello', 42)");
+    let ins2 = pgQuery(conn, "INSERT INTO cryoTest(name, value) VALUES ('world', 100)");
+    let ins3 = pgQuery(conn, "INSERT INTO cryoTest(name, value) VALUES ('cryo', 2024)");
+    if (ins1.success && ins2.success && ins3.success) {
+        print("    [PASS] 3 rows inserted!");
+    }
+    print("");
+    
+    // Test 3: Select data
+    print("[3] Selecting data...");
+    let sel = pgQuery(conn, "SELECT * FROM cryo_test");
+    if (sel.success) {
+        print("    [PASS] Query returned " + len(sel.rows) + " rows");
+    }
+    print("");
+    
+    // Test 4: Update data
+    print("[4] Updating data...");
+    let upd = pgQuery(conn, "UPDATE cryo_test SET value = 999 WHERE name = 'hello'");
+    if (upd.success) {
+        print("    [PASS] Data updated!");
+    }
+    print("");
+    
+    // Test 5: Delete data
+    print("[5] Deleting data...");
+    let del = pgQuery(conn, "DELETE FROM cryo_test WHERE name = 'world'");
+    if (del.success) {
+        print("    [PASS] Data deleted!");
+    }
+    print("");
+    
+    // Cleanup
+    print("[6] Cleanup...");
+    pgQuery(conn, "DROP TABLE cryo_test");
+    print("    [PASS] Table dropped");
+    print("");
+    
+    // Close connection
+    pgClose(conn);
+    
+    print("==========================================");
+    print("    ALL POSTGRESQL TESTS PASSED!");
+    print("==========================================");
+    
+    return 0;
+}

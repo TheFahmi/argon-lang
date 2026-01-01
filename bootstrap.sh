@@ -2,7 +2,7 @@
 set -e
 
 echo "============================================="
-echo "   ARGON BOOTSTRAP (Rust Interpreter)"
+echo "   CRYO BOOTSTRAP (Rust Interpreter)"
 echo "   Version 2.3"
 echo "============================================="
 echo ""
@@ -11,7 +11,7 @@ echo ""
 echo "[Runtime] Compiling Rust Runtime (with threading support)..."
 rustc --crate-type staticlib -O -o libruntime_rust.a self-host/runtime.rs
 
-# Use Rust interpreter to compile the Argon compiler
+# Use Rust interpreter to compile the Cryo compiler
 echo ""
 echo "[Stage 0] Compiling compiler.ar with Rust Interpreter..."
 
@@ -19,8 +19,8 @@ echo "[Stage 0] Compiling compiler.ar with Rust Interpreter..."
 rm -f self-host/compiler.ll self-host/compiler.ar.ll compiler_stage0.ll
 
 # Use the interpreter to compile the compiler source code
-echo "Running: ./argon --emit-llvm self-host/compiler.ar"
-./argon --emit-llvm self-host/compiler.ar
+echo "Running: ./cryo --emit-llvm self-host/compiler.cryo"
+./cryo --emit-llvm self-host/compiler.ar
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -ne 0 ]; then
@@ -51,17 +51,17 @@ else
     exit 1
 fi
 
-# Link to create argonc
+# Link to create cryoc
 echo ""
-echo "[Link] Creating argonc binary..."
-clang++ -O0 -Wno-override-module compiler_stage0.ll libruntime_rust.a -o argonc -lpthread -ldl
-echo ">> argonc created!"
+echo "[Link] Creating cryoc binary..."
+clang++ -O0 -Wno-override-module compiler_stage0.ll libruntime_rust.a -o cryoc -lpthread -ldl
+echo ">> cryoc created!"
 
 # Test with simple file
 echo ""
-echo "[Test] Testing argonc..."
+echo "[Test] Testing cryoc..."
 echo 'fn main() { print(42); }' > test_simple.ar
-./argonc test_simple.ar
+./cryoc test_simple.ar
 
 if [ -f "test_simple.ar.ll" ]; then
     echo ">> Compilation successful!"

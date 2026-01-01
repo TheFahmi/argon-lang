@@ -1,12 +1,12 @@
-# Argon Ecosystem Demo: Web Framework (v2.25.0)
+# Cryo Ecosystem Demo: Web Framework (v2.25.0)
 
 ## Goal
-Showcase Argon's capabilities by building a lightweight, async web framework and a Todo API.
+Showcase Cryo's capabilities by building a lightweight, async web framework and a Todo API.
 
 ## Architecture
 
-### 1. `ArgonWeb` Framework
-A library written in Argon that provides:
+### 1. `CryoWeb` Framework
+A library written in Cryo that provides:
 - **HttpServer**: Async TCP listener.
 - **Router**: Trie-based or Regex-based route matching.
 - **Context**: Wraps Request/Response.
@@ -41,7 +41,7 @@ async fn main() {
 }
 
 fn homeHandler(req) {
-    return http.Response::html("<h1>Welcome to ArgonWeb</h1>");
+    return http.Response::html("<h1>Welcome to CryoWeb</h1>");
 }
 
 fn listTodos(req) {
@@ -62,7 +62,7 @@ fn listTodos(req) {
 - `std::net` must support `TcpListener` (already there).
 - `std::net` must support `async` accept? (Needs verification if `v2.18` async covers net). 
   - *Note*: If `async` net is not fully ready, we might need to polish it or use blocking for v1.
-- `std::json` (we can write a simple serializer in Argon).
+- `std::json` (we can write a simple serializer in Cryo).
 
 ## Versioning
 This ecosystem demo will mark **v2.25.0**.

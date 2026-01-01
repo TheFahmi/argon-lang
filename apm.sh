@@ -1,7 +1,7 @@
 #!/bin/bash
 # ============================================
-# ARGON PACKAGE MANAGER (APM) v2.0.0
-# Complete dependency management for Argon
+# CRYO PACKAGE MANAGER (APM) v2.0.0
+# Complete dependency management for Cryo
 # Supports: local, git, and registry deps
 # ============================================
 
@@ -10,7 +10,7 @@ set -e
 VERSION="2.1.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEPS_DIR="deps"
-REGISTRY_URL="https://raw.githubusercontent.com/anthropics/argon-packages/main"
+REGISTRY_URL="https://raw.githubusercontent.com/anthropics/cryo-packages/main"
 
 # Colors
 RED='\033[0;31m'
@@ -24,7 +24,7 @@ NC='\033[0m'
 # Print functions
 print_header() {
     echo -e "${CYAN}========================================"
-    echo -e "  ARGON PACKAGE MANAGER v${VERSION}"
+    echo -e "  CRYO PACKAGE MANAGER v${VERSION}"
     echo -e "========================================${NC}"
     echo ""
 }
@@ -41,7 +41,7 @@ show_help() {
     echo "Usage: apm <command> [options]"
     echo ""
     echo "Commands:"
-    echo "  init [name]       Create a new Argon project"
+    echo "  init [name]       Create a new Cryo project"
     echo "  build [file]      Build the project"
     echo "  run [file]        Build and run the project"
     echo "  install           Install all dependencies"
@@ -71,16 +71,16 @@ cmd_init() {
     local name="${1:-my-project}"
     
     print_header
-    print_info "Creating new Argon project: ${name}"
+    print_info "Creating new Cryo project: ${name}"
     
     mkdir -p "${name}/src" "${name}/lib" "${name}/tests" "${name}/deps"
     
-    # Create argon.toml
-    cat > "${name}/argon.toml" << EOF
+    # Create cryo.toml
+    cat > "${name}/cryo.toml" << EOF
 [package]
 name = "${name}"
 version = "0.1.0"
-description = "An Argon project"
+description = "An Cryo project"
 author = ""
 license = "MIT"
 repository = ""
@@ -94,24 +94,24 @@ keywords = []
 [dev-dependencies]
 
 [build]
-entry = "src/main.ar"
+entry = "src/main.cryo"
 output = "build"
 EOF
 
     # Create main.ar
-    cat > "${name}/src/main.ar" << 'EOF'
+    cat > "${name}/src/main.cryo" << 'EOF'
 // ============================================
 // Main entry point
 // ============================================
 
 fn main() {
-    print("Hello from Argon!");
+    print("Hello from Cryo!");
     return 0;
 }
 EOF
 
     # Create lib.ar
-    cat > "${name}/lib/lib.ar" << 'EOF'
+    cat > "${name}/lib/lib.cryo" << 'EOF'
 // ============================================
 // Library code
 // ============================================
@@ -126,12 +126,12 @@ fn add(a, b) {
 EOF
 
     # Create test file
-    cat > "${name}/tests/test_main.ar" << 'EOF'
+    cat > "${name}/tests/test_main.cryo" << 'EOF'
 // ============================================
 // Test suite
 // ============================================
 
-import "../lib/lib.ar";
+import "../lib/lib.cryo";
 
 fn test_greet() {
     let result = greet("World");
@@ -175,7 +175,7 @@ build/
 deps/
 
 # Lock file can be committed
-# argon.lock
+# cryo.lock
 
 # IDE
 .vscode/
@@ -190,7 +190,7 @@ EOF
     cat > "${name}/README.md" << EOF
 # ${name}
 
-An Argon project.
+An Cryo project.
 
 ## Quick Start
 
@@ -212,8 +212,8 @@ apm run tests/test_main.ar
 
 \`\`\`
 ${name}/
-├── argon.toml      # Project manifest
-├── argon.lock      # Dependency lock file
+├── cryo.toml      # Project manifest
+├── cryo.lock      # Dependency lock file
 ├── src/
 │   └── main.ar     # Entry point
 ├── lib/
@@ -377,7 +377,7 @@ install_registry_dep() {
     if [[ -z "$registry_index" ]]; then
         print_warning "Could not fetch registry index"
         # Fallback to GitHub convention
-        local url="https://github.com/argon-lang/pkg-${name}"
+        local url="https://github.com/cryo-lang/pkg-${name}"
         return $(install_git_dep_fallback "$name" "$url" "$version")
     fi
     
@@ -491,7 +491,7 @@ get_package_info() {
 # ============================================
 
 generate_lockfile() {
-    local lockfile="argon.lock"
+    local lockfile="cryo.lock"
     
     print_info "Generating ${lockfile}..."
     
@@ -540,7 +540,7 @@ EOF
 }
 
 read_lockfile() {
-    local lockfile="argon.lock"
+    local lockfile="cryo.lock"
     
     if [[ ! -f "$lockfile" ]]; then
         return 1
@@ -571,12 +571,12 @@ read_lockfile() {
 cmd_install() {
     print_header
     
-    if [[ ! -f "argon.toml" ]]; then
-        print_error "No argon.toml found. Run 'apm init' first."
+    if [[ ! -f "cryo.toml" ]]; then
+        print_error "No cryo.toml found. Run 'apm init' first."
         exit 1
     fi
     
-    local name=$(parse_toml_value "argon.toml" "name")
+    local name=$(parse_toml_value "cryo.toml" "name")
     print_info "Installing dependencies for ${name}..."
     echo ""
     
@@ -612,7 +612,7 @@ cmd_install() {
                 fi
                 ;;
         esac
-    done < <(parse_all_dependencies "argon.toml")
+    done < <(parse_all_dependencies "cryo.toml")
     
     echo ""
     
@@ -639,8 +639,8 @@ cmd_add() {
     
     print_header
     
-    if [[ ! -f "argon.toml" ]]; then
-        print_error "No argon.toml found. Run 'apm init' first."
+    if [[ ! -f "cryo.toml" ]]; then
+        print_error "No cryo.toml found. Run 'apm init' first."
         exit 1
     fi
     
@@ -684,21 +684,21 @@ cmd_add() {
     print_info "Adding ${dep_name}..."
     
     # Check if already exists
-    if grep -q "^${dep_name}[[:space:]]*=" argon.toml 2>/dev/null; then
+    if grep -q "^${dep_name}[[:space:]]*=" cryo.toml 2>/dev/null; then
         print_warning "Dependency already exists: ${dep_name}"
         print_info "Use 'apm update' to update or remove first"
         exit 1
     fi
     
-    # Add to argon.toml
-    if grep -q "\[dependencies\]" argon.toml; then
+    # Add to cryo.toml
+    if grep -q "\[dependencies\]" cryo.toml; then
         # Add after [dependencies] section
-        sed -i "/\[dependencies\]/a ${dep_line}" argon.toml
+        sed -i "/\[dependencies\]/a ${dep_line}" cryo.toml
     else
         # Create section
-        echo "" >> argon.toml
-        echo "[dependencies]" >> argon.toml
-        echo "$dep_line" >> argon.toml
+        echo "" >> cryo.toml
+        echo "[dependencies]" >> cryo.toml
+        echo "$dep_line" >> cryo.toml
     fi
     
     print_success "Added: ${dep_line}"
@@ -717,14 +717,14 @@ cmd_remove() {
     print_header
     print_info "Removing ${pkg}..."
     
-    # Remove from argon.toml
-    sed -i "/^${pkg}[[:space:]]*=/d" argon.toml 2>/dev/null
+    # Remove from cryo.toml
+    sed -i "/^${pkg}[[:space:]]*=/d" cryo.toml 2>/dev/null
     
     # Remove from deps/
     rm -rf "${DEPS_DIR}/${pkg}"
     
     # Regenerate lock file
-    if [[ -f "argon.lock" ]]; then
+    if [[ -f "cryo.lock" ]]; then
         generate_lockfile
     fi
     
@@ -826,7 +826,7 @@ cmd_search() {
         print_warning "Local registry not found"
         echo ""
         echo "Search on GitHub:"
-        echo "  https://github.com/search?q=argon+${query}&type=repositories"
+        echo "  https://github.com/search?q=cryo+${query}&type=repositories"
         echo ""
         echo "To add a GitHub package:"
         echo "  apm add user/repo --git"
@@ -873,21 +873,21 @@ cmd_info() {
 cmd_publish() {
     print_header
     
-    if [[ ! -f "argon.toml" ]]; then
-        print_error "No argon.toml found."
+    if [[ ! -f "cryo.toml" ]]; then
+        print_error "No cryo.toml found."
         exit 1
     fi
     
-    local name=$(parse_toml_value "argon.toml" "name")
-    local version=$(parse_toml_value "argon.toml" "version")
+    local name=$(parse_toml_value "cryo.toml" "name")
+    local version=$(parse_toml_value "cryo.toml" "version")
     
     print_info "Publishing ${name}@${version}..."
     echo ""
     
     # Check required fields
-    local repo=$(parse_toml_value "argon.toml" "repository")
+    local repo=$(parse_toml_value "cryo.toml" "repository")
     if [[ -z "$repo" ]]; then
-        print_error "Missing 'repository' in argon.toml"
+        print_error "Missing 'repository' in cryo.toml"
         echo "Add: repository = \"https://github.com/user/repo\""
         exit 1
     fi
@@ -919,18 +919,18 @@ cmd_build() {
     
     print_header
     
-    if [[ ! -f "argon.toml" ]]; then
-        print_error "No argon.toml found. Run 'apm init' first."
+    if [[ ! -f "cryo.toml" ]]; then
+        print_error "No cryo.toml found. Run 'apm init' first."
         exit 1
     fi
     
-    local name=$(parse_toml_value "argon.toml" "name")
-    local version=$(parse_toml_value "argon.toml" "version")
+    local name=$(parse_toml_value "cryo.toml" "name")
+    local version=$(parse_toml_value "cryo.toml" "version")
     
     print_info "Building ${name} v${version}"
     
     # Check if deps need installing
-    local dep_count=$(parse_all_dependencies "argon.toml" | wc -l)
+    local dep_count=$(parse_all_dependencies "cryo.toml" | wc -l)
     if [[ $dep_count -gt 0 ]] && [[ ! -d "${DEPS_DIR}" ]]; then
         print_warning "Dependencies not installed. Running 'apm install'..."
         cmd_install
@@ -947,9 +947,9 @@ cmd_build() {
             mount_path="$(pwd)"
         fi
         
-        docker run --rm -v "${mount_path}:/src" -w //src argon-toolchain bash -c "
-            argonc ${target} && \
-            clang++ -O2 -Wno-override-module ${target}.ll /usr/lib/libruntime_argon.a -o ${target%.ar}.out -lpthread -ldl
+        docker run --rm -v "${mount_path}:/src" -w //src cryo-toolchain bash -c "
+            cryoc ${target} && \
+            clang++ -O2 -Wno-override-module ${target}.ll /usr/lib/libruntime_cryo.a -o ${target%.ar}.out -lpthread -ldl
         "
         
         if [[ -f "${target%.ar}.out" ]]; then
@@ -977,7 +977,7 @@ cmd_run() {
     local mount_path
     if [[ "$(uname -s)" == *"MINGW"* ]] || [[ "$(uname -s)" == *"MSYS"* ]]; then
         mount_path="$(pwd -W)"
-        docker run --rm -v "${mount_path}:/src" -w //src argon-toolchain ./${output}
+        docker run --rm -v "${mount_path}:/src" -w //src cryo-toolchain ./${output}
     else
         "./${output}"
     fi
@@ -1000,7 +1000,7 @@ cmd_clean() {
 }
 
 cmd_version() {
-    echo "Argon Package Manager v${VERSION}"
+    echo "Cryo Package Manager v${VERSION}"
 }
 
 # ============================================

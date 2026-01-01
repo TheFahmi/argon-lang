@@ -1,0 +1,49 @@
+// Cryo Traits Test (v2.26.0)
+
+trait Animal {
+    fn speak(self) -> string;
+    fn name(self) -> string;
+}
+
+struct Dog {
+    name: string
+}
+
+struct Cat {
+    name: string
+}
+
+impl Animal for Dog {
+    fn speak(self) -> string {
+        return "Woof!";
+    }
+    fn name(self) -> string {
+        return self.name;
+    }
+}
+
+impl Animal for Cat {
+    fn speak(self) -> string {
+        return "Meow!";
+    }
+    fn name(self) -> string {
+        return self.name;
+    }
+}
+
+fn main() {
+    print("=== Cryo Traits Test ===");
+    print("");
+    
+    let dog = Dog { name: "Buddy" };
+    let cat = Cat { name: "Whiskers" };
+    
+    print("Dog name: " + dog.name());
+    print("Dog speaks: " + dog.speak());
+    print("");
+    print("Cat name: " + cat.name());
+    print("Cat speaks: " + cat.speak());
+    
+    print("");
+    print("=== Traits Test Passed! ===");
+}

@@ -1,0 +1,401 @@
+// ============================================
+// CRYO STANDARD LIBRARY: WORKER (v3.0.0)
+// Worker-based parallelism (M:N threading)
+// ============================================
+
+let WORKER_VERSION = "3.0.0";
+
+// ============================================
+// WORKER STRUCTS
+// ============================================
+
+// Worker state enum
+let WORKER_PENDING = 0;
+let WORKER_RUNNING = 1;
+let WORKER_COMPLETED = 2;
+let WORKER_FAILED = 3;
+let WORKER_CANCELLED = 4;
+
+// Worker handle for managing spawned tasks
+struct Worker {
+    id: string,
+    state: int,
+    result: any,
+    error: string,
+    startTime: int,
+    endTime: int
+}
+
+// Worker pool for managing multiple workers
+struct WorkerPool {
+    workers: [Worker],
+    maxWorkers: int,
+    activeCount: int,
+    taskQueue: [any]
+}
+
+// Task definition
+struct Task {
+    id: string,
+    fn: any,
+    args: [any],
+    priority: int
+}
+
+// ============================================
+// WORKER CREATION
+// ============================================
+
+// Create a new worker
+fn createWorker() -> Worker {
+    return Worker {
+        id: generateWorkerId(),
+        state: WORKER_PENDING,
+        result: null,
+        error: "",
+        startTime: 0,
+        endTime: 0
+    };
+}
+
+// Generate unique worker ID
+fn generateWorkerId() -> string {
+    return "worker_" + toString(randInt(100000, 999999)) + "_" + toString(time());
+}
+
+// ============================================
+// SPAWN / JOIN
+// ============================================
+
+// Spawn a task (simulated - executes immediately in single-threaded context)
+// In real implementation, this would dispatch to thread pool
+fn spawn(task: any) -> Worker {
+    let worker = createWorker();
+    worker.state = WORKER_RUNNING;
+    worker.startTime = time();
+    
+    // Execute task
+    // Note: In real M:N threading, this would be async
+    worker.result = task;
+    worker.state = WORKER_COMPLETED;
+    worker.endTime = time();
+    
+    return worker;
+}
+
+// Spawn with arguments
+fn spawnWithArgs(fn: any, args: [any]) -> Worker {
+    let worker = createWorker();
+    worker.state = WORKER_RUNNING;
+    worker.startTime = time();
+    
+    // In real impl, fn would be called with args
+    // For now, store the definition
+    let task = Task {
+        id: worker.id + "_task",
+        fn: fn,
+        args: args,
+        priority: 0
+    };
+    
+    worker.result = task;
+    worker.state = WORKER_COMPLETED;
+    worker.endTime = time();
+    
+    return worker;
+}
+
+// Join a worker (wait for completion)
+fn join(worker: Worker) -> any {
+    // Wait for worker to complete
+    while (worker.state == WORKER_PENDING || worker.state == WORKER_RUNNING) {
+        sleep(1);
+    }
+    
+    if (worker.state == WORKER_FAILED) {
+        return null;
+    }
+    
+    return worker.result;
+}
+
+// Join with timeout (returns null if timeout)
+fn joinTimeout(worker: Worker, timeoutMs: int) -> any {
+    let elapsed = 0;
+    let interval = 10;
+    
+    while ((worker.state == WORKER_PENDING || worker.state == WORKER_RUNNING) && elapsed < timeoutMs) {
+        sleep(interval);
+        elapsed = elapsed + interval;
+    }
+    
+    if (worker.state != WORKER_COMPLETED) {
+        return null;
+    }
+    
+    return worker.result;
+}
+
+// Join multiple workers
+fn joinAll(workers: [Worker]) -> [any] {
+    let results = [];
+    let i = 0;
+    while (i < len(workers)) {
+        let result = join(workers[i]);
+        push(results, result);
+        i = i + 1;
+    }
+    return results;
+}
+
+// ============================================
+// WORKER STATUS
+// ============================================
+
+// Check if worker is running
+fn isRunning(worker: Worker) -> bool {
+    return worker.state == WORKER_RUNNING;
+}
+
+// Check if worker completed
+fn isCompleted(worker: Worker) -> bool {
+    return worker.state == WORKER_COMPLETED;
+}
+
+// Check if worker failed
+fn isFailed(worker: Worker) -> bool {
+    return worker.state == WORKER_FAILED;
+}
+
+// Check if worker was cancelled
+fn isCancelled(worker: Worker) -> bool {
+    return worker.state == WORKER_CANCELLED;
+}
+
+// Get worker state as string
+fn stateToString(state: int) -> string {
+    if (state == WORKER_PENDING) { return "pending"; }
+    if (state == WORKER_RUNNING) { return "running"; }
+    if (state == WORKER_COMPLETED) { return "completed"; }
+    if (state == WORKER_FAILED) { return "failed"; }
+    if (state == WORKER_CANCELLED) { return "cancelled"; }
+    return "unknown";
+}
+
+// Get worker duration in ms
+fn duration(worker: Worker) -> int {
+    if (worker.endTime > 0) {
+        return worker.endTime - worker.startTime;
+    }
+    if (worker.startTime > 0) {
+        return time() - worker.startTime;
+    }
+    return 0;
+}
+
+// ============================================
+// WORKER CANCELLATION
+// ============================================
+
+// Request worker cancellation
+fn cancel(worker: Worker) -> bool {
+    if (worker.state == WORKER_PENDING) {
+        worker.state = WORKER_CANCELLED;
+        return true;
+    }
+    if (worker.state == WORKER_RUNNING) {
+        // In real impl, would set cancellation flag
+        worker.state = WORKER_CANCELLED;
+        return true;
+    }
+    return false;
+}
+
+// ============================================
+// WORKER POOL
+// ============================================
+
+// Create a worker pool
+fn createPool(maxWorkers: int) -> WorkerPool {
+    return WorkerPool {
+        workers: [],
+        maxWorkers: maxWorkers,
+        activeCount: 0,
+        taskQueue: []
+    };
+}
+
+// Submit task to pool
+fn submit(pool: WorkerPool, task: any) -> Worker {
+    let worker = spawn(task);
+    push(pool.workers, worker);
+    return worker;
+}
+
+// Get active worker count
+fn activeWorkers(pool: WorkerPool) -> int {
+    let count = 0;
+    let i = 0;
+    while (i < len(pool.workers)) {
+        if (isRunning(pool.workers[i])) {
+            count = count + 1;
+        }
+        i = i + 1;
+    }
+    return count;
+}
+
+// Wait for all workers in pool
+fn awaitAll(pool: WorkerPool) -> [any] {
+    return joinAll(pool.workers);
+}
+
+// Shutdown pool (cancel pending tasks)
+fn shutdown(pool: WorkerPool) {
+    let i = 0;
+    while (i < len(pool.workers)) {
+        cancel(pool.workers[i]);
+        i = i + 1;
+    }
+    pool.taskQueue = [];
+}
+
+// ============================================
+// PARALLEL MAP / REDUCE
+// ============================================
+
+// Parallel map (simulated)
+fn parallelMap(items: [any], fn: any) -> [any] {
+    // In real impl, would spawn worker for each item
+    let results = [];
+    let i = 0;
+    while (i < len(items)) {
+        // Simulated parallel execution
+        let worker = spawn(items[i]);
+        push(results, join(worker));
+        i = i + 1;
+    }
+    return results;
+}
+
+// Parallel for each
+fn parallelForEach(items: [any], fn: any) {
+    let workers = [];
+    let i = 0;
+    while (i < len(items)) {
+        let worker = spawn(items[i]);
+        push(workers, worker);
+        i = i + 1;
+    }
+    // Wait for all
+    joinAll(workers);
+}
+
+// ============================================
+// WORK STEALING (Simplified)
+// ============================================
+
+// Work queue for work-stealing
+struct WorkQueue {
+    items: [any],
+    stolen: int
+}
+
+fn createWorkQueue() -> WorkQueue {
+    return WorkQueue {
+        items: [],
+        stolen: 0
+    };
+}
+
+fn pushWork(queue: WorkQueue, work: any) {
+    push(queue.items, work);
+}
+
+fn popWork(queue: WorkQueue) -> any {
+    if (len(queue.items) == 0) {
+        return null;
+    }
+    // Pop from end (LIFO for owner)
+    let idx = len(queue.items) - 1;
+    let work = queue.items[idx];
+    // Remove last element
+    let newItems = [];
+    let i = 0;
+    while (i < idx) {
+        push(newItems, queue.items[i]);
+        i = i + 1;
+    }
+    queue.items = newItems;
+    return work;
+}
+
+fn stealWork(queue: WorkQueue) -> any {
+    if (len(queue.items) == 0) {
+        return null;
+    }
+    // Steal from front (FIFO for thief)
+    let work = queue.items[0];
+    let newItems = [];
+    let i = 1;
+    while (i < len(queue.items)) {
+        push(newItems, queue.items[i]);
+        i = i + 1;
+    }
+    queue.items = newItems;
+    queue.stolen = queue.stolen + 1;
+    return work;
+}
+
+// ============================================
+// FUTURE / PROMISE
+// ============================================
+
+// Future representing async computation result
+struct Future {
+    worker: Worker,
+    callbacks: [any]
+}
+
+// Create future from worker
+fn futureFromWorker(worker: Worker) -> Future {
+    return Future {
+        worker: worker,
+        callbacks: []
+    };
+}
+
+// Await future result
+fn await(future: Future) -> any {
+    return join(future.worker);
+}
+
+// Check if future is ready
+fn isReady(future: Future) -> bool {
+    return isCompleted(future.worker);
+}
+
+// Add callback when future completes
+fn onComplete(future: Future, callback: any) {
+    push(future.callbacks, callback);
+}
+
+// ============================================
+// UTILITIES
+// ============================================
+
+// Sleep wrapper
+fn sleep(ms: int) {
+    // Built-in sleep
+    @sleep(ms);
+}
+
+// Get current time in ms
+fn time() -> int {
+    return @timeMs();
+}
+
+// Convert int to string
+fn toString(n: int) -> string {
+    return @toString(n);
+}

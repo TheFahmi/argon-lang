@@ -1,4 +1,4 @@
-// Argon Lexer - Tokenizes Argon source code
+// Cryo Lexer - Tokenizes Cryo source code
 // Compatible with compiler.ar v3.0.0
 
 #[derive(Debug, Clone, PartialEq)]

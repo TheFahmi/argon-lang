@@ -1,24 +1,24 @@
-# Argon Language - Agent Guide
+# Cryo Language - Agent Guide
 
-Dokumentasi ini membantu AI coding agents memahami struktur dan cara kerja proyek Argon.
+Dokumentasi ini membantu AI coding agents memahami struktur dan cara kerja proyek Cryo.
 
 ## 🎯 Project Overview
 
-**Argon** adalah bahasa pemrograman systems-level yang:
-- **Self-hosted**: Compiler ditulis dalam Argon sendiri (`self-host/compiler.ar`)
+**Cryo** adalah bahasa pemrograman systems-level yang:
+- **Self-hosted**: Compiler ditulis dalam Cryo sendiri (`self-host/compiler.ar`)
 - **High-performance**: Native compilation via LLVM (target: 40ms untuk Fib(35))
 - **Multi-target**: Interpreter, Bytecode VM, LLVM IR, WASM
 
 ## 📁 Struktur Proyek
 
 ```
-argon/
+cryo/
 ├── src/                    # Rust implementation (native compiler)
 │   ├── main.rs             # CLI entry point (v3.1.0)
 │   ├── lexer.rs            # Tokenizer
 │   ├── parser.rs           # AST parser (Expr, Stmt, TopLevel)
 │   ├── interpreter.rs      # Tree-walking interpreter
-│   ├── native_compiler.rs  # Argon -> LLVM IR compiler
+│   ├── native_compiler.rs  # Cryo -> LLVM IR compiler
 │   ├── bytecode_vm.rs      # Bytecode Virtual Machine
 │   ├── fast_vm.rs          # Native Rust benchmarks
 │   ├── optimizer.rs        # Constant folding, dead code elimination
@@ -26,8 +26,8 @@ argon/
 │   ├── ffi.rs              # Foreign Function Interface
 │   └── gc.rs               # Reference counting GC
 │
-├── self-host/              # Self-hosted compiler (Argon source)
-│   ├── compiler.ar         # Main compiler in Argon
+├── self-host/              # Self-hosted compiler (Cryo source)
+│   ├── compiler.ar         # Main compiler in Cryo
 │   └── runtime.rs          # Runtime support (Rust)
 │
 ├── stdlib/                 # Standard Library
@@ -50,7 +50,7 @@ argon/
 
 ### 1. Lexer (`src/lexer.rs`)
 
-Tokenizes Argon source code into tokens.
+Tokenizes Cryo source code into tokens.
 
 ```rust
 pub enum Token {
@@ -93,7 +93,7 @@ pub enum TopLevel {
 
 ### 3. Native Compiler (`src/native_compiler.rs`)
 
-Compiles Argon AST directly to LLVM IR.
+Compiles Cryo AST directly to LLVM IR.
 
 ```rust
 pub fn compileToLlvm(source: &str) -> Result<String, String>
@@ -101,7 +101,7 @@ pub fn compileToLlvm(source: &str) -> Result<String, String>
 
 ### 4. Interpreter (`src/interpreter.rs`)
 
-Tree-walking interpreter for running Argon code.
+Tree-walking interpreter for running Cryo code.
 
 ## 🚀 Build & Run Commands
 
@@ -110,20 +110,20 @@ Tree-walking interpreter for running Argon code.
 cargo build --release
 
 # Run file (native mode - default)
-./argon.exe examples/hello.ar
+./cryo.exe examples/hello.ar
 
 # Run with interpreter (fallback)
-./argon.exe --interpret examples/hello.ar
+./cryo.exe --interpret examples/hello.ar
 
 # Benchmark
-./argon.exe --native-bench 35    # Target: ~40ms
-./argon.exe --vm-bench 35        # Bytecode VM
+./cryo.exe --native-bench 35    # Target: ~40ms
+./cryo.exe --vm-bench 35        # Bytecode VM
 
 # Generate LLVM IR
-./argon.exe --emit-llvm output.ll source.ar
+./cryo.exe --emit-llvm output.ll source.ar
 ```
 
-## 📝 Argon Language Syntax
+## 📝 Cryo Language Syntax
 
 ### Basic
 ```javascript
@@ -201,14 +201,14 @@ impl UsersController {
 
 ```bash
 # Run stdlib tests
-./argon.exe test_stdlib.ar
+./cryo.exe test_stdlib.ar
 
 # Run benchmarks
 ./build.sh bench 35
 
 # Docker benchmarks
-docker build -t argon-bench .
-docker run --rm argon-bench
+docker build -t cryo-bench .
+docker run --rm cryo-bench
 ```
 
 ## 📚 Documentation Files
@@ -218,7 +218,7 @@ docker run --rm argon-bench
 | `README.md` | Project overview |
 | `ROADMAP.md` | Development roadmap |
 | `docs/running_native.md` | How to build & run native |
-| `docs/argon_design_doc.md` | Language design |
+| `docs/cryo_design_doc.md` | Language design |
 | `docs/stdlib_reference.md` | Standard library reference |
 | `docs/traits_design.md` | Traits system design |
 | `docs/async_design.md` | Async/await design |
@@ -236,9 +236,9 @@ docker run --rm argon-bench
    - `Stmt::Return(Option<Expr>)` - expr is optional
    - `Function` and `StructDef` have `decorators` field
 
-3. **File Extensions**: Argon files use `.ar` extension.
+3. **File Extensions**: Cryo files use `.ar` extension.
 
-4. **Self-Hosting**: The compiler in `self-host/compiler.ar` is written in Argon and can compile itself.
+4. **Self-Hosting**: The compiler in `self-host/compiler.ar` is written in Cryo and can compile itself.
 
 5. **Benchmark Target**: Fib(35) should run in ~40ms with native mode.
 
@@ -246,5 +246,5 @@ docker run --rm argon-bench
 
 - [Build Native Compiler](docs/running_native.md)
 - [Standard Library](docs/stdlib_reference.md)
-- [Language Design](docs/argon_design_doc.md)
+- [Language Design](docs/cryo_design_doc.md)
 - [Examples](examples/)

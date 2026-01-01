@@ -1,4 +1,4 @@
-// Argon FFI Module - Foreign Function Interface
+// Cryo FFI Module - Foreign Function Interface
 // Load and call functions from dynamic libraries (.dll/.so)
 
 #![allow(dead_code)]

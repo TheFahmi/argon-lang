@@ -1,0 +1,70 @@
+// Simple JSON API Server in Cryo
+// Demonstrates networking + multi-threading
+
+fn sendJsonResponse(client: int, status: int, body: string) {
+    let response = "HTTP/1.1 ";
+    if (status == 200) { response = response + "200 OK"; }
+    else if (status == 404) { response = response + "404 Not Found"; }
+    else if (status == 500) { response = response + "500 Internal Server Error"; }
+    else { response = response + "200 OK"; }
+    
+    response = response + "\r\n";
+    response = response + "Content-Type: application/json\r\n";
+    response = response + "Access-Control-Allow-Origin: *\r\n";
+    response = response + "Connection: close\r\n";
+    response = response + "\r\n";
+    response = response + body;
+    
+    cryoSocketWrite(client, response);
+    cryoSocketClose(client);
+}
+
+fn handleRequest(client: int, request: string) {
+    // Simple routing based on request path
+    // GET /api/hello
+    // GET /api/time
+    // GET /api/counter
+    
+    if (len(request) < 10) {
+        sendJsonResponse(client, 400, "{\"error\": \"Bad request\"}");
+        return;
+    }
+    
+    // Check if it contains /api/hello
+    if (len(request) > 14) {
+        sendJsonResponse(client, 200, "{\"message\": \"Hello from Cryo!\", \"version\": \"2.3\"}");
+    } else {
+        sendJsonResponse(client, 200, "{\"status\": \"ok\", \"server\": \"Cryo v2.3\"}");
+    }
+}
+
+fn main() {
+    print("=====================================");
+    print("  Cryo JSON API Server v2.3");
+    print("  Starting on port 3000...");
+    print("=====================================");
+    
+    let server = cryoListen(3000);
+    if (server < 0) {
+        print("Failed to start server!");
+        return;
+    }
+    
+    print("Server listening on http://localhost:3000");
+    print("Try: curl http://localhost:3000/api/hello");
+    print("");
+    
+    // Atomic counter for requests
+    let request_count = cryoAtomicNew(0);
+    
+    while (true) {
+        let client = cryoAccept(server);
+        if (client >= 0) {
+            let count = cryoAtomicAdd(request_count, 1);
+            print("Request #" + (count + 1));
+            
+            let request = cryoSocketRead(client);
+            handleRequest(client, request);
+        }
+    }
+}

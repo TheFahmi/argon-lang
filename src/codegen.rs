@@ -1,4 +1,4 @@
-// Argon Codegen - Placeholder for LLVM IR generation
+// Cryo Codegen - Placeholder for LLVM IR generation
 // The actual code generation is done by the compiler.ar itself
 // This module is for future direct LLVM IR output from Rust
 

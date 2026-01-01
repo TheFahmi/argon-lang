@@ -1,0 +1,236 @@
+// ============================================
+// CRYO STANDARD LIBRARY: MATH
+// Mathematical functions and constants
+// ============================================
+
+// Constants
+let PI = 3141592653;  // PI * 10^9 (scaled integer)
+let E = 2718281828;   // E * 10^9 (scaled integer)
+
+// Absolute value
+fn abs(n) {
+    if (n < 0) {
+        return 0 - n;
+    }
+    return n;
+}
+
+// Maximum of two numbers
+fn max(a, b) {
+    if (a > b) {
+        return a;
+    }
+    return b;
+}
+
+// Minimum of two numbers
+fn min(a, b) {
+    if (a < b) {
+        return a;
+    }
+    return b;
+}
+
+// Clamp value between min and max
+fn clamp(val, min_val, max_val) {
+    if (val < min_val) {
+        return min_val;
+    }
+    if (val > max_val) {
+        return max_val;
+    }
+    return val;
+}
+
+// Power function (integer exponent)
+fn pow(base, exp) {
+    if (exp == 0) {
+        return 1;
+    }
+    if (exp < 0) {
+        return 0; // Integer division would be 0
+    }
+    let result = 1;
+    let i = 0;
+    while (i < exp) {
+        result = result * base;
+        i = i + 1;
+    }
+    return result;
+}
+
+// Square root (integer, using Newton's method)
+fn sqrt(n) {
+    if (n < 0) {
+        return 0 - 1; // Error: negative input
+    }
+    if (n == 0) {
+        return 0;
+    }
+    if (n == 1) {
+        return 1;
+    }
+    
+    let x = n;
+    let y = (x + 1) / 2;
+    while (y < x) {
+        x = y;
+        y = (x + n / x) / 2;
+    }
+    return x;
+}
+
+// Sign of a number (-1, 0, or 1)
+fn sign(n) {
+    if (n < 0) {
+        return 0 - 1;
+    }
+    if (n > 0) {
+        return 1;
+    }
+    return 0;
+}
+
+// Floor division (always rounds down)
+fn floorDiv(a, b) {
+    let q = a / b;
+    if ((a < 0) != (b < 0)) {
+        if (a != q * b) {
+            return q - 1;
+        }
+    }
+    return q;
+}
+
+// Modulo (always positive result)
+fn mod(a, b) {
+    let r = a - (a / b) * b;
+    if (r < 0) {
+        return r + abs(b);
+    }
+    return r;
+}
+
+// Greatest Common Divisor (Euclidean algorithm)
+fn gcd(a, b) {
+    a = abs(a);
+    b = abs(b);
+    while (b != 0) {
+        let temp = b;
+        b = mod(a, b);
+        a = temp;
+    }
+    return a;
+}
+
+// Least Common Multiple
+fn lcm(a, b) {
+    if (a == 0) {
+        return 0;
+    }
+    if (b == 0) {
+        return 0;
+    }
+    return abs(a * b) / gcd(a, b);
+}
+
+// Factorial
+fn factorial(n) {
+    if (n < 0) {
+        return 0 - 1; // Error
+    }
+    if (n <= 1) {
+        return 1;
+    }
+    let result = 1;
+    let i = 2;
+    while (i <= n) {
+        result = result * i;
+        i = i + 1;
+    }
+    return result;
+}
+
+// Check if number is even
+fn isEven(n) {
+    return mod(n, 2) == 0;
+}
+
+// Check if number is odd
+fn isOdd(n) {
+    return mod(n, 2) != 0;
+}
+
+// Check if number is prime
+fn isPrime(n) {
+    if (n < 2) {
+        return false;
+    }
+    if (n == 2) {
+        return true;
+    }
+    if (mod(n, 2) == 0) {
+        return false;
+    }
+    let i = 3;
+    let limit = sqrt(n);
+    while (i <= limit) {
+        if (mod(n, i) == 0) {
+            return false;
+        }
+        i = i + 2;
+    }
+    return true;
+}
+
+// Sum of array elements
+fn sum(arr) {
+    let total = 0;
+    let i = 0;
+    while (i < len(arr)) {
+        total = total + arr[i];
+        i = i + 1;
+    }
+    return total;
+}
+
+// Average of array elements
+fn average(arr) {
+    let n = len(arr);
+    if (n == 0) {
+        return 0;
+    }
+    return sum(arr) / n;
+}
+
+// Find maximum in array
+fn arrayMax(arr) {
+    if (len(arr) == 0) {
+        return 0;
+    }
+    let m = arr[0];
+    let i = 1;
+    while (i < len(arr)) {
+        if (arr[i] > m) {
+            m = arr[i];
+        }
+        i = i + 1;
+    }
+    return m;
+}
+
+// Find minimum in array
+fn arrayMin(arr) {
+    if (len(arr) == 0) {
+        return 0;
+    }
+    let m = arr[0];
+    let i = 1;
+    while (i < len(arr)) {
+        if (arr[i] < m) {
+            m = arr[i];
+        }
+        i = i + 1;
+    }
+    return m;
+}

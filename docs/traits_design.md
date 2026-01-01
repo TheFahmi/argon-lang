@@ -1,4 +1,4 @@
-# Argon Traits Design (v2.20.0)
+# Cryo Traits Design (v2.20.0)
 
 ## Overview
 
@@ -8,7 +8,7 @@ Traits define shared behavior (interfaces) that types can implement.
 
 ### Defining Traits
 
-```argon
+```cryo
 trait Printable {
     fn toString(self) -> string;
 }
@@ -26,7 +26,7 @@ trait Iterator<T> {
 
 ### Implementing Traits
 
-```argon
+```cryo
 struct Point {
     x: i32,
     y: i32
@@ -53,7 +53,7 @@ impl Comparable for Point {
 
 ### Trait Bounds (Generic Constraints)
 
-```argon
+```cryo
 // Function that requires Printable
 fn print_it<T: Printable>(item: T) {
     print(item.toString());
@@ -75,7 +75,7 @@ fn compare_and_print<T: Comparable + Printable>(a: T, b: T) {
 
 ### Default Implementations
 
-```argon
+```cryo
 trait Display {
     fn format(self) -> string;
     
@@ -97,7 +97,7 @@ impl Display for Point {
 
 ### Token Changes
 
-```argon
+```cryo
 let TOK_TRAIT = 92;       // trait keyword
 let TOK_IMPL = 93;        // impl keyword
 let TOK_FOR = 94;         // for keyword
@@ -106,7 +106,7 @@ let TOK_SELF_TYPE = 95;   // Self type
 
 ### AST Changes
 
-```argon
+```cryo
 let AST_TRAIT_DEF = 90;   // trait Name { ... }
 let AST_IMPL_BLOCK = 91;  // impl Trait for Type { ... }
 let AST_TRAIT_BOUND = 92; // T: Trait
@@ -138,7 +138,7 @@ TraitBound {
 
 Traits are implemented via monomorphization (like generics):
 
-```argon
+```cryo
 // Source
 fn print_it<T: Printable>(item: T) { ... }
 printIt(point);   // Point
@@ -152,28 +152,28 @@ fn print_it_Vec2(item: Vec2) { ... }
 ## Built-in Traits
 
 ### Clone
-```argon
+```cryo
 trait Clone {
     fn clone(self) -> Self;
 }
 ```
 
 ### Default
-```argon
+```cryo
 trait Default {
     fn default() -> Self;
 }
 ```
 
 ### Debug
-```argon
+```cryo
 trait Debug {
     fn debug(self) -> string;
 }
 ```
 
 ### Eq / Ord
-```argon
+```cryo
 trait Eq {
     fn eq(self, other: Self) -> bool;
     fn ne(self, other: Self) -> bool {
@@ -191,7 +191,7 @@ trait Ord: Eq {
 ```
 
 ### Iterator
-```argon
+```cryo
 trait Iterator<T> {
     fn next(self) -> Option<T>;
     
@@ -212,7 +212,7 @@ trait Iterator<T> {
 
 ## Example Program
 
-```argon
+```cryo
 trait Animal {
     fn speak(self) -> string;
     fn name(self) -> string;

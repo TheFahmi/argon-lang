@@ -1,0 +1,392 @@
+// ============================================
+// CRYO STANDARD LIBRARY: DATE/TIME
+// Date and time utilities
+// (Uses milliseconds since epoch as base unit)
+// ============================================
+
+// Time constants (in milliseconds)
+let MS_SECOND = 1000;
+let MS_MINUTE = 60000;
+let MS_HOUR = 3600000;
+let MS_DAY = 86400000;
+let MS_WEEK = 604800000;
+
+// Time unit constants
+let SECONDS_PER_MINUTE = 60;
+let MINUTES_PER_HOUR = 60;
+let HOURS_PER_DAY = 24;
+let DAYS_PER_WEEK = 7;
+
+// Days per month (non-leap year)
+let DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+// Day names
+let DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+let DAY_NAMES_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+// Month names
+let MONTH_NAMES = ["January", "February", "March", "April", "May", "June", 
+                   "July", "August", "September", "October", "November", "December"];
+let MONTH_NAMES_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// Check if year is leap year
+fn isLeapYear(year) {
+    if ((year / 400) * 400 == year) {
+        return true;
+    }
+    if ((year / 100) * 100 == year) {
+        return false;
+    }
+    if ((year / 4) * 4 == year) {
+        return true;
+    }
+    return false;
+}
+
+// Get days in month
+fn daysInMonth(year, month) {
+    if (month < 1) {
+        return 0;
+    }
+    if (month > 12) {
+        return 0;
+    }
+    
+    let days = DAYS_IN_MONTH[month - 1];
+    if (month == 2) {
+        if (isLeapYear(year)) {
+            return 29;
+        }
+    }
+    return days;
+}
+
+// Get days in year
+fn daysInYear(year) {
+    if (isLeapYear(year)) {
+        return 366;
+    }
+    return 365;
+}
+
+// Create date struct [year, month, day, hour, minute, second]
+fn dateNew(year, month, day, hour, minute, second) {
+    let result = [];
+    result = push(result, year);
+    result = push(result, month);
+    result = push(result, day);
+    result = push(result, hour);
+    result = push(result, minute);
+    result = push(result, second);
+    return result;
+}
+
+// Create date from just day
+fn dateFromYmd(year, month, day) {
+    return dateNew(year, month, day, 0, 0, 0);
+}
+
+// Get year from date
+fn dateYear(d) {
+    return d[0];
+}
+
+// Get month from date (1-12)
+fn dateMonth(d) {
+    return d[1];
+}
+
+// Get day from date (1-31)
+fn dateDay(d) {
+    return d[2];
+}
+
+// Get hour from date (0-23)
+fn dateHour(d) {
+    return d[3];
+}
+
+// Get minute from date (0-59)
+fn dateMinute(d) {
+    return d[4];
+}
+
+// Get second from date (0-59)
+fn dateSecond(d) {
+    return d[5];
+}
+
+// Format date as ISO string (YYYY-MM-DD)
+fn dateFormatIso(d) {
+    let year = "" + d[0];
+    let month = datePad2(d[1]);
+    let day = datePad2(d[2]);
+    return year + "-" + month + "-" + day;
+}
+
+// Format datetime as ISO string (YYYY-MM-DDTHH:MM:SS)
+fn datetimeFormatIso(d) {
+    let year = "" + d[0];
+    let month = datePad2(d[1]);
+    let day = datePad2(d[2]);
+    let hour = datePad2(d[3]);
+    let minute = datePad2(d[4]);
+    let second = datePad2(d[5]);
+    return year + "-" + month + "-" + day + "T" + hour + ":" + minute + ":" + second;
+}
+
+// Format date as human readable
+fn dateFormatHuman(d) {
+    let month_name = MONTH_NAMES[d[1] - 1];
+    return month_name + " " + d[2] + ", " + d[0];
+}
+
+// Pad number to 2 digits
+fn datePad2(n) {
+    if (n < 10) {
+        return "0" + n;
+    }
+    return "" + n;
+}
+
+// Add days to date
+fn dateAddDays(d, days) {
+    let year = d[0];
+    let month = d[1];
+    let day = d[2] + days;
+    
+    // Handle overflow
+    while (day > daysInMonth(year, month)) {
+        day = day - daysInMonth(year, month);
+        month = month + 1;
+        if (month > 12) {
+            month = 1;
+            year = year + 1;
+        }
+    }
+    
+    // Handle underflow
+    while (day < 1) {
+        month = month - 1;
+        if (month < 1) {
+            month = 12;
+            year = year - 1;
+        }
+        day = day + daysInMonth(year, month);
+    }
+    
+    return dateNew(year, month, day, d[3], d[4], d[5]);
+}
+
+// Add months to date
+fn dateAddMonths(d, months) {
+    let year = d[0];
+    let month = d[1] + months;
+    
+    while (month > 12) {
+        month = month - 12;
+        year = year + 1;
+    }
+    while (month < 1) {
+        month = month + 12;
+        year = year - 1;
+    }
+    
+    // Clamp day to valid range
+    let day = d[2];
+    let max_day = daysInMonth(year, month);
+    if (day > max_day) {
+        day = max_day;
+    }
+    
+    return dateNew(year, month, day, d[3], d[4], d[5]);
+}
+
+// Add years to date
+fn dateAddYears(d, years) {
+    let year = d[0] + years;
+    let month = d[1];
+    let day = d[2];
+    
+    // Handle Feb 29 on non-leap year
+    if (month == 2) {
+        if (day == 29) {
+            if (isLeapYear(year) == false) {
+                day = 28;
+            }
+        }
+    }
+    
+    return dateNew(year, month, day, d[3], d[4], d[5]);
+}
+
+// Compare two dates (-1 if a < b, 0 if equal, 1 if a > b)
+fn dateCompare(a, b) {
+    // Compare year
+    if (a[0] < b[0]) { return 0 - 1; }
+    if (a[0] > b[0]) { return 1; }
+    
+    // Compare month
+    if (a[1] < b[1]) { return 0 - 1; }
+    if (a[1] > b[1]) { return 1; }
+    
+    // Compare day
+    if (a[2] < b[2]) { return 0 - 1; }
+    if (a[2] > b[2]) { return 1; }
+    
+    // Compare hour
+    if (a[3] < b[3]) { return 0 - 1; }
+    if (a[3] > b[3]) { return 1; }
+    
+    // Compare minute
+    if (a[4] < b[4]) { return 0 - 1; }
+    if (a[4] > b[4]) { return 1; }
+    
+    // Compare second
+    if (a[5] < b[5]) { return 0 - 1; }
+    if (a[5] > b[5]) { return 1; }
+    
+    return 0;
+}
+
+// Check if dates are equal
+fn dateEquals(a, b) {
+    return dateCompare(a, b) == 0;
+}
+
+// Check if date a is before date b
+fn dateBefore(a, b) {
+    return dateCompare(a, b) < 0;
+}
+
+// Check if date a is after date b
+fn dateAfter(a, b) {
+    return dateCompare(a, b) > 0;
+}
+
+// Get difference in days between two dates (a - b)
+fn dateDiffDays(a, b) {
+    // Simple implementation - count days from a to b
+    let days_a = dateToDays(a);
+    let days_b = dateToDays(b);
+    return days_a - days_b;
+}
+
+// Convert date to days since epoch (Jan 1, year 1)
+fn dateToDays(d) {
+    let days = 0;
+    
+    // Add years
+    let y = 1;
+    while (y < d[0]) {
+        days = days + daysInYear(y);
+        y = y + 1;
+    }
+    
+    // Add months
+    let m = 1;
+    while (m < d[1]) {
+        days = days + daysInMonth(d[0], m);
+        m = m + 1;
+    }
+    
+    // Add days
+    days = days + d[2] - 1;
+    
+    return days;
+}
+
+// Get day of week (0 = Sunday, 6 = Saturday)
+fn dateDayOfWeek(d) {
+    // Using Zeller's formula simplified
+    let days = dateToDays(d);
+    // Jan 1, year 1 was a Monday (day 1)
+    // Formula: (days + 1) % 7
+    let x = days + 1;
+    let rem = x - ((x / 7) * 7);
+    return rem;
+}
+
+// Get name of day
+fn dateDayName(d) {
+    let dow = dateDayOfWeek(d);
+    return DAY_NAMES[dow];
+}
+
+// Get short name of day
+fn dateDayNameShort(d) {
+    let dow = dateDayOfWeek(d);
+    return DAY_NAMES_SHORT[dow];
+}
+
+// Get month name
+fn dateMonthName(d) {
+    return MONTH_NAMES[d[1] - 1];
+}
+
+// Get short month name
+fn dateMonthNameShort(d) {
+    return MONTH_NAMES_SHORT[d[1] - 1];
+}
+
+// Check if date is valid
+fn dateIsValid(d) {
+    let year = d[0];
+    let month = d[1];
+    let day = d[2];
+    let hour = d[3];
+    let minute = d[4];
+    let second = d[5];
+    
+    if (month < 1) { return false; }
+    if (month > 12) { return false; }
+    if (day < 1) { return false; }
+    if (day > daysInMonth(year, month)) { return false; }
+    if (hour < 0) { return false; }
+    if (hour > 23) { return false; }
+    if (minute < 0) { return false; }
+    if (minute > 59) { return false; }
+    if (second < 0) { return false; }
+    if (second > 59) { return false; }
+    
+    return true;
+}
+
+// Parse ISO date string (YYYY-MM-DD)
+fn dateParseIso(s) {
+    // Expect format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS
+    if (len(s) < 10) {
+        return null;
+    }
+    
+    let year = dateParseInt(s, 0, 4);
+    let month = dateParseInt(s, 5, 7);
+    let day = dateParseInt(s, 8, 10);
+    
+    let hour = 0;
+    let minute = 0;
+    let second = 0;
+    
+    if (len(s) >= 19) {
+        hour = dateParseInt(s, 11, 13);
+        minute = dateParseInt(s, 14, 16);
+        second = dateParseInt(s, 17, 19);
+    }
+    
+    return dateNew(year, month, day, hour, minute, second);
+}
+
+// Helper: parse integer from substring
+fn dateParseInt(s, start, end) {
+    let result = 0;
+    let i = start;
+    while (i < end) {
+        let code = charCodeAt(s, i);
+        if ((code >= 48) == (code <= 57)) {
+            result = result * 10 + (code - 48);
+        }
+        i = i + 1;
+    }
+    return result;
+}

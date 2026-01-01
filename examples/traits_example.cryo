@@ -1,0 +1,105 @@
+// Cryo Traits Example
+// Demonstrates trait definitions and implementations
+
+// Define a trait for printable objects
+trait Printable {
+    fn toString(self) -> string;
+}
+
+// Define a trait for comparable objects
+trait Comparable {
+    fn compare(self, other: Self) -> i32;
+    fn equals(self, other: Self) -> bool;
+}
+
+// Point struct
+struct Point {
+    x: i32,
+    y: i32
+}
+
+// Implement Printable for Point
+impl Printable for Point {
+    fn toString(self) -> string {
+        return "(" + self.x + ", " + self.y + ")";
+    }
+}
+
+// Implement Comparable for Point
+impl Comparable for Point {
+    fn compare(self, other: Point) -> i32 {
+        let d1 = self.x * self.x + self.y * self.y;
+        let d2 = other.x * other.x + other.y * other.y;
+        return d1 - d2;
+    }
+    
+    fn equals(self, other: Point) -> bool {
+        return self.x == other.x && self.y == other.y;
+    }
+}
+
+// Generic function with trait bound
+fn print_item<T: Printable>(item: T) {
+    print(item.toString());
+}
+
+// Animal trait
+trait Animal {
+    fn speak(self) -> string;
+    fn name(self) -> string;
+}
+
+struct Dog { name: string }
+struct Cat { name: string }
+
+impl Animal for Dog {
+    fn speak(self) -> string { return "Woof!"; }
+    fn name(self) -> string { return self.name; }
+}
+
+impl Animal for Cat {
+    fn speak(self) -> string { return "Meow!"; }
+    fn name(self) -> string { return self.name; }
+}
+
+fn introduce<T: Animal>(animal: T) {
+    print(animal.name() + " says: " + animal.speak());
+}
+
+fn main() {
+    print("=== Traits Demo ===");
+    print("");
+    
+    // Create points
+    let p1 = Point { x: 3, y: 4 };
+    let p2 = Point { x: 1, y: 1 };
+    let p3 = Point { x: 3, y: 4 };
+    
+    // Use Printable trait
+    print("Point 1: " + p1.toString());
+    print("Point 2: " + p2.toString());
+    
+    // Use Comparable trait
+    let cmp = p1.compare(p2);
+    if (cmp > 0) {
+        print("P1 is further from origin");
+    } else if (cmp < 0) {
+        print("P2 is further from origin");   
+    } else {
+        print("Same distance from origin");
+    }
+    
+    print("P1 equals P3: " + p1.equals(p3));
+    
+    print("");
+    
+    // Animal examples
+    let dog = Dog { name: "Buddy" };
+    let cat = Cat { name: "Whiskers" };
+    
+    introduce(dog);
+    introduce(cat);
+    
+    print("");
+    print("=== Traits Demo Complete ===");
+}

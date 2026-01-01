@@ -1,11 +1,11 @@
-# Argon VS Code Extension v2.0.0
+# Cryo VS Code Extension v2.0.0
 
-Full IDE support for the Argon programming language.
+Full IDE support for the Cryo programming language.
 
 ## Features
 
 ### ✅ Syntax Highlighting
-Beautiful syntax highlighting for all Argon constructs.
+Beautiful syntax highlighting for all Cryo constructs.
 
 ### ✅ Autocomplete (Phase 3)
 - **Keywords**: `fn`, `let`, `if`, `while`, `struct`, `enum`, `match`, `import`
@@ -120,5 +120,5 @@ The autocomplete includes all 19 stdlib modules:
 ## Contributing
 
 Contributions welcome!
-- Language Server: `lsp/argon-lsp.js`
+- Language Server: `lsp/cryo-lsp.js`
 - Extension: `lsp/vscode-extension/`

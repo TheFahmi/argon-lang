@@ -1,0 +1,352 @@
+// ============================================
+// CRYO STANDARD LIBRARY: CRYPTO (v3.0.0)
+// Cryptographic utilities
+// Note: These are simplified implementations
+// For production, use native crypto via FFI
+// ============================================
+
+// ============================================
+// CONSTANTS
+// ============================================
+
+let CRYPTO_VERSION = "3.0.0";
+
+// Base64 character set
+let BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+// Hex character set
+let HEX_CHARS = "0123456789abcdef";
+
+// ============================================
+// RANDOM NUMBER GENERATION
+// ============================================
+
+// Generate random bytes as hex string
+fn randomBytes(length: int) -> string {
+    let result = "";
+    let i = 0;
+    while (i < length) {
+        let byte = randInt(0, 255);
+        let hi = byte / 16;
+        let lo = byte % 16;
+        result = result + charAt(HEX_CHARS, hi) + charAt(HEX_CHARS, lo);
+        i = i + 1;
+    }
+    return result;
+}
+
+// Generate random integer in range
+fn randomInt(min: int, max: int) -> int {
+    return randInt(min, max);
+}
+
+// Generate random float between 0 and 1
+fn randomFloat() -> int {
+    return randInt(0, 1000000) / 1000000;
+}
+
+// ============================================
+// UUID GENERATION
+// ============================================
+
+// Generate UUID v4
+fn uuidV4() -> string {
+    return uuid();
+}
+
+// Generate short ID (8 characters)
+fn shortId() -> string {
+    return substr(randomBytes(8), 0, 8);
+}
+
+// Generate nano ID (21 characters)
+fn nanoId() -> string {
+    let chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    let result = "";
+    let i = 0;
+    while (i < 21) {
+        let idx = randInt(0, 61);
+        result = result + charAt(chars, idx);
+        i = i + 1;
+    }
+    return result;
+}
+
+// ============================================
+// HEX ENCODING
+// ============================================
+
+// Convert integer to hex string
+fn toHex(n: int) -> string {
+    let hex = "";
+    let num = n;
+    if (num < 0) { num = 0 - num; }
+    if (num == 0) { return "00"; }
+    while (num > 0) {
+        let digit = num % 16;
+        hex = charAt(HEX_CHARS, digit) + hex;
+        num = num / 16;
+    }
+    // Pad to even length
+    if (len(hex) % 2 == 1) {
+        hex = "0" + hex;
+    }
+    return hex;
+}
+
+// Convert hex string to integer
+fn fromHex(hex: string) -> int {
+    let result = 0;
+    let i = 0;
+    while (i < len(hex)) {
+        let c = charAt(hex, i);
+        let val = 0;
+        if (c >= "0" && c <= "9") {
+            val = charCodeAt(c, 0) - 48;
+        } else if (c >= "a" && c <= "f") {
+            val = charCodeAt(c, 0) - 87;
+        } else if (c >= "A" && c <= "F") {
+            val = charCodeAt(c, 0) - 55;
+        }
+        result = result * 16 + val;
+        i = i + 1;
+    }
+    return result;
+}
+
+// ============================================
+// BASE64 ENCODING
+// ============================================
+
+// Encode bytes to Base64
+fn base64Encode(input: string) -> string {
+    let result = "";
+    let i = 0;
+    let inputLen = len(input);
+    
+    while (i < inputLen) {
+        let b1 = charCodeAt(input, i);
+        let b2 = 0;
+        let b3 = 0;
+        let pad = 0;
+        
+        if (i + 1 < inputLen) {
+            b2 = charCodeAt(input, i + 1);
+        } else {
+            pad = pad + 1;
+        }
+        if (i + 2 < inputLen) {
+            b3 = charCodeAt(input, i + 2);
+        } else {
+            pad = pad + 1;
+        }
+        
+        let c1 = b1 / 4;
+        let c2 = ((b1 % 4) * 16) + (b2 / 16);
+        let c3 = ((b2 % 16) * 4) + (b3 / 64);
+        let c4 = b3 % 64;
+        
+        result = result + charAt(BASE64_CHARS, c1);
+        result = result + charAt(BASE64_CHARS, c2);
+        
+        if (pad < 2) {
+            result = result + charAt(BASE64_CHARS, c3);
+        } else {
+            result = result + "=";
+        }
+        if (pad < 1) {
+            result = result + charAt(BASE64_CHARS, c4);
+        } else {
+            result = result + "=";
+        }
+        
+        i = i + 3;
+    }
+    return result;
+}
+
+// ============================================
+// HASHING
+// ============================================
+
+// Simple hash function (DJB2 algorithm)
+fn hashDJB2(input: string) -> int {
+    let hash = 5381;
+    let i = 0;
+    while (i < len(input)) {
+        let c = charCodeAt(input, i);
+        hash = ((hash * 33) + c) % 2147483647;
+        i = i + 1;
+    }
+    return hash;
+}
+
+// Simple hash to hex
+fn hash(input: string) -> string {
+    return toHex(hashDJB2(input));
+}
+
+// FNV-1a hash
+fn hashFNV1a(input: string) -> int {
+    let hash = 2166136261;
+    let i = 0;
+    while (i < len(input)) {
+        let c = charCodeAt(input, i);
+        hash = (hash * 16777619) % 2147483647;
+        hash = hash + c;
+        i = i + 1;
+    }
+    return hash;
+}
+
+// ============================================
+// HMAC (Simplified)
+// ============================================
+
+// Simple HMAC using hash
+fn hmac(key: string, message: string) -> string {
+    let innerKey = key + "inner";
+    let outerKey = key + "outer";
+    let innerHash = hash(innerKey + message);
+    return hash(outerKey + innerHash);
+}
+
+// ============================================
+// ENCRYPTION (Simple XOR - NOT SECURE)
+// ============================================
+
+// XOR cipher (for demo purposes only)
+fn xorCipher(data: string, key: string) -> string {
+    let result = "";
+    let keyLen = len(key);
+    let i = 0;
+    while (i < len(data)) {
+        let dataChar = charCodeAt(data, i);
+        let keyChar = charCodeAt(key, i % keyLen);
+        // XOR using subtraction trick
+        let xored = dataChar + keyChar;
+        if (xored > 255) {
+            xored = xored - 256;
+        }
+        result = result + charFromCode(xored % 256);
+        i = i + 1;
+    }
+    return result;
+}
+
+// ============================================
+// PASSWORD UTILITIES
+// ============================================
+
+// Generate random password
+fn generatePassword(length: int) -> string {
+    let chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let result = "";
+    let i = 0;
+    while (i < length) {
+        let idx = randInt(0, len(chars) - 1);
+        result = result + charAt(chars, idx);
+        i = i + 1;
+    }
+    return result;
+}
+
+// Check password strength (returns 0-4)
+fn passwordStrength(password: string) -> int {
+    let score = 0;
+    let passLen = len(password);
+    
+    // Length check
+    if (passLen >= 8) { score = score + 1; }
+    if (passLen >= 12) { score = score + 1; }
+    
+    // Has lowercase
+    let hasLower = false;
+    let hasUpper = false;
+    let hasDigit = false;
+    let hasSpecial = false;
+    
+    let i = 0;
+    while (i < passLen) {
+        let c = charAt(password, i);
+        if (c >= "a" && c <= "z") { hasLower = true; }
+        if (c >= "A" && c <= "Z") { hasUpper = true; }
+        if (c >= "0" && c <= "9") { hasDigit = true; }
+        if (c == "!" || c == "@" || c == "#" || c == "$" || c == "%") {
+            hasSpecial = true;
+        }
+        i = i + 1;
+    }
+    
+    if (hasLower && hasUpper) { score = score + 1; }
+    if (hasDigit && hasSpecial) { score = score + 1; }
+    
+    return score;
+}
+
+// ============================================
+// TIMING-SAFE COMPARISON
+// ============================================
+
+// Compare strings in constant time
+fn secureCompare(a: string, b: string) -> bool {
+    if (len(a) != len(b)) {
+        return false;
+    }
+    let diff = 0;
+    let i = 0;
+    while (i < len(a)) {
+        let ca = charCodeAt(a, i);
+        let cb = charCodeAt(b, i);
+        diff = diff + abs(ca - cb);
+        i = i + 1;
+    }
+    return diff == 0;
+}
+
+// ============================================
+// TOKEN GENERATION
+// ============================================
+
+// Generate API token
+fn generateToken(prefix: string) -> string {
+    return prefix + "_" + randomBytes(16);
+}
+
+// Generate session ID
+fn generateSessionId() -> string {
+    return "sess_" + randomBytes(24);
+}
+
+// Generate verification code (6 digits)
+fn generateVerificationCode() -> string {
+    let code = randInt(100000, 999999);
+    return toString(code);
+}
+
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
+
+// Absolute value
+fn abs(n: int) -> int {
+    if (n < 0) { return 0 - n; }
+    return n;
+}
+
+// Pad string to length
+fn padLeft(s: string, length: int, char: string) -> string {
+    let result = s;
+    while (len(result) < length) {
+        result = char + result;
+    }
+    return result;
+}
+
+fn padRight(s: string, length: int, char: string) -> string {
+    let result = s;
+    while (len(result) < length) {
+        result = result + char;
+    }
+    return result;
+}

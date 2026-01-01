@@ -1,5 +1,5 @@
-// Argon Native Compiler (Rust)
-// Compiles Argon source directly to LLVM IR
+// Cryo Native Compiler (Rust)
+// Compiles Cryo source directly to LLVM IR
 // Much faster than self-hosted compiler.ar
 
 use crate::parser::{Parser, TopLevel, Stmt, Expr, Function};
@@ -31,7 +31,7 @@ impl Compiler {
         let ast = parser.parse().map_err(|e| format!("Parse error: {}", e))?;
 
         // LLVM IR Header
-        self.output.push_str("; Argon Native Compiler Output\n");
+        self.output.push_str("; Cryo Native Compiler Output\n");
         self.output.push_str("target triple = \"x86_64-pc-linux-gnu\"\n\n");
         
         // External declarations

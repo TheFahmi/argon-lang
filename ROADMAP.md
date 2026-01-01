@@ -1,8 +1,8 @@
-# Argon Roadmap
+# Cryo Roadmap
 
 **Current Version: v3.2.1** (2026-01-01)
 
-Argon is evolving rapidly. This document outlines the current state and future milestones for the language.
+Cryo is evolving rapidly. This document outlines the current state and future milestones for the language.
 
 ---
 
@@ -15,7 +15,7 @@ The core infrastructure is now stable and performant.
     - [x] Optimized HashMaps (`FxHashMap`)
     - [x] Standard Library (Math, String, Array, IO, Net)
 - **Compiler**:
-    - [x] Self-hosted Compiler (`argonc`)
+    - [x] Self-hosted Compiler (`cryoc`)
     - [x] LLVM IR Backend (`native` target)
     - [x] WebAssembly Backend (`wasm32` / `wasi` target)
 - **Tooling**:
@@ -87,15 +87,15 @@ Focus on ecosystem and enterprise readiness.
   - [x] Non-blocking `channelTryRecv()` and `channelRecvTimeout()`
 
 ### ✅ Tooling
-- [x] Documentation generator (`argondoc`)
-- [x] Code formatter (`argonfmt`)
+- [x] Documentation generator (`cryodoc`)
+- [x] Code formatter (`cryofmt`)
 
 ---
 
 ## ✅ Phase 5: Ecosystem (v3.1.1 - v3.2.1) [COMPLETED]
 Building a thriving developer ecosystem.
 
-### ✅ Web Framework (`argonweb`) [v3.1.1]
+### ✅ Web Framework (`cryoweb`) [v3.1.1]
 - [x] Express-like HTTP server
 - [x] NestJS-style architecture
 - [x] Router with route parameters (`:id`)
@@ -118,7 +118,7 @@ Building a thriving developer ecosystem.
   - [x] Broadcast messaging
 
 ### ✅ Native Database Connectors [v3.2.0 - v3.2.1]
-All database clients are implemented **100% in native Argon** without external library dependencies.
+All database clients are implemented **100% in native Cryo** without external library dependencies.
 
 #### ✅ PostgreSQL (`stdlib/postgres_native.ar`)
 - [x] Wire Protocol v3.0 implementation
@@ -155,7 +155,7 @@ All database clients are implemented **100% in native Argon** without external l
 | `@tcpWriteRaw(conn, bytes)` | Write raw byte array |
 | `@tcpReadRaw(conn, count)` | Read exact bytes as array |
 | `@tcpReadAvailable(conn)` | Read all available bytes |
-| `@argonSocketClose(conn)` | Close connection |
+| `@cryoSocketClose(conn)` | Close connection |
 
 #### Crypto Functions
 | Function | Description |
@@ -178,7 +178,7 @@ All database clients are implemented **100% in native Argon** without external l
 ## � Phase 6: Package Ecosystem (v3.3) [IN PROGRESS]
 Building the package ecosystem.
 
-### Package Registry (`apm.argon.dev`)
+### Package Registry (`apm.cryo.dev`)
 - [ ] Web portal for package discovery
 - [ ] Package publishing workflow (`apm publish`)
 - [ ] Version management & semver
@@ -187,8 +187,8 @@ Building the package ecosystem.
 - [ ] Package statistics & downloads
 
 ### Package Format
-- [ ] `argon.toml` manifest file
-- [ ] Lock file (`argon.lock`)
+- [ ] `cryo.toml` manifest file
+- [ ] Lock file (`cryo.lock`)
 - [ ] Workspace support (monorepo)
 - [ ] Build scripts
 
@@ -228,7 +228,7 @@ Enterprise-grade security features.
 
 ### Authentication
 - [ ] bcrypt password hashing
-- [ ] Argon2 password hashing
+- [ ] Cryo2 password hashing
 - [ ] JWT token creation/validation
 - [ ] OAuth2 client
 
@@ -335,7 +335,7 @@ AI/ML capabilities for modern applications.
 ---
 
 ## 🔮 Phase 13: Embedded & IoT (v4.3)
-Running Argon on constrained devices.
+Running Cryo on constrained devices.
 
 ### Embedded Targets
 - [ ] ARM Cortex-M compilation
@@ -380,7 +380,7 @@ Enterprise-grade features for large organizations.
 
 ---
 
-## 🔮 Phase 15: Argon 5.0 (v5.0)
+## 🔮 Phase 15: Cryo 5.0 (v5.0)
 The next major version with breaking changes.
 
 ### Language Evolution
@@ -441,7 +441,7 @@ The next major version with breaking changes.
 
 ### Q1 2026 (January - March)
 - [x] v3.2.1: Native Database Connectors ✅
-- [ ] v3.3.0: Package Registry (apm.argon.dev)
+- [ ] v3.3.0: Package Registry (apm.cryo.dev)
 - [ ] v3.3.1: SQLite Native Driver
 - [ ] v3.3.2: MongoDB Client
 
@@ -474,14 +474,14 @@ Quick start for database testing:
 docker-compose -f docker-compose.db.yml up -d
 
 # Containers started:
-# ├── PostgreSQL : localhost:5432 (user: argon, db: argondb, trust auth)
-# ├── MariaDB    : localhost:3307 (user: argon, pass: argon123, db: argondb)
+# ├── PostgreSQL : localhost:5432 (user: cryo, db: cryodb, trust auth)
+# ├── MariaDB    : localhost:3307 (user: cryo, pass: cryo123, db: cryodb)
 # └── Redis      : localhost:6379 (no auth)
 
 # Run database tests
-./target/release/argon.exe examples/test_redis_real.ar      # ✅ All pass
-./target/release/argon.exe examples/test_postgres_real.ar   # ✅ All pass
-./target/release/argon.exe examples/test_mysql_real.ar      # ✅ All pass
+./target/release/cryo.exe examples/test_redis_real.ar      # ✅ All pass
+./target/release/cryo.exe examples/test_postgres_real.ar   # ✅ All pass
+./target/release/cryo.exe examples/test_mysql_real.ar      # ✅ All pass
 
 # Stop databases
 docker-compose -f docker-compose.db.yml down
@@ -503,7 +503,7 @@ docker-compose -f docker-compose.db.yml down
 | v3.0.0 | 2025-11 | Enterprise Stdlib | ✅ |
 | v3.0.1 | 2025-11 | Channels & Workers | ✅ |
 | v3.1.0 | 2025-12 | True OS Threading | ✅ |
-| v3.1.1 | 2025-12 | ArgonWeb Framework | ✅ |
+| v3.1.1 | 2025-12 | CryoWeb Framework | ✅ |
 | v3.2.0 | 2025-12 | Native Database Connectors | ✅ |
 | v3.2.1 | 2026-01 | SHA1 Auth & Binary Protocols | ✅ Current |
 | v3.3.0 | 2026-Q1 | Package Registry | 🚀 In Progress |
@@ -515,25 +515,25 @@ docker-compose -f docker-compose.db.yml down
 | v4.2.0 | 2027-Q3 | AI/ML Libraries | 🔮 Planned |
 | v4.3.0 | 2027-Q4 | Embedded & IoT | 🔮 Planned |
 | v4.4.0 | 2028-Q1 | Enterprise Features | 🔮 Planned |
-| v5.0.0 | 2028-Q2 | Argon 5.0 (Next Gen) | 🔮 Vision |
+| v5.0.0 | 2028-Q2 | Cryo 5.0 (Next Gen) | 🔮 Vision |
 
 ---
 
 ## Community & Resources
 
 ### Get Involved
-- 📖 Documentation: [docs.argon.dev](https://docs.argon.dev)
-- 💬 Discord: [discord.gg/argon](https://discord.gg/argon)
-- 🐦 Twitter: [@argonlang](https://twitter.com/argonlang)
-- 📦 Packages: [apm.argon.dev](https://apm.argon.dev)
+- 📖 Documentation: [docs.cryo.dev](https://docs.cryo.dev)
+- 💬 Discord: [discord.gg/cryo](https://discord.gg/cryo)
+- 🐦 Twitter: [@cryolang](https://twitter.com/cryolang)
+- 📦 Packages: [apm.cryo.dev](https://apm.cryo.dev)
 
 ### Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to Argon.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to Cryo.
 
 ### License
 
-Argon is open source under the MIT License. See [LICENSE](LICENSE).
+Cryo is open source under the MIT License. See [LICENSE](LICENSE).
 
 ---
 

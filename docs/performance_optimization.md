@@ -1,10 +1,10 @@
-# Argon Performance Optimization Guide
+# Cryo Performance Optimization Guide
 
-This document describes the performance optimizations implemented in the Argon interpreter and compiler.
+This document describes the performance optimizations implemented in the Cryo interpreter and compiler.
 
 ## Overview
 
-Argon v2.24.0 includes significant performance improvements:
+Cryo v2.24.0 includes significant performance improvements:
 
 | Mode | Performance | Use Case |
 |------|-------------|----------|
@@ -102,12 +102,12 @@ Source (.ar) -> AST -> Bytecode -> VM Execution
 
 ```bash
 # Run fibonacci via bytecode VM
-./argon.exe --vm-bench 35
+./cryo.exe --vm-bench 35
 
 # Output:
-# Argon VM: Running Fib(35)...
-# Argon VM: Result = 9227465
-# Argon VM: Time = 3015ms
+# Cryo VM: Running Fib(35)...
+# Cryo VM: Result = 9227465
+# Cryo VM: Time = 3015ms
 ```
 
 ### OpCode Set
@@ -129,7 +129,7 @@ pub enum OpCode {
 
 ## 3. Native Compilation (LLVM)
 
-For maximum performance, Argon can be compiled to native code via LLVM IR.
+For maximum performance, Cryo can be compiled to native code via LLVM IR.
 
 ### Compilation Pipeline
 
@@ -142,8 +142,8 @@ Source (.ar) -> Parser -> AST -> LLVM IR -> Native Binary
 The `self-host/compiler.ar` generates optimized LLVM IR:
 
 ```bash
-# Compile Argon to LLVM IR
-./argon.exe self-host/compiler.ar myprogram.ar -o myprogram.ll
+# Compile Cryo to LLVM IR
+./cryo.exe self-host/compiler.ar myprogram.ar -o myprogram.ll
 
 # Compile LLVM IR to native
 clang -O3 myprogram.ll -o myprogram
@@ -153,8 +153,8 @@ clang -O3 myprogram.ll -o myprogram
 
 ```bash
 # Build and run comprehensive benchmarks
-docker build -t argon-bench .
-docker run --rm argon-bench
+docker build -t cryo-bench .
+docker run --rm cryo-bench
 ```
 
 ---
@@ -199,7 +199,7 @@ clang -O3 -march=native -mtune=native -funroll-loops program.ll -o program
 | Language | Time |
 |----------|------|
 | C++ (native) | 4.1s |
-| **Argon (native)** | **5.1s** |
+| **Cryo (native)** | **5.1s** |
 | Rust (native) | 6.3s |
 
 ### Ackermann(3, 11) - Deep Recursion
@@ -207,7 +207,7 @@ clang -O3 -march=native -mtune=native -funroll-loops program.ll -o program
 | Language | Time |
 |----------|------|
 | C++ (native) | 136ms |
-| **Argon (native)** | **232ms** |
+| **Cryo (native)** | **232ms** |
 | Rust (native) | 261ms |
 
 ---

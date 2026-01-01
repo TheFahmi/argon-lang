@@ -5,12 +5,12 @@ const path = require('path');
 let client;
 
 function activate(context) {
-    console.log('Argon Language extension activated');
+    console.log('Cryo Language extension activated');
 
     // Path to the language server
     // Path to the language server
     const serverModule = context.asAbsolutePath(
-        path.join('argon-lsp.js')
+        path.join('cryo-lsp.js')
     );
 
     const serverOptions = {
@@ -19,15 +19,15 @@ function activate(context) {
     };
 
     const clientOptions = {
-        documentSelector: [{ scheme: 'file', language: 'argon' }],
+        documentSelector: [{ scheme: 'file', language: 'cryo' }],
         synchronize: {
             fileEvents: vscode.workspace.createFileSystemWatcher('**/*.ar')
         }
     };
 
     client = new LanguageClient(
-        'argonLanguageServer',
-        'Argon Language Server',
+        'cryoLanguageServer',
+        'Cryo Language Server',
         serverOptions,
         clientOptions
     );

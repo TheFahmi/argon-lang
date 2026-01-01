@@ -1,0 +1,25 @@
+macro sayHello(name) {
+    print("Hello, " + $name);
+}
+
+macro checkDebug(cond) {
+     if ($cond) {
+         print("Debug Mode ON");
+     } else {
+         print("Debug Mode OFF");
+     }
+}
+
+fn main() {
+    print("Macro Test Start");
+    
+    sayHello("World");
+    
+    let user = "Cryo User";
+    sayHello(user);
+    
+    checkDebug(true);
+    checkDebug(false);
+    
+    print("Macro Test End");
+}

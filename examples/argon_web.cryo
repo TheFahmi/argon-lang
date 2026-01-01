@@ -1,0 +1,115 @@
+// CryoWeb Framework (v2.24 Advanced)
+import "http"
+import "json"
+
+// --- Helper Structs ---
+struct RouteMap {}
+
+// --- Context Struct ---
+struct Context {
+    request: any,    // [method, path, headers, body]
+    response_body: string,
+    status: int,
+    content_type: string
+}
+
+impl Context {
+    fn new(req) {
+        return Context { 
+            request: req, 
+            response_body: "", 
+            status: 200, 
+            content_type: "text/plain" 
+        };
+    }
+
+    fn json(self, data) {
+        self.status = 200;
+        self.response_body = jsonStringify(data);
+        self.content_type = "application/json";
+    }
+    
+    fn html(self, html) {
+        self.status = 200;
+        self.response_body = html;
+        self.content_type = "text/html";
+    }
+    
+    fn text(self, msg) {
+        self.status = 200;
+        self.response_body = msg;
+        self.content_type = "text/plain";
+    }
+}
+
+// --- Router Struct ---
+struct Router {
+    routes: RouteMap // Struct used as Map<String, Function>
+}
+
+impl Router {
+    fn new() {
+        return Router { routes: RouteMap {} };
+    }
+    
+    fn add(self, method, path, handler) {
+        let key = method + ":" + path;
+        self.routes[key] = handler;
+    }
+    
+    fn handle(self, raw_req) {
+        if (raw_req == null) { return ""; }
+        
+        let method = raw_req[0];
+        let path = raw_req[1];
+        let key = method + ":" + path;
+        
+        let handler = self.routes[key];
+        
+        if (handler != null) {
+            let ctx = Context::new(raw_req);
+            handler(ctx); 
+            return httpResponse(ctx.status, ctx.content_type, ctx.response_body);
+        }
+        
+        return httpError(404, "Not Found (CryoWeb)");
+    }
+}
+
+// --- Server Struct ---
+struct Server {
+    port: int,
+    router: Router
+}
+
+impl Server {
+    fn new(port) {
+        return Server { port: port, router: Router::new() };
+    }
+    
+    fn start(self) {
+        print("CryoWeb Server running on port " + self.port);
+        let listener = cryoListen(self.port);
+        
+        if (listener < 0) {
+            print("FATAL: Failed to bind to port " + self.port);
+            return;
+        }
+        
+        while (true) {
+            let client = cryoAccept(listener);
+            
+            if (client >= 0) {
+                defer cryoSocketClose(client);
+                
+                let req_str = cryoSocketRead(client);
+                
+                if (len(req_str) > 0) {
+                    let req = httpParseRequest(req_str);
+                    let resp = self.router.handle(req);
+                    cryoSocketWrite(client, resp);
+                }
+            }
+        }
+    }
+}

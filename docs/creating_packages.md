@@ -1,4 +1,4 @@
-# Membuat Package Argon
+# Membuat Package Cryo
 
 ## 1. Buat Project Baru
 
@@ -11,7 +11,7 @@ cd my-package
 
 ```
 my-package/
-├── argon.toml      # Manifest (WAJIB)
+├── cryo.toml      # Manifest (WAJIB)
 ├── lib/
 │   └── lib.ar      # Kode library utama
 ├── src/
@@ -21,7 +21,7 @@ my-package/
 └── README.md       # Dokumentasi
 ```
 
-## 3. Edit argon.toml
+## 3. Edit cryo.toml
 
 ```toml
 [package]
@@ -31,7 +31,7 @@ description = "Deskripsi singkat package Anda"
 author = "Nama Anda <email@example.com>"
 license = "MIT"
 repository = "https://github.com/username/my-package"
-keywords = ["argon", "utility"]
+keywords = ["cryo", "utility"]
 
 [dependencies]
 # Tambahkan dependencies jika ada
@@ -41,7 +41,7 @@ keywords = ["argon", "utility"]
 ## 4. Tulis Kode Library
 
 **lib/lib.ar:**
-```argon
+```cryo
 // ============================================
 // My Package - Utility functions
 // ============================================
@@ -62,7 +62,7 @@ fn multiply(a, b) {
 ## 5. Buat Repository di GitHub
 
 1. Buka https://github.com/new
-2. Nama repo: `my-package` (sama dengan nama di argon.toml)
+2. Nama repo: `my-package` (sama dengan nama di cryo.toml)
 3. Pilih Public
 4. Klik "Create repository"
 
@@ -110,7 +110,7 @@ Untuk mendaftarkan package ke central registry, edit `registry/index.json`:
 }
 ```
 
-Lalu buat Pull Request ke repo Argon.
+Lalu buat Pull Request ke repo Cryo.
 
 ---
 
@@ -135,8 +135,8 @@ apm add my-package
 
 ### Import di Kode
 
-```argon
-import "deps/my-package/lib/lib.ar";
+```cryo
+import "deps/my-package/lib/lib.cryo";
 
 fn main() {
     print(greet("World"));

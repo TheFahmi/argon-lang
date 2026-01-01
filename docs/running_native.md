@@ -1,6 +1,6 @@
-# Menjalankan Argon Native
+# Menjalankan Cryo Native
 
-Dokumentasi ini menjelaskan cara menjalankan Argon dalam mode native untuk mendapatkan performa maksimal.
+Dokumentasi ini menjelaskan cara menjalankan Cryo dalam mode native untuk mendapatkan performa maksimal.
 
 > **Sejak v3.1.0**: Native mode adalah **default**. Gunakan `--interpret` untuk fallback ke interpreter.
 
@@ -9,8 +9,8 @@ Dokumentasi ini menjelaskan cara menjalankan Argon dalam mode native untuk menda
 ## 📋 Daftar Isi
 
 1. [Prerequisite](#prerequisite)
-2. [Build Argon Native Compiler](#build-argon-native-compiler)
-3. [Mode Menjalankan Argon](#mode-menjalankan-argon)
+2. [Build Cryo Native Compiler](#build-cryo-native-compiler)
+3. [Mode Menjalankan Cryo](#mode-menjalankan-cryo)
 4. [Kompilasi ke Native Binary](#kompilasi-ke-native-binary)
 5. [Benchmark Native](#benchmark-native)
 6. [Menggunakan Docker](#menggunakan-docker)
@@ -20,33 +20,33 @@ Dokumentasi ini menjelaskan cara menjalankan Argon dalam mode native untuk menda
 
 ## Prerequisite
 
-Sebelum menjalankan Argon native, pastikan Anda memiliki:
+Sebelum menjalankan Cryo native, pastikan Anda memiliki:
 
 ### Tools yang Diperlukan
 
 | Tool | Deskripsi | Instalasi |
 |------|-----------|-----------|
-| **Rust** | Untuk build Argon Native Compiler | [rustup.rs](https://rustup.rs) |
+| **Rust** | Untuk build Cryo Native Compiler | [rustup.rs](https://rustup.rs) |
 | **Clang/LLVM** | Untuk kompilasi LLVM IR ke native binary | `apt install clang llvm` (Linux) atau [LLVM Downloads](https://releases.llvm.org/) |
 | **Git Bash** (Windows) | Untuk menjalankan script `.sh` | Termasuk dalam Git for Windows |
 
 ---
 
-## Build Argon Native Compiler
+## Build Cryo Native Compiler
 
 ### Quick Build
 
 ```bash
 # Clone repository (jika belum)
 git clone <repo-url>
-cd argon
+cd cryo
 
 # Build dengan optimasi release
 cargo build --release
 
 # Binary akan tersedia di:
-# - Windows: target/release/argon.exe
-# - Linux/Mac: target/release/argon
+# - Windows: target/release/cryo.exe
+# - Linux/Mac: target/release/cryo
 ```
 
 ### Struktur Source Code
@@ -86,52 +86,52 @@ cargo build --release --target x86_64-pc-windows-msvc
 
 ```bash
 # Cek versi
-./target/release/argon.exe --version
-# Output: Argon Native v3.1.0
+./target/release/cryo.exe --version
+# Output: Cryo Native v3.1.0
 
 # Cek help
-./target/release/argon.exe --help
+./target/release/cryo.exe --help
 
 # Test benchmark (target: ~40ms)
-./target/release/argon.exe --native-bench 35
+./target/release/cryo.exe --native-bench 35
 
 # Test file
-./target/release/argon.exe examples/hello.ar
+./target/release/cryo.exe examples/hello.ar
 ```
 
 ### Install ke System Path (Opsional)
 
 ```bash
 # Windows (PowerShell sebagai Admin)
-copy target\release\argon.exe C:\Windows\System32\argon.exe
+copy target\release\cryo.exe C:\Windows\System32\cryo.exe
 
 # Linux/Mac
-sudo cp target/release/argon /usr/local/bin/argon
+sudo cp target/release/cryo /usr/local/bin/cryo
 
 # Atau copy ke root project
-cp target/release/argon.exe argon.exe  # Windows
-cp target/release/argon ./argon        # Linux/Mac
+cp target/release/cryo.exe cryo.exe  # Windows
+cp target/release/cryo ./cryo        # Linux/Mac
 ```
 
 ---
 
-## Mode Menjalankan Argon
+## Mode Menjalankan Cryo
 
-Argon memiliki beberapa mode eksekusi:
+Cryo memiliki beberapa mode eksekusi:
 
 ### 1. **Native Mode** (Default - v3.1.0+)
 
-Mode default dengan performa optimal. Menjalankan file Argon dengan optimized interpreter:
+Mode default dengan performa optimal. Menjalankan file Cryo dengan optimized interpreter:
 
 ```bash
 # Windows
-./argon.exe examples/hello.ar
+./cryo.exe examples/hello.ar
 
 # Linux/Mac
-./argon examples/hello.ar
+./cryo examples/hello.ar
 
 # Eksplisit native mode
-./argon.exe --native examples/hello.ar
+./cryo.exe --native examples/hello.ar
 ```
 
 ### 2. **Interpreter Mode** (Fallback)
@@ -139,7 +139,7 @@ Mode default dengan performa optimal. Menjalankan file Argon dengan optimized in
 Gunakan jika memerlukan kompatibilitas penuh dengan tree-walking interpreter:
 
 ```bash
-./argon.exe --interpret examples/hello.ar
+./cryo.exe --interpret examples/hello.ar
 ```
 
 ### 3. **Bytecode VM Mode** (Benchmark)
@@ -147,7 +147,7 @@ Gunakan jika memerlukan kompatibilitas penuh dengan tree-walking interpreter:
 Menjalankan dengan bytecode VM untuk performa benchmark:
 
 ```bash
-./argon.exe --vm-bench 35
+./cryo.exe --vm-bench 35
 ```
 
 ### 4. **Native Rust Benchmark**
@@ -155,7 +155,7 @@ Menjalankan dengan bytecode VM untuk performa benchmark:
 Baseline performa dengan implementasi native Rust (target: 40ms untuk Fib(35)):
 
 ```bash
-./argon.exe --native-bench 35
+./cryo.exe --native-bench 35
 ```
 
 ### 5. **Kompilasi ke LLVM IR**
@@ -163,14 +163,14 @@ Baseline performa dengan implementasi native Rust (target: 40ms untuk Fib(35)):
 Menghasilkan file LLVM IR (`.ll`) untuk kompilasi native:
 
 ```bash
-./argon.exe --emit-llvm output.ll source.ar
+./cryo.exe --emit-llvm output.ll source.ar
 ```
 
 ---
 
 ## Kompilasi ke Native Binary
 
-Untuk mendapatkan performa maksimal (near C++ performance), kompilasi kode Argon ke native binary melalui LLVM:
+Untuk mendapatkan performa maksimal (near C++ performance), kompilasi kode Cryo ke native binary melalui LLVM:
 
 ### Menggunakan `build.sh`
 
@@ -195,7 +195,7 @@ Jika Anda ingin mengontrol proses kompilasi secara manual:
 
 ```bash
 # Step 1: Generate LLVM IR
-./argon.exe self-host/compiler.ar examples/fib.ar -o fib.ll
+./cryo.exe self-host/compiler.ar examples/fib.ar -o fib.ll
 
 # Step 2: Compile ke native binary dengan clang
 clang -O3 -march=native fib.ll -o fib.exe
@@ -230,10 +230,10 @@ Jalankan benchmark Fibonacci cepat:
 
 ```bash
 # Bytecode VM benchmark
-./argon.exe --vm-bench 35
+./cryo.exe --vm-bench 35
 
 # Native Rust baseline
-./argon.exe --native-bench 35
+./cryo.exe --native-bench 35
 
 # Atau menggunakan build.sh
 ./build.sh bench 35
@@ -241,7 +241,7 @@ Jalankan benchmark Fibonacci cepat:
 
 ### Benchmark Komprehensif
 
-Untuk benchmark lengkap yang membandingkan Argon dengan C++, Rust, dll:
+Untuk benchmark lengkap yang membandingkan Cryo dengan C++, Rust, dll:
 
 ```bash
 # Masuk ke direktori benchmark
@@ -269,7 +269,7 @@ Benchmark dijalankan pada 1 Januari 2026:
 
 ### Hasil Benchmark Komprehensif (Referensi)
 
-| Benchmark | C++ | Argon Native | Rust | Argon vs Rust |
+| Benchmark | C++ | Cryo Native | Rust | Cryo vs Rust |
 |-----------|-----|--------------|------|---------------|
 | **Fibonacci(35)** | ~35ms | **40ms** | ~50ms | **20% faster** |
 | **Fibonacci(45)** | 4.1s | 5.1s | 6.3s | **19% faster** |
@@ -287,17 +287,17 @@ Docker menyediakan environment yang konsisten untuk build dan benchmark:
 ### Build Image
 
 ```bash
-docker build -t argon-bench .
+docker build -t cryo-bench .
 ```
 
 ### Jalankan Benchmark
 
 ```bash
 # Jalankan benchmark default
-docker run --rm argon-bench
+docker run --rm cryo-bench
 
 # Jalankan perintah custom
-docker run --rm argon-bench ./build.sh native examples/fib.ar
+docker run --rm cryo-bench ./build.sh native examples/fib.ar
 ```
 
 ### Dockerfile Overview
@@ -309,9 +309,9 @@ FROM rust:slim
 RUN apt-get update && apt-get install -y \
     g++ clang llvm time
 
-# Build Argon
+# Build Cryo
 RUN cargo build --release
-RUN cp target/release/argon /usr/bin/argon
+RUN cp target/release/cryo /usr/bin/cryo
 
 # Default: Run tests then benchmarks
 CMD ["bash", "-c", "./build.sh test && ./build.sh bench"]
@@ -368,9 +368,9 @@ wsl ./build.sh native examples/fib.ar
 
 | Perintah | Deskripsi |
 |----------|-----------|
-| `./argon.exe file.ar` | Jalankan dengan interpreter |
-| `./argon.exe --vm-bench N` | Benchmark bytecode VM |
-| `./argon.exe --native-bench N` | Benchmark native Rust |
+| `./cryo.exe file.ar` | Jalankan dengan interpreter |
+| `./cryo.exe --vm-bench N` | Benchmark bytecode VM |
+| `./cryo.exe --native-bench N` | Benchmark native Rust |
 | `./build.sh run file.ar` | Jalankan file |
 | `./build.sh compile file.ar` | Compile ke LLVM IR |
 | `./build.sh native file.ar` | Compile ke native binary |
@@ -381,7 +381,7 @@ wsl ./build.sh native examples/fib.ar
 
 ## Lihat Juga
 
-- [README.md](../README.md) - Overview proyek Argon
+- [README.md](../README.md) - Overview proyek Cryo
 - [ROADMAP.md](../ROADMAP.md) - Roadmap pengembangan
 - [performance_optimization.md](./performance_optimization.md) - Tips optimasi performa
 - [wasm_design.md](./wasm_design.md) - Kompilasi ke WebAssembly

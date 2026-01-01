@@ -1,4 +1,4 @@
-// Argon Bytecode VM - High Performance Execution Engine
+// Cryo Bytecode VM - High Performance Execution Engine
 // Provides ~10-20x speedup over tree-walking interpreter
 
 #![allow(dead_code)]

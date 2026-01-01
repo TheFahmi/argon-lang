@@ -1,4 +1,4 @@
-# Argon Struct Implementation - COMPLETE ✅
+# Cryo Struct Implementation - COMPLETE ✅
 
 **Date:** 2025-12-29  
 **Status:** 🎉 **FULLY WORKING** - All struct tests pass! 🎉
@@ -7,7 +7,7 @@
 
 ## Summary
 
-Argon v2.4 now fully supports **structs** with the following features:
+Cryo v2.4 now fully supports **structs** with the following features:
 - Struct definitions (`struct Point { x: int, y: int }`)
 - Struct instantiation (`Point { x: 10, y: 20 }`)
 - Field access (`p.x`, `p.y`)
@@ -19,7 +19,7 @@ Argon v2.4 now fully supports **structs** with the following features:
 ## Test Results
 
 ```
-=== Argon Struct Test ===
+=== Cryo Struct Test ===
 
 Test 1: Create Point
   p1.x = 10 ✅
@@ -61,8 +61,8 @@ Test 4: Rectangle Area
 ### Code Generation
 Structs are implemented as **arrays** at runtime:
 - `Point { x: 10, y: 20 }` → `[10, 20]`
-- `p.x` → `argonGet(p, 0)`
-- `p.y` → `argonGet(p, 1)`
+- `p.x` → `cryoGet(p, 0)`
+- `p.y` → `cryoGet(p, 1)`
 
 ### Key Workarounds (Stage 1 Compatibility)
 

@@ -1,0 +1,282 @@
+// ============================================
+// CRYO STANDARD LIBRARY: CONSOLE
+// Console I/O utilities
+// ============================================
+
+// Print with newline
+fn println(msg) {
+    print(msg);
+}
+
+// Print without newline (if supported by runtime)
+fn printInline(msg) {
+    print(msg);
+}
+
+// Print formatted string (simple placeholder replacement)
+// Usage: printFmt("Hello, {}!", "World") -> "Hello, World!"
+fn printFmt(template, arg1) {
+    let result = "";
+    let i = 0;
+    let n = len(template);
+    let arg_idx = 0;
+    
+    while (i < n) {
+        let c = template[i];
+        if (c == "{") {
+            if (i + 1 < n) {
+                if (template[i + 1] == "}") {
+                    // Insert argument
+                    if (arg_idx == 0) {
+                        result = result + arg1;
+                    }
+                    arg_idx = arg_idx + 1;
+                    i = i + 2;
+                } else {
+                    result = result + c;
+                    i = i + 1;
+                }
+            } else {
+                result = result + c;
+                i = i + 1;
+            }
+        } else {
+            result = result + c;
+            i = i + 1;
+        }
+    }
+    print(result);
+}
+
+// Print with 2 arguments
+fn printFmt2(template, arg1, arg2) {
+    let result = "";
+    let i = 0;
+    let n = len(template);
+    let arg_idx = 0;
+    
+    while (i < n) {
+        let c = template[i];
+        if (c == "{") {
+            if (i + 1 < n) {
+                if (template[i + 1] == "}") {
+                    if (arg_idx == 0) {
+                        result = result + arg1;
+                    } else if (arg_idx == 1) {
+                        result = result + arg2;
+                    }
+                    arg_idx = arg_idx + 1;
+                    i = i + 2;
+                } else {
+                    result = result + c;
+                    i = i + 1;
+                }
+            } else {
+                result = result + c;
+                i = i + 1;
+            }
+        } else {
+            result = result + c;
+            i = i + 1;
+        }
+    }
+    print(result);
+}
+
+// Print with 3 arguments
+fn printFmt3(template, arg1, arg2, arg3) {
+    let result = "";
+    let i = 0;
+    let n = len(template);
+    let arg_idx = 0;
+    
+    while (i < n) {
+        let c = template[i];
+        if (c == "{") {
+            if (i + 1 < n) {
+                if (template[i + 1] == "}") {
+                    if (arg_idx == 0) {
+                        result = result + arg1;
+                    } else if (arg_idx == 1) {
+                        result = result + arg2;
+                    } else if (arg_idx == 2) {
+                        result = result + arg3;
+                    }
+                    arg_idx = arg_idx + 1;
+                    i = i + 2;
+                } else {
+                    result = result + c;
+                    i = i + 1;
+                }
+            } else {
+                result = result + c;
+                i = i + 1;
+            }
+        } else {
+            result = result + c;
+            i = i + 1;
+        }
+    }
+    print(result);
+}
+
+// Format string (returns formatted string instead of printing)
+fn format(template, arg1) {
+    let result = "";
+    let i = 0;
+    let n = len(template);
+    let arg_idx = 0;
+    
+    while (i < n) {
+        let c = template[i];
+        if (c == "{") {
+            if (i + 1 < n) {
+                if (template[i + 1] == "}") {
+                    if (arg_idx == 0) {
+                        result = result + arg1;
+                    }
+                    arg_idx = arg_idx + 1;
+                    i = i + 2;
+                } else {
+                    result = result + c;
+                    i = i + 1;
+                }
+            } else {
+                result = result + c;
+                i = i + 1;
+            }
+        } else {
+            result = result + c;
+            i = i + 1;
+        }
+    }
+    return result;
+}
+
+// Format with 2 arguments
+fn format2(template, arg1, arg2) {
+    let result = "";
+    let i = 0;
+    let n = len(template);
+    let arg_idx = 0;
+    
+    while (i < n) {
+        let c = template[i];
+        if (c == "{") {
+            if (i + 1 < n) {
+                if (template[i + 1] == "}") {
+                    if (arg_idx == 0) {
+                        result = result + arg1;
+                    } else if (arg_idx == 1) {
+                        result = result + arg2;
+                    }
+                    arg_idx = arg_idx + 1;
+                    i = i + 2;
+                } else {
+                    result = result + c;
+                    i = i + 1;
+                }
+            } else {
+                result = result + c;
+                i = i + 1;
+            }
+        } else {
+            result = result + c;
+            i = i + 1;
+        }
+    }
+    return result;
+}
+
+// Print error message (may use stderr in future)
+fn error(msg) {
+    print("Error: " + msg);
+}
+
+// Print warning message
+fn warn(msg) {
+    print("Warning: " + msg);
+}
+
+// Print info message
+fn info(msg) {
+    print("Info: " + msg);
+}
+
+// Print debug message
+fn debug(msg) {
+    print("Debug: " + msg);
+}
+
+// Print success message
+fn success(msg) {
+    print("Success: " + msg);
+}
+
+// Print separator line
+fn separator(char, width) {
+    let line = "";
+    let i = 0;
+    while (i < width) {
+        line = line + char;
+        i = i + 1;
+    }
+    print(line);
+}
+
+// Print table row (simple formatting)
+fn tableRow(cols, widths) {
+    let result = "|";
+    let i = 0;
+    while (i < len(cols)) {
+        let cell = "" + cols[i];
+        let width = widths[i];
+        
+        // Pad cell to width
+        while (len(cell) < width) {
+            cell = cell + " ";
+        }
+        // Truncate if needed
+        if (len(cell) > width) {
+            cell = consoleSubstring(cell, 0, width);
+        }
+        
+        result = result + " " + cell + " |";
+        i = i + 1;
+    }
+    print(result);
+}
+
+// Print progress bar
+fn progressBar(current, total, width) {
+    let filled = 0;
+    if (total > 0) {
+        filled = (current * width) / total;
+    }
+    
+    let bar = "[";
+    let i = 0;
+    while (i < width) {
+        if (i < filled) {
+            bar = bar + "=";
+        } else if (i == filled) {
+            bar = bar + ">";
+        } else {
+            bar = bar + " ";
+        }
+        i = i + 1;
+    }
+    bar = bar + "] " + current + "/" + total;
+    print(bar);
+}
+
+// Helper: substring
+fn consoleSubstring(s, start, end) {
+    let result = "";
+    let i = start;
+    while (i < end) {
+        result = result + s[i];
+        i = i + 1;
+    }
+    return result;
+}

@@ -13,7 +13,7 @@ use std::thread::{self, JoinHandle};
 use std::collections::HashMap;
 
 // ============================================
-// ARGON RUNTIME LIBRARY (RUST EDITION)
+// CRYO RUNTIME LIBRARY (RUST EDITION)
 // ============================================
 
 // --- TYPES ---
@@ -57,7 +57,7 @@ fn from_int(n: i64) -> i64 {
 // --- EXPORTED FUNCTIONS ---
 
 #[no_mangle]
-pub extern "C" fn argon_add(a: i64, b: i64) -> i64 {
+pub extern "C" fn cryo_add(a: i64, b: i64) -> i64 {
     if is_int(a) && is_int(b) {
         return from_int(to_int(a) + to_int(b));
     }
@@ -110,34 +110,34 @@ pub extern "C" fn argon_add(a: i64, b: i64) -> i64 {
 }
 
 #[no_mangle]
-pub extern "C" fn argon_sub(a: i64, b: i64) -> i64 {
+pub extern "C" fn cryo_sub(a: i64, b: i64) -> i64 {
     from_int(to_int(a) - to_int(b))
 }
 
 #[no_mangle]
-pub extern "C" fn argon_mul(a: i64, b: i64) -> i64 {
+pub extern "C" fn cryo_mul(a: i64, b: i64) -> i64 {
     from_int(to_int(a) * to_int(b))
 }
 
 #[no_mangle]
-pub extern "C" fn argon_div(a: i64, b: i64) -> i64 {
+pub extern "C" fn cryo_div(a: i64, b: i64) -> i64 {
     let vb = to_int(b);
     if vb == 0 { return from_int(0); }
     from_int(to_int(a) / vb)
 }
 
 #[no_mangle]
-pub extern "C" fn argon_lt(a: i64, b: i64) -> i64 {
+pub extern "C" fn cryo_lt(a: i64, b: i64) -> i64 {
     if to_int(a) < to_int(b) { from_int(1) } else { from_int(0) }
 }
 
 #[no_mangle]
-pub extern "C" fn argon_gt(a: i64, b: i64) -> i64 {
+pub extern "C" fn cryo_gt(a: i64, b: i64) -> i64 {
     if to_int(a) > to_int(b) { from_int(1) } else { from_int(0) }
 }
 
 #[no_mangle]
-pub extern "C" fn argon_eq(a: i64, b: i64) -> i64 {
+pub extern "C" fn cryo_eq(a: i64, b: i64) -> i64 {
     // Same value (including same pointer)
     if a == b { 
         return from_int(1); 
@@ -171,7 +171,7 @@ fn alloc_obj(size: usize, tag: u64) -> *mut ObjHeader {
 }
 
 #[no_mangle]
-pub extern "C" fn argon_str_new(s: *const c_char) -> i64 {
+pub extern "C" fn cryo_str_new(s: *const c_char) -> i64 {
     let c_str = unsafe { CStr::from_ptr(s) };
     let r_str = c_str.to_string_lossy().into_owned();
     let size = std::mem::size_of::<ObjString>();
@@ -183,7 +183,7 @@ pub extern "C" fn argon_str_new(s: *const c_char) -> i64 {
 }
 
 #[no_mangle]
-pub extern "C" fn argon_arr_new() -> i64 {
+pub extern "C" fn cryo_arr_new() -> i64 {
     let size = std::mem::size_of::<ObjArray>();
     let ptr = alloc_obj(size, OBJ_ARRAY) as *mut ObjArray;
     unsafe {
@@ -193,7 +193,7 @@ pub extern "C" fn argon_arr_new() -> i64 {
 }
 
 #[no_mangle]
-pub extern "C" fn argon_push(arr: i64, val: i64) -> i64 {
+pub extern "C" fn cryo_push(arr: i64, val: i64) -> i64 {
     if is_ptr(arr) {
         let ptr = arr as *mut ObjArray;
         unsafe {
@@ -206,7 +206,7 @@ pub extern "C" fn argon_push(arr: i64, val: i64) -> i64 {
 }
 
 #[no_mangle]
-pub extern "C" fn argon_get(arr: i64, idx: i64) -> i64 {
+pub extern "C" fn cryo_get(arr: i64, idx: i64) -> i64 {
     if is_ptr(arr) {
         let ptr = arr as *mut ObjHeader;
         unsafe {
@@ -225,7 +225,7 @@ pub extern "C" fn argon_get(arr: i64, idx: i64) -> i64 {
                  if idx < data.len() {
                      let ch = &data[idx..idx+1];
                      let cstr = std::ffi::CString::new(ch).unwrap();
-                     return argon_str_new(cstr.as_ptr());
+                     return cryo_str_new(cstr.as_ptr());
                  }
              }
         }
@@ -234,7 +234,7 @@ pub extern "C" fn argon_get(arr: i64, idx: i64) -> i64 {
 }
 
 #[no_mangle]
-pub extern "C" fn argon_set(arr: i64, idx: i64, val: i64) -> i64 {
+pub extern "C" fn cryo_set(arr: i64, idx: i64, val: i64) -> i64 {
     if is_ptr(arr) {
         let ptr = arr as *mut ObjArray;
         unsafe {
@@ -250,7 +250,7 @@ pub extern "C" fn argon_set(arr: i64, idx: i64, val: i64) -> i64 {
 }
 
 #[no_mangle]
-pub extern "C" fn argon_len(val: i64) -> i64 {
+pub extern "C" fn cryo_len(val: i64) -> i64 {
     if is_ptr(val) {
         unsafe {
             let header = val as *mut ObjHeader;
@@ -267,12 +267,12 @@ pub extern "C" fn argon_len(val: i64) -> i64 {
 }
 
 #[no_mangle]
-pub extern "C" fn argon_get_args() -> i64 {
-    let arr = argon_arr_new();
+pub extern "C" fn cryo_get_args() -> i64 {
+    let arr = cryo_arr_new();
     for arg in std::env::args() {
         let s_ptr = std::ffi::CString::new(arg).unwrap();
-        let s_obj = argon_str_new(s_ptr.as_ptr());
-        argon_push(arr, s_obj);
+        let s_obj = cryo_str_new(s_ptr.as_ptr());
+        cryo_push(arr, s_obj);
     }
     arr
 }
@@ -281,7 +281,7 @@ pub extern "C" fn argon_get_args() -> i64 {
 
 
 #[no_mangle]
-pub extern "C" fn argon_char_code_at(s: i64, idx: i64) -> i64 {
+pub extern "C" fn cryo_char_code_at(s: i64, idx: i64) -> i64 {
     if is_ptr(s) {
         unsafe {
             let header = s as *mut ObjHeader;
@@ -299,7 +299,7 @@ pub extern "C" fn argon_char_code_at(s: i64, idx: i64) -> i64 {
 }
 
 #[no_mangle]
-pub extern "C" fn argon_parse_int(s: i64) -> i64 {
+pub extern "C" fn cryo_parse_int(s: i64) -> i64 {
     if is_ptr(s) {
         unsafe {
             let header = s as *mut ObjHeader;
@@ -316,7 +316,7 @@ pub extern "C" fn argon_parse_int(s: i64) -> i64 {
 }
 
 #[no_mangle]
-pub extern "C" fn argon_print(val: i64) {
+pub extern "C" fn cryo_print(val: i64) {
     if is_int(val) {
         println!("{}", to_int(val));
     } else if is_ptr(val) {
@@ -335,7 +335,7 @@ pub extern "C" fn argon_print(val: i64) {
 }
 
 #[no_mangle]
-pub extern "C" fn argon_read_file(path: i64) -> i64 {
+pub extern "C" fn cryo_read_file(path: i64) -> i64 {
     if is_ptr(path) {
         unsafe {
             let header = path as *mut ObjHeader;
@@ -344,7 +344,7 @@ pub extern "C" fn argon_read_file(path: i64) -> i64 {
                 let path_str = &(*obj).data;
                 if let Ok(content) = std::fs::read_to_string(path_str) {
                     let cstr = std::ffi::CString::new(content).unwrap();
-                    return argon_str_new(cstr.as_ptr());
+                    return cryo_str_new(cstr.as_ptr());
                 }
             }
         }
@@ -353,7 +353,7 @@ pub extern "C" fn argon_read_file(path: i64) -> i64 {
 }
 
 #[no_mangle]
-pub extern "C" fn argon_write_file(path: i64, content: i64) -> i64 {
+pub extern "C" fn cryo_write_file(path: i64, content: i64) -> i64 {
     if is_ptr(path) && is_ptr(content) {
         unsafe {
             let header_p = path as *mut ObjHeader;
@@ -370,7 +370,7 @@ pub extern "C" fn argon_write_file(path: i64, content: i64) -> i64 {
 }
 
 #[no_mangle]
-pub extern "C" fn argon_file_exists(path: i64) -> i64 {
+pub extern "C" fn cryo_file_exists(path: i64) -> i64 {
     if is_ptr(path) {
         unsafe {
             let header = path as *mut ObjHeader;
@@ -392,7 +392,7 @@ static mut LISTENERS: Vec<Option<TcpListener>> = Vec::new();
 static mut STREAMS: Vec<Option<TcpStream>> = Vec::new();
 
 #[no_mangle]
-pub extern "C" fn argon_listen(port: i64) -> i64 {
+pub extern "C" fn cryo_listen(port: i64) -> i64 {
     let port = to_int(port);
     let addr = format!("0.0.0.0:{}", port);
     if let Ok(l) = TcpListener::bind(&addr) {
@@ -405,7 +405,7 @@ pub extern "C" fn argon_listen(port: i64) -> i64 {
 }
 
 #[no_mangle]
-pub extern "C" fn argon_accept(id: i64) -> i64 {
+pub extern "C" fn cryo_accept(id: i64) -> i64 {
     let idx = to_int(id) as usize;
     unsafe {
         if idx < LISTENERS.len() {
@@ -421,17 +421,17 @@ pub extern "C" fn argon_accept(id: i64) -> i64 {
 }
 
 #[no_mangle]
-pub extern "C" fn argon_socket_read(id: i64) -> i64 {
+pub extern "C" fn cryo_socket_read(id: i64) -> i64 {
     let idx = to_int(id) as usize;
     unsafe {
         if idx < STREAMS.len() {
             if let Some(s) = &mut STREAMS[idx] {
                 let mut buf = [0u8; 1024];
                 if let Ok(n) = s.read(&mut buf) {
-                     if n == 0 { return argon_str_new(std::ffi::CString::new("").unwrap().as_ptr()); }
+                     if n == 0 { return cryo_str_new(std::ffi::CString::new("").unwrap().as_ptr()); }
                      let s_str = String::from_utf8_lossy(&buf[..n]).to_string();
                      let cstr = std::ffi::CString::new(s_str).unwrap();
-                     return argon_str_new(cstr.as_ptr());
+                     return cryo_str_new(cstr.as_ptr());
                 }
             }
         }
@@ -440,7 +440,7 @@ pub extern "C" fn argon_socket_read(id: i64) -> i64 {
 }
 
 #[no_mangle]
-pub extern "C" fn argon_socket_write(id: i64, str_val: i64) -> i64 {
+pub extern "C" fn cryo_socket_write(id: i64, str_val: i64) -> i64 {
     let idx = to_int(id) as usize;
     if !is_ptr(str_val) { return from_int(0); }
     unsafe {
@@ -461,7 +461,7 @@ pub extern "C" fn argon_socket_write(id: i64, str_val: i64) -> i64 {
 }
 
 #[no_mangle]
-pub extern "C" fn argon_socket_close(id: i64) -> i64 {
+pub extern "C" fn cryo_socket_close(id: i64) -> i64 {
     let idx = to_int(id) as usize;
     unsafe {
         if idx < STREAMS.len() {
@@ -485,7 +485,7 @@ static mut THREAD_COUNTER: i64 = 0;
 /// The function must take no arguments and return i64
 /// Returns: thread_id (tagged integer)
 #[no_mangle]
-pub extern "C" fn argon_thread_spawn(func_ptr: i64) -> i64 {
+pub extern "C" fn cryo_thread_spawn(func_ptr: i64) -> i64 {
     // func_ptr is a function pointer cast to i64
     // We need to call it in a new thread
     let handle = thread::spawn(move || {
@@ -503,7 +503,7 @@ pub extern "C" fn argon_thread_spawn(func_ptr: i64) -> i64 {
 /// Wait for a thread to complete and get its result
 /// Returns: the return value of the thread function
 #[no_mangle]
-pub extern "C" fn argon_thread_join(thread_id: i64) -> i64 {
+pub extern "C" fn cryo_thread_join(thread_id: i64) -> i64 {
     let idx = to_int(thread_id) as usize;
     unsafe {
         if idx < THREADS.len() {
@@ -521,7 +521,7 @@ pub extern "C" fn argon_thread_join(thread_id: i64) -> i64 {
 /// Create a new mutex
 /// Returns: mutex_id (tagged integer)
 #[no_mangle]
-pub extern "C" fn argon_mutex_new() -> i64 {
+pub extern "C" fn cryo_mutex_new() -> i64 {
     unsafe {
         MUTEXES.push(Arc::new(Mutex::new(0)));
         from_int((MUTEXES.len() - 1) as i64)
@@ -531,7 +531,7 @@ pub extern "C" fn argon_mutex_new() -> i64 {
 /// Lock a mutex (blocking)
 /// Returns: 1 on success, -1 on failure
 #[no_mangle]
-pub extern "C" fn argon_mutex_lock(mutex_id: i64) -> i64 {
+pub extern "C" fn cryo_mutex_lock(mutex_id: i64) -> i64 {
     let idx = to_int(mutex_id) as usize;
     unsafe {
         if idx < MUTEXES.len() {
@@ -552,7 +552,7 @@ pub extern "C" fn argon_mutex_lock(mutex_id: i64) -> i64 {
 /// Unlock a mutex
 /// Returns: 1 on success
 #[no_mangle]
-pub extern "C" fn argon_mutex_unlock(mutex_id: i64) -> i64 {
+pub extern "C" fn cryo_mutex_unlock(mutex_id: i64) -> i64 {
     // In this simple model, unlock is a no-op since we can't hold guards
     // A proper implementation would use a different approach
     from_int(1)
@@ -561,7 +561,7 @@ pub extern "C" fn argon_mutex_unlock(mutex_id: i64) -> i64 {
 /// Create a new atomic integer
 /// Returns: atomic_id (tagged integer)
 #[no_mangle]
-pub extern "C" fn argon_atomic_new(initial_value: i64) -> i64 {
+pub extern "C" fn cryo_atomic_new(initial_value: i64) -> i64 {
     let value = to_int(initial_value);
     unsafe {
         ATOMICS.push(Arc::new(AtomicI64::new(value)));
@@ -572,7 +572,7 @@ pub extern "C" fn argon_atomic_new(initial_value: i64) -> i64 {
 /// Load value from atomic
 /// Returns: tagged integer value
 #[no_mangle]
-pub extern "C" fn argon_atomic_load(atomic_id: i64) -> i64 {
+pub extern "C" fn cryo_atomic_load(atomic_id: i64) -> i64 {
     let idx = to_int(atomic_id) as usize;
     unsafe {
         if idx < ATOMICS.len() {
@@ -586,7 +586,7 @@ pub extern "C" fn argon_atomic_load(atomic_id: i64) -> i64 {
 /// Store value to atomic
 /// Returns: 1 on success
 #[no_mangle]
-pub extern "C" fn argon_atomic_store(atomic_id: i64, value: i64) -> i64 {
+pub extern "C" fn cryo_atomic_store(atomic_id: i64, value: i64) -> i64 {
     let idx = to_int(atomic_id) as usize;
     let val = to_int(value);
     unsafe {
@@ -601,7 +601,7 @@ pub extern "C" fn argon_atomic_store(atomic_id: i64, value: i64) -> i64 {
 /// Atomically add to value and return previous value
 /// Returns: previous value (tagged)
 #[no_mangle]
-pub extern "C" fn argon_atomic_add(atomic_id: i64, delta: i64) -> i64 {
+pub extern "C" fn cryo_atomic_add(atomic_id: i64, delta: i64) -> i64 {
     let idx = to_int(atomic_id) as usize;
     let d = to_int(delta);
     unsafe {
@@ -616,7 +616,7 @@ pub extern "C" fn argon_atomic_add(atomic_id: i64, delta: i64) -> i64 {
 /// Atomic compare-and-swap
 /// Returns: 1 if successful, 0 if not
 #[no_mangle]
-pub extern "C" fn argon_atomic_cas(atomic_id: i64, expected: i64, new_value: i64) -> i64 {
+pub extern "C" fn cryo_atomic_cas(atomic_id: i64, expected: i64, new_value: i64) -> i64 {
     let idx = to_int(atomic_id) as usize;
     let exp = to_int(expected);
     let new_val = to_int(new_value);
@@ -633,7 +633,7 @@ pub extern "C" fn argon_atomic_cas(atomic_id: i64, expected: i64, new_value: i64
 
 /// Sleep for specified milliseconds
 #[no_mangle]
-pub extern "C" fn argon_sleep(ms: i64) -> i64 {
+pub extern "C" fn cryo_sleep(ms: i64) -> i64 {
     let duration = std::time::Duration::from_millis(to_int(ms) as u64);
     thread::sleep(duration);
     from_int(1)
@@ -641,27 +641,27 @@ pub extern "C" fn argon_sleep(ms: i64) -> i64 {
 
 /// Get current thread ID (for debugging)
 #[no_mangle]
-pub extern "C" fn argon_thread_id() -> i64 {
+pub extern "C" fn cryo_thread_id() -> i64 {
     // Return a simple identifier based on thread
     let id = thread::current().id();
     from_int(format!("{:?}", id).len() as i64)
 }
 
 #[no_mangle]
-pub extern "C" fn argon_char_from_code(code: i64) -> i64 {
+pub extern "C" fn cryo_char_from_code(code: i64) -> i64 {
     let c = to_int(code) as u8 as char;
     let s = c.to_string();
     let cstr = std::ffi::CString::new(s).unwrap();
-    argon_str_new(cstr.as_ptr())
+    cryo_str_new(cstr.as_ptr())
 }
 
 #[no_mangle]
-pub extern "C" fn argon_exit(code: i64) -> i64 {
+pub extern "C" fn cryo_exit(code: i64) -> i64 {
     std::process::exit(to_int(code) as i32);
 }
 
 #[no_mangle]
-pub extern "C" fn argon_get_env(name: i64) -> i64 {
+pub extern "C" fn cryo_get_env(name: i64) -> i64 {
     if is_ptr(name) {
         unsafe {
             let header = name as *mut ObjHeader;
@@ -671,22 +671,22 @@ pub extern "C" fn argon_get_env(name: i64) -> i64 {
                 match std::env::var(key) {
                     Ok(val) => {
                         let cstr = std::ffi::CString::new(val).unwrap();
-                        return argon_str_new(cstr.as_ptr());
+                        return cryo_str_new(cstr.as_ptr());
                     },
                     Err(_) => {
                         let cstr = std::ffi::CString::new("").unwrap();
-                        return argon_str_new(cstr.as_ptr());
+                        return cryo_str_new(cstr.as_ptr());
                     }
                 }
             }
         }
     }
     let cstr = std::ffi::CString::new("").unwrap();
-    argon_str_new(cstr.as_ptr())
+    cryo_str_new(cstr.as_ptr())
 }
 
 #[no_mangle]
-pub extern "C" fn argon_system(cmd: i64) -> i64 {
+pub extern "C" fn cryo_system(cmd: i64) -> i64 {
     if is_ptr(cmd) {
         unsafe {
             let header = cmd as *mut ObjHeader;
@@ -716,7 +716,7 @@ pub extern "C" fn argon_system(cmd: i64) -> i64 {
 }
 
 #[no_mangle]
-pub extern "C" fn argon_stdin_read() -> i64 {
+pub extern "C" fn cryo_stdin_read() -> i64 {
     let mut buffer = String::new();
     if let Ok(_) = std::io::stdin().read_line(&mut buffer) {
         // Remove trailing newline if present
@@ -727,8 +727,8 @@ pub extern "C" fn argon_stdin_read() -> i64 {
             }
         }
         let cstr = std::ffi::CString::new(buffer).unwrap();
-        return argon_str_new(cstr.as_ptr());
+        return cryo_str_new(cstr.as_ptr());
     }
     let cstr = std::ffi::CString::new("").unwrap();
-    argon_str_new(cstr.as_ptr())
+    cryo_str_new(cstr.as_ptr())
 }

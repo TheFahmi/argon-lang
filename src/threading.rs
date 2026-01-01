@@ -1,5 +1,5 @@
 // ============================================
-// Argon Threading Module
+// Cryo Threading Module
 // True parallelism using OS threads
 // ============================================
 

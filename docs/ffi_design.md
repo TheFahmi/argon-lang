@@ -1,14 +1,14 @@
-# Argon FFI Design (v2.20.0)
+# Cryo FFI Design (v2.20.0)
 
 ## Overview
 
-FFI (Foreign Function Interface) allows Argon to call external C/Rust functions directly.
+FFI (Foreign Function Interface) allows Cryo to call external C/Rust functions directly.
 
 ## Syntax
 
 ### Declaring External Functions
 
-```argon
+```cryo
 // Declare C function
 extern "C" fn printf(format: *i8, ...) -> i32;
 extern "C" fn malloc(size: usize) -> *void;
@@ -24,7 +24,7 @@ extern "C" from "libm" {
 
 ### Calling External Functions
 
-```argon
+```cryo
 fn main() {
     // Call libc functions
     let ptr = malloc(1024);
@@ -39,7 +39,7 @@ fn main() {
 
 ### Pointers and Memory
 
-```argon
+```cryo
 // Pointer types
 let ptr: *i32 = null;
 let cstr: *i8 = "hello";  // C string
@@ -57,7 +57,7 @@ let ptr = arr.as_ptr();
 
 ### Token Changes
 
-```argon
+```cryo
 let TOK_EXTERN = 83;      // extern keyword (already exists)
 let TOK_FROM = 63;        // from keyword (already exists)
 let TOK_PTR = 90;         // * for pointers
@@ -66,7 +66,7 @@ let TOK_REF = 91;         // & for references
 
 ### AST Changes
 
-```argon
+```cryo
 let AST_EXTERN_FN = 85;   // External function declaration
 let AST_PTR_TYPE = 86;    // Pointer type *T
 let AST_DEREF = 87;       // Dereference *expr
@@ -88,7 +88,7 @@ call void @free(i8* %ptr)
 
 ## Type Mappings
 
-| Argon Type | C Type | LLVM Type |
+| Cryo Type | C Type | LLVM Type |
 |------------|--------|-----------|
 | i8 | char | i8 |
 | i16 | short | i16 |
@@ -103,7 +103,7 @@ call void @free(i8* %ptr)
 ## Standard FFI Bindings
 
 ### libc.ar
-```argon
+```cryo
 // stdlib/ffi/libc.ar
 extern "C" fn malloc(size: usize) -> *void;
 extern "C" fn free(ptr: *void);
@@ -113,7 +113,7 @@ extern "C" fn strcmp(s1: *i8, s2: *i8) -> i32;
 ```
 
 ### libm.ar
-```argon
+```cryo
 // stdlib/ffi/libm.ar
 extern "C" fn sin(x: f64) -> f64;
 extern "C" fn cos(x: f64) -> f64;
@@ -131,7 +131,7 @@ FFI functions are inherently unsafe:
 - No null pointer checks
 - Memory must be managed manually
 
-```argon
+```cryo
 // Recommended: wrap in safe interface
 fn safeMalloc(size: i64) -> Option<*void> {
     let ptr = malloc(size as usize);

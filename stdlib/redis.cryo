@@ -1,0 +1,585 @@
+// ============================================
+// CRYO STANDARD LIBRARY: REDIS (v3.1.0)
+// Redis Client Driver
+// ============================================
+
+let REDIS_VERSION = "3.1.0";
+
+// ============================================
+// Configuration
+// ============================================
+
+struct RedisConfig {
+    host: string,
+    port: int,
+    password: string,
+    database: int,
+    connectionTimeout: int,
+    poolSize: int
+}
+
+fn redisConfig() -> RedisConfig {
+    return RedisConfig {
+        host: "localhost",
+        port: 6379,
+        password: "",
+        database: 0,
+        connectionTimeout: 30,
+        poolSize: 10
+    };
+}
+
+fn redisConfigFromEnv() -> RedisConfig {
+    return RedisConfig {
+        host: env("REDIS_HOST", "localhost"),
+        port: parseInt(env("REDIS_PORT", "6379")),
+        password: env("REDIS_PASSWORD", ""),
+        database: parseInt(env("REDIS_DB", "0")),
+        connectionTimeout: 30,
+        poolSize: 10
+    };
+}
+
+fn redisConfigFromUrl(url: string) -> RedisConfig {
+    // Parse: redis://[:password@]host:port[/database]
+    let config = redisConfig();
+    
+    let rest = url;
+    if (startsWith(url, "redis://")) {
+        rest = substr(url, 8, len(url) - 8);
+    }
+    
+    // Check for password
+    let atIdx = indexOf(rest, "@");
+    if (atIdx > 0) {
+        let passStr = substr(rest, 0, atIdx);
+        if (startsWith(passStr, ":")) {
+            config.password = substr(passStr, 1, len(passStr) - 1);
+        }
+        rest = substr(rest, atIdx + 1, len(rest) - atIdx - 1);
+    }
+    
+    // Check for database
+    let slashIdx = indexOf(rest, "/");
+    if (slashIdx > 0) {
+        config.database = parseInt(substr(rest, slashIdx + 1, len(rest) - slashIdx - 1));
+        rest = substr(rest, 0, slashIdx);
+    }
+    
+    // Host and port
+    let colonIdx = indexOf(rest, ":");
+    if (colonIdx > 0) {
+        config.host = substr(rest, 0, colonIdx);
+        config.port = parseInt(substr(rest, colonIdx + 1, len(rest) - colonIdx - 1));
+    } else {
+        config.host = rest;
+    }
+    
+    return config;
+}
+
+// ============================================
+// Connection
+// ============================================
+
+struct RedisConnection {
+    id: int,
+    config: RedisConfig,
+    connected: bool,
+    lastError: string
+}
+
+fn redisConnect(config: RedisConfig) -> RedisConnection {
+    let conn = RedisConnection {
+        id: timestampMs() % 1000000,
+        config: config,
+        connected: false,
+        lastError: ""
+    };
+    
+    print("[Redis] Connecting to " + config.host + ":" + config.port);
+    conn.connected = true;
+    
+    // Auth if password set
+    if (len(config.password) > 0) {
+        print("[Redis] Authenticating...");
+    }
+    
+    // Select database
+    if (config.database > 0) {
+        print("[Redis] SELECT " + config.database);
+    }
+    
+    print("[Redis] Connected successfully");
+    return conn;
+}
+
+fn redisConnectUrl(url: string) -> RedisConnection {
+    let config = redisConfigFromUrl(url);
+    return redisConnect(config);
+}
+
+impl RedisConnection {
+    fn close(self) {
+        if (self.connected) {
+            print("[Redis] Closing connection " + self.id);
+            self.connected = false;
+        }
+    }
+    
+    fn isConnected(self) -> bool {
+        return self.connected;
+    }
+    
+    fn ping(self) -> string {
+        if (!self.connected) { return ""; }
+        return "PONG";
+    }
+    
+    fn selectDb(self, db: int) -> bool {
+        if (!self.connected) { return false; }
+        self.config.database = db;
+        print("[Redis] SELECT " + db);
+        return true;
+    }
+}
+
+// ============================================
+// In-Memory Store (Simulation)
+// ============================================
+
+let redisStore = {};
+let redisExpiry = {};
+let redisSets = {};
+let redisLists = {};
+let redisHashes = {};
+
+// ============================================
+// String Commands
+// ============================================
+
+fn redisGet(conn: RedisConnection, key: string) -> string {
+    if (!conn.connected) { return ""; }
+    
+    // Check expiry
+    let exp = redisExpiry[key];
+    if (exp != null && exp > 0 && exp < timestampMs()) {
+        redisStore[key] = null;
+        redisExpiry[key] = null;
+        return "";
+    }
+    
+    let val = redisStore[key];
+    if (val == null) { return ""; }
+    return "" + val;
+}
+
+fn redisSet(conn: RedisConnection, key: string, value: string) -> bool {
+    if (!conn.connected) { return false; }
+    redisStore[key] = value;
+    return true;
+}
+
+fn redisSetEx(conn: RedisConnection, key: string, seconds: int, value: string) -> bool {
+    if (!conn.connected) { return false; }
+    redisStore[key] = value;
+    redisExpiry[key] = timestampMs() + (seconds * 1000);
+    return true;
+}
+
+fn redisPSetEx(conn: RedisConnection, key: string, milliseconds: int, value: string) -> bool {
+    if (!conn.connected) { return false; }
+    redisStore[key] = value;
+    redisExpiry[key] = timestampMs() + milliseconds;
+    return true;
+}
+
+fn redisSetNx(conn: RedisConnection, key: string, value: string) -> bool {
+    if (!conn.connected) { return false; }
+    if (redisStore[key] != null) { return false; }
+    redisStore[key] = value;
+    return true;
+}
+
+fn redisIncr(conn: RedisConnection, key: string) -> int {
+    if (!conn.connected) { return 0; }
+    let current = parseInt(redisGet(conn, key));
+    let newVal = current + 1;
+    redisStore[key] = newVal;
+    return newVal;
+}
+
+fn redisIncrBy(conn: RedisConnection, key: string, amount: int) -> int {
+    if (!conn.connected) { return 0; }
+    let current = parseInt(redisGet(conn, key));
+    let newVal = current + amount;
+    redisStore[key] = newVal;
+    return newVal;
+}
+
+fn redisDecr(conn: RedisConnection, key: string) -> int {
+    if (!conn.connected) { return 0; }
+    let current = parseInt(redisGet(conn, key));
+    let newVal = current - 1;
+    redisStore[key] = newVal;
+    return newVal;
+}
+
+fn redisDecrBy(conn: RedisConnection, key: string, amount: int) -> int {
+    if (!conn.connected) { return 0; }
+    let current = parseInt(redisGet(conn, key));
+    let newVal = current - amount;
+    redisStore[key] = newVal;
+    return newVal;
+}
+
+fn redisAppend(conn: RedisConnection, key: string, value: string) -> int {
+    if (!conn.connected) { return 0; }
+    let current = redisGet(conn, key);
+    let newVal = current + value;
+    redisStore[key] = newVal;
+    return len(newVal);
+}
+
+fn redisMGet(conn: RedisConnection, keys: [string]) -> [string] {
+    let result = [];
+    let i = 0;
+    while (i < len(keys)) {
+        push(result, redisGet(conn, keys[i]));
+        i = i + 1;
+    }
+    return result;
+}
+
+fn redisMSet(conn: RedisConnection, pairs: [any]) -> bool {
+    if (!conn.connected) { return false; }
+    let i = 0;
+    while (i < len(pairs) - 1) {
+        redisStore[pairs[i]] = pairs[i + 1];
+        i = i + 2;
+    }
+    return true;
+}
+
+// ============================================
+// Key Commands
+// ============================================
+
+fn redisDel(conn: RedisConnection, key: string) -> int {
+    if (!conn.connected) { return 0; }
+    if (redisStore[key] == null) { return 0; }
+    redisStore[key] = null;
+    return 1;
+}
+
+fn redisExists(conn: RedisConnection, key: string) -> bool {
+    if (!conn.connected) { return false; }
+    return redisStore[key] != null;
+}
+
+fn redisExpire(conn: RedisConnection, key: string, seconds: int) -> bool {
+    if (!conn.connected) { return false; }
+    if (redisStore[key] == null) { return false; }
+    redisExpiry[key] = timestampMs() + (seconds * 1000);
+    return true;
+}
+
+fn redisTtl(conn: RedisConnection, key: string) -> int {
+    if (!conn.connected) { return -2; }
+    if (redisStore[key] == null) { return -2; }
+    
+    let exp = redisExpiry[key];
+    if (exp == null || exp == 0) { return -1; }
+    
+    let remaining = (exp - timestampMs()) / 1000;
+    if (remaining < 0) {
+        redisStore[key] = null;
+        return -2;
+    }
+    return remaining;
+}
+
+fn redisPersist(conn: RedisConnection, key: string) -> bool {
+    if (!conn.connected) { return false; }
+    if (redisStore[key] == null) { return false; }
+    redisExpiry[key] = 0;
+    return true;
+}
+
+fn redisRename(conn: RedisConnection, oldKey: string, newKey: string) -> bool {
+    if (!conn.connected) { return false; }
+    if (redisStore[oldKey] == null) { return false; }
+    redisStore[newKey] = redisStore[oldKey];
+    redisStore[oldKey] = null;
+    return true;
+}
+
+fn redisType(conn: RedisConnection, key: string) -> string {
+    if (!conn.connected) { return "none"; }
+    if (redisStore[key] != null) { return "string"; }
+    if (redisLists[key] != null) { return "list"; }
+    if (redisSets[key] != null) { return "set"; }
+    if (redisHashes[key] != null) { return "hash"; }
+    return "none";
+}
+
+// ============================================
+// List Commands
+// ============================================
+
+fn redisLPush(conn: RedisConnection, key: string, value: string) -> int {
+    if (!conn.connected) { return 0; }
+    if (redisLists[key] == null) {
+        redisLists[key] = [];
+    }
+    // Insert at beginning
+    let newList = [value];
+    let old = redisLists[key];
+    let i = 0;
+    while (i < len(old)) {
+        push(newList, old[i]);
+        i = i + 1;
+    }
+    redisLists[key] = newList;
+    return len(redisLists[key]);
+}
+
+fn redisRPush(conn: RedisConnection, key: string, value: string) -> int {
+    if (!conn.connected) { return 0; }
+    if (redisLists[key] == null) {
+        redisLists[key] = [];
+    }
+    push(redisLists[key], value);
+    return len(redisLists[key]);
+}
+
+fn redisLPop(conn: RedisConnection, key: string) -> string {
+    if (!conn.connected) { return ""; }
+    let list = redisLists[key];
+    if (list == null || len(list) == 0) { return ""; }
+    let val = list[0];
+    // Remove first element
+    let newList = [];
+    let i = 1;
+    while (i < len(list)) {
+        push(newList, list[i]);
+        i = i + 1;
+    }
+    redisLists[key] = newList;
+    return "" + val;
+}
+
+fn redisRPop(conn: RedisConnection, key: string) -> string {
+    if (!conn.connected) { return ""; }
+    let list = redisLists[key];
+    if (list == null || len(list) == 0) { return ""; }
+    let val = list[len(list) - 1];
+    // Remove last element
+    let newList = [];
+    let i = 0;
+    while (i < len(list) - 1) {
+        push(newList, list[i]);
+        i = i + 1;
+    }
+    redisLists[key] = newList;
+    return "" + val;
+}
+
+fn redisLLen(conn: RedisConnection, key: string) -> int {
+    if (!conn.connected) { return 0; }
+    let list = redisLists[key];
+    if (list == null) { return 0; }
+    return len(list);
+}
+
+fn redisLRange(conn: RedisConnection, key: string, start: int, stop: int) -> [string] {
+    if (!conn.connected) { return []; }
+    let list = redisLists[key];
+    if (list == null) { return []; }
+    
+    let result = [];
+    let actualStop = stop;
+    if (stop < 0) {
+        actualStop = len(list) + stop;
+    }
+    if (actualStop >= len(list)) {
+        actualStop = len(list) - 1;
+    }
+    
+    let i = start;
+    while (i <= actualStop && i < len(list)) {
+        push(result, "" + list[i]);
+        i = i + 1;
+    }
+    return result;
+}
+
+// ============================================
+// Set Commands
+// ============================================
+
+fn redisSAdd(conn: RedisConnection, key: string, member: string) -> int {
+    if (!conn.connected) { return 0; }
+    if (redisSets[key] == null) {
+        redisSets[key] = [];
+    }
+    // Check if exists
+    let set = redisSets[key];
+    let i = 0;
+    while (i < len(set)) {
+        if (set[i] == member) { return 0; }
+        i = i + 1;
+    }
+    push(redisSets[key], member);
+    return 1;
+}
+
+fn redisSRem(conn: RedisConnection, key: string, member: string) -> int {
+    if (!conn.connected) { return 0; }
+    let set = redisSets[key];
+    if (set == null) { return 0; }
+    
+    let newSet = [];
+    let removed = 0;
+    let i = 0;
+    while (i < len(set)) {
+        if (set[i] != member) {
+            push(newSet, set[i]);
+        } else {
+            removed = 1;
+        }
+        i = i + 1;
+    }
+    redisSets[key] = newSet;
+    return removed;
+}
+
+fn redisSMembers(conn: RedisConnection, key: string) -> [string] {
+    if (!conn.connected) { return []; }
+    let set = redisSets[key];
+    if (set == null) { return []; }
+    return set;
+}
+
+fn redisSIsMember(conn: RedisConnection, key: string, member: string) -> bool {
+    if (!conn.connected) { return false; }
+    let set = redisSets[key];
+    if (set == null) { return false; }
+    
+    let i = 0;
+    while (i < len(set)) {
+        if (set[i] == member) { return true; }
+        i = i + 1;
+    }
+    return false;
+}
+
+fn redisSCard(conn: RedisConnection, key: string) -> int {
+    if (!conn.connected) { return 0; }
+    let set = redisSets[key];
+    if (set == null) { return 0; }
+    return len(set);
+}
+
+// ============================================
+// Hash Commands
+// ============================================
+
+fn redisHSet(conn: RedisConnection, key: string, field: string, value: string) -> int {
+    if (!conn.connected) { return 0; }
+    if (redisHashes[key] == null) {
+        redisHashes[key] = {};
+    }
+    let isNew = redisHashes[key][field] == null;
+    redisHashes[key][field] = value;
+    return isNew ? 1 : 0;
+}
+
+fn redisHGet(conn: RedisConnection, key: string, field: string) -> string {
+    if (!conn.connected) { return ""; }
+    let hash = redisHashes[key];
+    if (hash == null) { return ""; }
+    let val = hash[field];
+    if (val == null) { return ""; }
+    return "" + val;
+}
+
+fn redisHDel(conn: RedisConnection, key: string, field: string) -> int {
+    if (!conn.connected) { return 0; }
+    let hash = redisHashes[key];
+    if (hash == null) { return 0; }
+    if (hash[field] == null) { return 0; }
+    hash[field] = null;
+    return 1;
+}
+
+fn redisHExists(conn: RedisConnection, key: string, field: string) -> bool {
+    if (!conn.connected) { return false; }
+    let hash = redisHashes[key];
+    if (hash == null) { return false; }
+    return hash[field] != null;
+}
+
+fn redisHIncrBy(conn: RedisConnection, key: string, field: string, amount: int) -> int {
+    if (!conn.connected) { return 0; }
+    if (redisHashes[key] == null) {
+        redisHashes[key] = {};
+    }
+    let current = parseInt(redisHGet(conn, key, field));
+    let newVal = current + amount;
+    redisHashes[key][field] = newVal;
+    return newVal;
+}
+
+// ============================================
+// Pub/Sub Commands (Simulated)
+// ============================================
+
+let pubsubChannels = {};
+
+fn redisPublish(conn: RedisConnection, channel: string, message: string) -> int {
+    if (!conn.connected) { return 0; }
+    print("[Redis] PUBLISH " + channel + ": " + message);
+    // In real impl, broadcast to subscribers
+    return 1;
+}
+
+fn redisSubscribe(conn: RedisConnection, channel: string, callback: any) {
+    if (!conn.connected) { return; }
+    print("[Redis] SUBSCRIBE " + channel);
+    pubsubChannels[channel] = callback;
+}
+
+fn redisUnsubscribe(conn: RedisConnection, channel: string) {
+    if (!conn.connected) { return; }
+    print("[Redis] UNSUBSCRIBE " + channel);
+    pubsubChannels[channel] = null;
+}
+
+// ============================================
+// Utility Commands
+// ============================================
+
+fn redisFlushDb(conn: RedisConnection) -> bool {
+    if (!conn.connected) { return false; }
+    redisStore = {};
+    redisExpiry = {};
+    redisSets = {};
+    redisLists = {};
+    redisHashes = {};
+    print("[Redis] FLUSHDB");
+    return true;
+}
+
+fn redisDbSize(conn: RedisConnection) -> int {
+    // Count all keys
+    // This is simplified
+    return 0;
+}
+
+fn redisInfo(conn: RedisConnection) -> string {
+    if (!conn.connected) { return ""; }
+    return "redis_version:" + REDIS_VERSION + "\n" +
+           "connected_clients:1\n" +
+           "db0:keys=0";
+}

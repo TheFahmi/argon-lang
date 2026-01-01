@@ -1,15 +1,15 @@
-# Argon Package Manager Design
+# Cryo Package Manager Design
 
 ## Overview
 
-The Argon Package Manager (APM) provides dependency management for Argon projects.
+The Cryo Package Manager (APM) provides dependency management for Cryo projects.
 
 ## Project Structure
 
 ```
 my-project/
-├── argon.toml          # Project manifest
-├── argon.lock          # Lock file (generated)
+├── cryo.toml          # Project manifest
+├── cryo.lock          # Lock file (generated)
 ├── src/
 │   └── main.ar         # Entry point
 ├── lib/
@@ -19,13 +19,13 @@ my-project/
         └── lib.ar
 ```
 
-## argon.toml Format
+## cryo.toml Format
 
 ```toml
 [package]
 name = "my-project"
 version = "1.0.0"
-description = "My awesome Argon project"
+description = "My awesome Cryo project"
 author = "Your Name"
 license = "MIT"
 repository = "https://github.com/user/my-project"
@@ -44,7 +44,7 @@ local-lib = { path = "../local-lib" }
 test-framework = "0.1.0"
 
 [build]
-entry = "src/main.ar"
+entry = "src/main.cryo"
 output = "build"
 ```
 
@@ -83,22 +83,22 @@ apm add package-name
 ## Implementation Status
 
 ### Phase 1: Core (v2.8.0) ✅
-- [x] argon.toml parser
-- [x] argon init command
-- [x] argon build command
+- [x] cryo.toml parser
+- [x] cryo init command
+- [x] cryo build command
 - [x] Local path dependencies
 
 ### Phase 2: Remote (v2.9.0) ✅
 - [x] Git dependencies  
-- [x] argon install command
-- [x] argon.lock generation
-- [x] argon list command
-- [x] argon update command
+- [x] cryo install command
+- [x] cryo.lock generation
+- [x] cryo list command
+- [x] cryo update command
 
 ### Phase 3: Publishing (v2.9.0) ✅
-- [x] argon publish command (git tag based)
-- [x] argon remove command
-- [x] argon search command
+- [x] cryo publish command (git tag based)
+- [x] cryo remove command
+- [x] cryo search command
 
 ### Phase 4: Central Registry (v2.10.0) ✅
 - [x] registry/index.json format

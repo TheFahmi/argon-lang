@@ -1,7 +1,7 @@
-# Argon Optimization Design (v2.22.0)
+# Cryo Optimization Design (v2.22.0)
 
 ## Motivation
-Argon v2.21.0 interpreter is fully functional with GC, but can be slow and stack-heavy due to:
+Cryo v2.21.0 interpreter is fully functional with GC, but can be slow and stack-heavy due to:
 1. Recalculating constants at runtime (`1 + 2` is computed every time).
 2. Deep recursion causing Stack Overflow (Rust stack is limited).
 

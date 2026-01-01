@@ -1,11 +1,11 @@
-# Argon Threading & Concurrency
+# Cryo Threading & Concurrency
 
 **Version:** v3.1.0  
 **Status:** ✅ Implemented
 
 ## Overview
 
-Argon provides **true OS-level parallelism** through its threading module. This enables real parallel execution using native operating system threads, not simulated concurrency.
+Cryo provides **true OS-level parallelism** through its threading module. This enables real parallel execution using native operating system threads, not simulated concurrency.
 
 ## Features
 
@@ -52,7 +52,7 @@ When spawning a thread with `threadSpawn(value, operation)`, the following opera
 
 ### Parallel Fibonacci
 
-```argon
+```cryo
 fn main() {
     // Spawn 4 parallel fibonacci computations
     let t1 = threadSpawn(30, "fib");
@@ -75,7 +75,7 @@ fn main() {
 
 ### Channel Communication
 
-```argon
+```cryo
 fn main() {
     // Create channel
     let ch = channelNew();
@@ -96,7 +96,7 @@ fn main() {
 
 ### Non-blocking Receive
 
-```argon
+```cryo
 fn main() {
     let ch = channelNew();
     
@@ -117,7 +117,7 @@ fn main() {
 
 ### Timeout Receive
 
-```argon
+```cryo
 fn main() {
     let ch = channelNew();
     
@@ -134,7 +134,7 @@ fn main() {
 
 ### Check Thread Status
 
-```argon
+```cryo
 fn main() {
     let worker = threadSpawn(500, "sleep");
     
@@ -161,7 +161,7 @@ The threading module is implemented in Rust using:
 
 ```
 ┌─────────────────────────────────────────┐
-│           Argon Interpreter             │
+│           Cryo Interpreter             │
 ├─────────────────────────────────────────┤
 │          ThreadManager                  │
 │  ┌─────────────┐  ┌─────────────────┐  │
@@ -181,7 +181,7 @@ The threading module is implemented in Rust using:
 
 ## Limitations
 
-1. **Custom Functions**: Currently only predefined operations (fib, factorial, etc.) can be spawned. Custom Argon functions cannot be executed in parallel yet.
+1. **Custom Functions**: Currently only predefined operations (fib, factorial, etc.) can be spawned. Custom Cryo functions cannot be executed in parallel yet.
 
 2. **Structs**: Struct values cannot be sent through channels (they serialize to Null).
 
@@ -189,7 +189,7 @@ The threading module is implemented in Rust using:
 
 ## Future Enhancements
 
-- [ ] Spawn arbitrary Argon functions in threads
+- [ ] Spawn arbitrary Cryo functions in threads
 - [ ] Work-stealing thread pool
 - [ ] Async/await integration
 - [ ] Parallel iterators

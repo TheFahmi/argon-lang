@@ -1,9 +1,9 @@
 {
-    "name": "argon-lang",
-    "displayName": "Argon Language",
-    "description": "Full language support for Argon programming language - autocomplete, go to definition, formatting",
+    "name": "cryo-lang",
+    "displayName": "Cryo Language",
+    "description": "Full language support for Cryo programming language - autocomplete, go to definition, formatting",
     "version": "2.0.1",
-    "publisher": "argon-lang",
+    "publisher": "cryo-lang",
     "engines": {
         "vscode": "^1.60.0"
     },
@@ -13,39 +13,39 @@
         "Snippets"
     ],
     "keywords": [
-        "argon",
+        "cryo",
         "programming language",
         "systems programming"
     ],
     "activationEvents": [
-        "onLanguage:argon"
+        "onLanguage:cryo"
     ],
     "main": "./extension.js",
     "contributes": {
         "languages": [
             {
-                "id": "argon",
+                "id": "cryo",
                 "aliases": [
-                    "Argon",
-                    "argon"
+                    "Cryo",
+                    "cryo"
                 ],
                 "extensions": [
-                    ".ar"
+                    ".cryo"
                 ],
                 "configuration": "./language-configuration.json"
             }
         ],
         "grammars": [
             {
-                "language": "argon",
-                "scopeName": "source.argon",
-                "path": "./syntaxes/argon.tmLanguage.json"
+                "language": "cryo",
+                "scopeName": "source.cryo",
+                "path": "./syntaxes/cryo.tmLanguage.json"
             }
         ],
         "snippets": [
             {
-                "language": "argon",
-                "path": "./snippets/argon.json"
+                "language": "cryo",
+                "path": "./snippets/cryo.json"
             }
         ]
     },

@@ -1,0 +1,675 @@
+// ============================================
+// CRYOFMT - Code Formatter
+// Cryo Code Formatting Tool v1.0
+// ============================================
+
+import "stdlib/string.cryo";
+import "stdlib/fs.cryo";
+
+// ============================================
+// CONSTANTS
+// ============================================
+
+let VERSION = "1.0.0";
+let INDENT_SIZE = 4;  // Spaces per indent level
+let MAX_LINE_LENGTH = 100;
+
+// ============================================
+// FORMATTER CONFIG
+// ============================================
+
+struct FormatConfig {
+    indentSize: int,
+    useTabs: bool,
+    maxLineLength: int,
+    insertFinalNewline: bool,
+    trimTrailingWhitespace: bool,
+    alignStructFields: bool,
+    spaceAfterColon: bool,
+    spaceBeforeBrace: bool
+}
+
+fn defaultConfig() -> FormatConfig {
+    return FormatConfig {
+        indentSize: 4,
+        useTabs: false,
+        maxLineLength: 100,
+        insertFinalNewline: true,
+        trimTrailingWhitespace: true,
+        alignStructFields: true,
+        spaceAfterColon: true,
+        spaceBeforeBrace: true
+    };
+}
+
+// ============================================
+// TOKEN TYPES
+// ============================================
+
+let TOK_KEYWORD = 1;
+let TOK_IDENT = 2;
+let TOK_NUMBER = 3;
+let TOK_STRING = 4;
+let TOK_OPERATOR = 5;
+let TOK_PAREN = 6;
+let TOK_BRACE = 7;
+let TOK_BRACKET = 8;
+let TOK_COMMA = 9;
+let TOK_SEMICOLON = 10;
+let TOK_COLON = 11;
+let TOK_ARROW = 12;
+let TOK_COMMENT = 13;
+let TOK_NEWLINE = 14;
+let TOK_WHITESPACE = 15;
+
+struct Token {
+    type: int,
+    value: string,
+    line: int,
+    col: int
+}
+
+// ============================================
+// KEYWORDS
+// ============================================
+
+fn isKeyword(word: string) -> bool {
+    if (word == "fn") { return true; }
+    if (word == "let") { return true; }
+    if (word == "if") { return true; }
+    if (word == "else") { return true; }
+    if (word == "while") { return true; }
+    if (word == "for") { return true; }
+    if (word == "return") { return true; }
+    if (word == "struct") { return true; }
+    if (word == "enum") { return true; }
+    if (word == "import") { return true; }
+    if (word == "true") { return true; }
+    if (word == "false") { return true; }
+    if (word == "null") { return true; }
+    if (word == "break") { return true; }
+    if (word == "continue") { return true; }
+    if (word == "impl") { return true; }
+    if (word == "trait") { return true; }
+    if (word == "async") { return true; }
+    if (word == "await") { return true; }
+    if (word == "match") { return true; }
+    return false;
+}
+
+// ============================================
+// LEXER
+// ============================================
+
+fn tokenize(source: string) -> [Token] {
+    let tokens = [];
+    let i = 0;
+    let line = 1;
+    let col = 1;
+    let srcLen = len(source);
+    
+    while (i < srcLen) {
+        let c = charAt(source, i);
+        
+        // Newline
+        if (c == "\n") {
+            push(tokens, Token { type: TOK_NEWLINE, value: "\n", line: line, col: col });
+            line = line + 1;
+            col = 1;
+            i = i + 1;
+            continue;
+        }
+        
+        // Whitespace (but not newline)
+        if (c == " " || c == "\t" || c == "\r") {
+            let start = i;
+            while (i < srcLen) {
+                let ch = charAt(source, i);
+                if (ch != " " && ch != "\t" && ch != "\r") {
+                    break;
+                }
+                i = i + 1;
+                col = col + 1;
+            }
+            push(tokens, Token { type: TOK_WHITESPACE, value: substr(source, start, i - start), line: line, col: col });
+            continue;
+        }
+        
+        // Comments
+        if (c == "/" && i + 1 < srcLen) {
+            let next = charAt(source, i + 1);
+            if (next == "/") {
+                // Line comment
+                let start = i;
+                while (i < srcLen && charAt(source, i) != "\n") {
+                    i = i + 1;
+                }
+                push(tokens, Token { type: TOK_COMMENT, value: substr(source, start, i - start), line: line, col: col });
+                continue;
+            }
+        }
+        
+        // String
+        if (c == "\"") {
+            let start = i;
+            i = i + 1;
+            while (i < srcLen) {
+                let ch = charAt(source, i);
+                if (ch == "\\") {
+                    i = i + 2; // Skip escape
+                    continue;
+                }
+                if (ch == "\"") {
+                    i = i + 1;
+                    break;
+                }
+                i = i + 1;
+            }
+            push(tokens, Token { type: TOK_STRING, value: substr(source, start, i - start), line: line, col: col });
+            col = col + (i - start);
+            continue;
+        }
+        
+        // Number
+        if (isDigit(c)) {
+            let start = i;
+            while (i < srcLen && (isDigit(charAt(source, i)) || charAt(source, i) == ".")) {
+                i = i + 1;
+            }
+            push(tokens, Token { type: TOK_NUMBER, value: substr(source, start, i - start), line: line, col: col });
+            col = col + (i - start);
+            continue;
+        }
+        
+        // Identifier / Keyword
+        if (isAlpha(c) || c == "_") {
+            let start = i;
+            while (i < srcLen) {
+                let ch = charAt(source, i);
+                if (!isAlphaNum(ch) && ch != "_") {
+                    break;
+                }
+                i = i + 1;
+            }
+            let word = substr(source, start, i - start);
+            let tokType = TOK_IDENT;
+            if (isKeyword(word)) {
+                tokType = TOK_KEYWORD;
+            }
+            push(tokens, Token { type: tokType, value: word, line: line, col: col });
+            col = col + (i - start);
+            continue;
+        }
+        
+        // Arrow ->
+        if (c == "-" && i + 1 < srcLen && charAt(source, i + 1) == ">") {
+            push(tokens, Token { type: TOK_ARROW, value: "->", line: line, col: col });
+            i = i + 2;
+            col = col + 2;
+            continue;
+        }
+        
+        // Two-char operators
+        if (i + 1 < srcLen) {
+            let two = substr(source, i, 2);
+            if (two == "==" || two == "!=" || two == "<=" || two == ">=" || 
+                two == "&&" || two == "||" || two == "+=" || two == "-=") {
+                push(tokens, Token { type: TOK_OPERATOR, value: two, line: line, col: col });
+                i = i + 2;
+                col = col + 2;
+                continue;
+            }
+        }
+        
+        // Single character tokens
+        if (c == "(") { push(tokens, Token { type: TOK_PAREN, value: "(", line: line, col: col }); }
+        else if (c == ")") { push(tokens, Token { type: TOK_PAREN, value: ")", line: line, col: col }); }
+        else if (c == "{") { push(tokens, Token { type: TOK_BRACE, value: "{", line: line, col: col }); }
+        else if (c == "}") { push(tokens, Token { type: TOK_BRACE, value: "}", line: line, col: col }); }
+        else if (c == "[") { push(tokens, Token { type: TOK_BRACKET, value: "[", line: line, col: col }); }
+        else if (c == "]") { push(tokens, Token { type: TOK_BRACKET, value: "]", line: line, col: col }); }
+        else if (c == ",") { push(tokens, Token { type: TOK_COMMA, value: ",", line: line, col: col }); }
+        else if (c == ";") { push(tokens, Token { type: TOK_SEMICOLON, value: ";", line: line, col: col }); }
+        else if (c == ":") { push(tokens, Token { type: TOK_COLON, value: ":", line: line, col: col }); }
+        else {
+            // Other operators
+            push(tokens, Token { type: TOK_OPERATOR, value: c, line: line, col: col });
+        }
+        
+        i = i + 1;
+        col = col + 1;
+    }
+    
+    return tokens;
+}
+
+// ============================================
+// CHARACTER HELPERS
+// ============================================
+
+fn isDigit(c: string) -> bool {
+    return c >= "0" && c <= "9";
+}
+
+fn isAlpha(c: string) -> bool {
+    return (c >= "a" && c <= "z") || (c >= "A" && c <= "Z");
+}
+
+fn isAlphaNum(c: string) -> bool {
+    return isDigit(c) || isAlpha(c);
+}
+
+// ============================================
+// FORMATTER
+// ============================================
+
+fn format(source: string, config: FormatConfig) -> string {
+    let tokens = tokenize(source);
+    let result = "";
+    let indent = 0;
+    let lineStart = true;
+    let prevToken = Token { type: 0, value: "", line: 0, col: 0 };
+    
+    let i = 0;
+    while (i < len(tokens)) {
+        let tok = tokens[i];
+        
+        // Skip original whitespace (we'll add our own)
+        if (tok.type == TOK_WHITESPACE) {
+            i = i + 1;
+            continue;
+        }
+        
+        // Handle newlines
+        if (tok.type == TOK_NEWLINE) {
+            result = result + "\n";
+            lineStart = true;
+            i = i + 1;
+            continue;
+        }
+        
+        // Handle closing braces - decrease indent before
+        if (tok.type == TOK_BRACE && tok.value == "}") {
+            indent = indent - 1;
+            if (indent < 0) { indent = 0; }
+        }
+        
+        // Add indentation at line start
+        if (lineStart) {
+            result = result + makeIndent(indent, config);
+            lineStart = false;
+        }
+        
+        // Add spacing before token
+        result = result + getSpacingBefore(tok, prevToken, config);
+        
+        // Add the token
+        result = result + tok.value;
+        
+        // Handle opening braces - increase indent after
+        if (tok.type == TOK_BRACE && tok.value == "{") {
+            indent = indent + 1;
+        }
+        
+        prevToken = tok;
+        i = i + 1;
+    }
+    
+    // Final newline
+    if (config.insertFinalNewline && !endsWith(result, "\n")) {
+        result = result + "\n";
+    }
+    
+    return result;
+}
+
+// Create indentation string
+fn makeIndent(level: int, config: FormatConfig) -> string {
+    let result = "";
+    let i = 0;
+    while (i < level) {
+        if (config.useTabs) {
+            result = result + "\t";
+        } else {
+            let j = 0;
+            while (j < config.indentSize) {
+                result = result + " ";
+                j = j + 1;
+            }
+        }
+        i = i + 1;
+    }
+    return result;
+}
+
+// Determine spacing before a token
+fn getSpacingBefore(tok: Token, prev: Token, config: FormatConfig) -> string {
+    // No space at start
+    if (prev.type == 0) {
+        return "";
+    }
+    
+    // Space after keywords
+    if (prev.type == TOK_KEYWORD) {
+        return " ";
+    }
+    
+    // Space around binary operators
+    if (tok.type == TOK_OPERATOR && len(tok.value) > 0) {
+        let op = tok.value;
+        if (op == "=" || op == "+" || op == "-" || op == "*" || op == "/" ||
+            op == "==" || op == "!=" || op == "<" || op == ">" || op == "<=" || op == ">=" ||
+            op == "&&" || op == "||") {
+            return " ";
+        }
+    }
+    if (prev.type == TOK_OPERATOR && len(prev.value) > 0) {
+        let op = prev.value;
+        if (op == "=" || op == "+" || op == "-" || op == "*" || op == "/" ||
+            op == "==" || op == "!=" || op == "<" || op == ">" || op == "<=" || op == ">=" ||
+            op == "&&" || op == "||") {
+            return " ";
+        }
+    }
+    
+    // Space after colon in type annotations
+    if (prev.type == TOK_COLON && config.spaceAfterColon) {
+        return " ";
+    }
+    
+    // Space after comma
+    if (prev.type == TOK_COMMA) {
+        return " ";
+    }
+    
+    // Space before opening brace
+    if (tok.type == TOK_BRACE && tok.value == "{" && config.spaceBeforeBrace) {
+        return " ";
+    }
+    
+    // Space after arrow
+    if (prev.type == TOK_ARROW) {
+        return " ";
+    }
+    
+    // Space before arrow
+    if (tok.type == TOK_ARROW) {
+        return " ";
+    }
+    
+    // No space after opening parens/brackets
+    if (prev.type == TOK_PAREN && prev.value == "(") {
+        return "";
+    }
+    if (prev.type == TOK_BRACKET && prev.value == "[") {
+        return "";
+    }
+    
+    // No space before closing parens/brackets
+    if (tok.type == TOK_PAREN && tok.value == ")") {
+        return "";
+    }
+    if (tok.type == TOK_BRACKET && tok.value == "]") {
+        return "";
+    }
+    
+    // No space before semicolon
+    if (tok.type == TOK_SEMICOLON) {
+        return "";
+    }
+    
+    // No space before colon
+    if (tok.type == TOK_COLON) {
+        return "";
+    }
+    
+    // No space before comma
+    if (tok.type == TOK_COMMA) {
+        return "";
+    }
+    
+    // Default: no space
+    return "";
+}
+
+// ============================================
+// FILE OPERATIONS
+// ============================================
+
+fn formatFile(path: string, config: FormatConfig, inPlace: bool) -> bool {
+    let content = readFile(path);
+    if (len(content) == 0) {
+        print("Error: Could not read file: " + path);
+        return false;
+    }
+    
+    let formatted = format(content, config);
+    
+    if (inPlace) {
+        writeFile(path, formatted);
+        print("Formatted: " + path);
+    } else {
+        print(formatted);
+    }
+    
+    return true;
+}
+
+fn formatDirectory(dir: string, config: FormatConfig, inPlace: bool) -> int {
+    let files = listDir(dir);
+    let count = 0;
+    
+    let i = 0;
+    while (i < len(files)) {
+        let file = files[i];
+        if (endsWith(file, ".cryo")) {
+            let path = dir + "/" + file;
+            if (formatFile(path, config, inPlace)) {
+                count = count + 1;
+            }
+        }
+        i = i + 1;
+    }
+    
+    return count;
+}
+
+// ============================================
+// CHECK MODE
+// ============================================
+
+fn checkFile(path: string, config: FormatConfig) -> bool {
+    let content = readFile(path);
+    let formatted = format(content, config);
+    
+    if (content == formatted) {
+        return true;
+    }
+    
+    print("Would reformat: " + path);
+    return false;
+}
+
+fn checkDirectory(dir: string, config: FormatConfig) -> int {
+    let files = listDir(dir);
+    let needsFormat = 0;
+    
+    let i = 0;
+    while (i < len(files)) {
+        let file = files[i];
+        if (endsWith(file, ".cryo")) {
+            let path = dir + "/" + file;
+            if (!checkFile(path, config)) {
+                needsFormat = needsFormat + 1;
+            }
+        }
+        i = i + 1;
+    }
+    
+    return needsFormat;
+}
+
+// ============================================
+// DIFF MODE
+// ============================================
+
+fn diffFile(path: string, config: FormatConfig) {
+    let content = readFile(path);
+    let formatted = format(content, config);
+    
+    if (content == formatted) {
+        print("No changes needed for: " + path);
+        return;
+    }
+    
+    print("--- " + path + " (original)");
+    print("+++ " + path + " (formatted)");
+    
+    // Simple line-by-line diff
+    let origLines = split(content, "\n");
+    let fmtLines = split(formatted, "\n");
+    
+    let maxLines = len(origLines);
+    if (len(fmtLines) > maxLines) {
+        maxLines = len(fmtLines);
+    }
+    
+    let i = 0;
+    while (i < maxLines) {
+        let orig = "";
+        let fmt = "";
+        if (i < len(origLines)) { orig = origLines[i]; }
+        if (i < len(fmtLines)) { fmt = fmtLines[i]; }
+        
+        if (orig != fmt) {
+            print("@@ line " + toString(i + 1) + " @@");
+            print("- " + orig);
+            print("+ " + fmt);
+        }
+        i = i + 1;
+    }
+}
+
+// ============================================
+// CLI INTERFACE
+// ============================================
+
+fn printUsage() {
+    print("Usage: cryofmt [OPTIONS] <files or directories>");
+    print("");
+    print("Options:");
+    print("  -i, --in-place     Modify files in place");
+    print("  -c, --check        Check if files would be reformatted");
+    print("  -d, --diff         Show diff of formatting changes");
+    print("  --indent <N>       Set indent size (default: 4)");
+    print("  --tabs             Use tabs instead of spaces");
+    print("  -h, --help         Show this help message");
+    print("  -v, --version      Show version");
+    print("");
+    print("Examples:");
+    print("  cryofmt -i src/           Format all .ar files in src/");
+    print("  cryofmt --check .         Check formatting in current dir");
+    print("  cryofmt -d myfile.ar      Show diff for single file");
+}
+
+fn main() {
+    let args = getArgs();
+    
+    if (len(args) < 2) {
+        printUsage();
+        return 1;
+    }
+    
+    let config = defaultConfig();
+    let inPlace = false;
+    let checkMode = false;
+    let diffMode = false;
+    let targets = [];
+    
+    let i = 1;
+    while (i < len(args)) {
+        let arg = args[i];
+        
+        if (arg == "-h" || arg == "--help") {
+            printUsage();
+            return 0;
+        } else if (arg == "-v" || arg == "--version") {
+            print("cryofmt v" + VERSION);
+            return 0;
+        } else if (arg == "-i" || arg == "--in-place") {
+            inPlace = true;
+        } else if (arg == "-c" || arg == "--check") {
+            checkMode = true;
+        } else if (arg == "-d" || arg == "--diff") {
+            diffMode = true;
+        } else if (arg == "--tabs") {
+            config.useTabs = true;
+        } else if (arg == "--indent" && i + 1 < len(args)) {
+            i = i + 1;
+            config.indentSize = parseInt(args[i]);
+        } else if (!startsWith(arg, "-")) {
+            push(targets, arg);
+        }
+        
+        i = i + 1;
+    }
+    
+    if (len(targets) == 0) {
+        print("Error: No files or directories specified");
+        return 1;
+    }
+    
+    print("🔧 cryofmt v" + VERSION);
+    
+    let totalFiles = 0;
+    let needsFormat = 0;
+    
+    i = 0;
+    while (i < len(targets)) {
+        let target = targets[i];
+        
+        if (isDirectory(target)) {
+            if (checkMode) {
+                needsFormat = needsFormat + checkDirectory(target, config);
+            } else if (diffMode) {
+                let files = listDir(target);
+                let j = 0;
+                while (j < len(files)) {
+                    if (endsWith(files[j], ".cryo")) {
+                        diffFile(target + "/" + files[j], config);
+                        totalFiles = totalFiles + 1;
+                    }
+                    j = j + 1;
+                }
+            } else {
+                totalFiles = totalFiles + formatDirectory(target, config, inPlace);
+            }
+        } else {
+            if (checkMode) {
+                if (!checkFile(target, config)) {
+                    needsFormat = needsFormat + 1;
+                }
+            } else if (diffMode) {
+                diffFile(target, config);
+            } else {
+                formatFile(target, config, inPlace);
+            }
+            totalFiles = totalFiles + 1;
+        }
+        
+        i = i + 1;
+    }
+    
+    if (checkMode) {
+        if (needsFormat > 0) {
+            print("\n" + toString(needsFormat) + " file(s) would be reformatted.");
+            return 1;
+        } else {
+            print("\n✅ All files are properly formatted.");
+            return 0;
+        }
+    }
+    
+    print("\n✅ Processed " + toString(totalFiles) + " file(s).");
+    return 0;
+}

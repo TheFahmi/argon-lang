@@ -1,4 +1,4 @@
-# Argon Language: Architecture & Design
+# Cryo Language: Architecture & Design
 
 **Version:** 2.7.2 (Self-Hosted & Stable)
 **Status:** Production Ready (Self-Hosting Verified)
@@ -8,16 +8,16 @@
 ---
 
 ## 1. Introduction
-Argon is a high-performance, self-hosted systems programming language designed to provide memory safety without a Garbage Collector (GC) or the complexity of Rust's lifetime annotations. It achieves this through **Region-Based Memory Management (RBMM)** and **Linear Capabilities**.
+Cryo is a high-performance, self-hosted systems programming language designed to provide memory safety without a Garbage Collector (GC) or the complexity of Rust's lifetime annotations. It achieves this through **Region-Based Memory Management (RBMM)** and **Linear Capabilities**.
 
-Argon has reached a major milestone: **Verified Self-Hosting**. The compiler (`compiler.ar`) is written in Argon itself, can compile itself, and produces **byte-for-byte identical output** when compiled by itself (Stage 1 == Stage 2).
+Cryo has reached a major milestone: **Verified Self-Hosting**. The compiler (`compiler.ar`) is written in Cryo itself, can compile itself, and produces **byte-for-byte identical output** when compiled by itself (Stage 1 == Stage 2).
 
 ---
 
 ## 2. Core Concepts
 
 ### 2.1 Region-Based Memory Management (RBMM)
-Instead of tracking individual object lifetimes, Argon groups allocations into **Regions** (Arenas).
+Instead of tracking individual object lifetimes, Cryo groups allocations into **Regions** (Arenas).
 - **Allocations**: Simply bump a pointer in the current region (O(1)).
 - **Deallocations**: Free the entire region at once when it goes out of scope (O(1)).
 - **Safety**: The compiler ensures no reference outlives its region.
@@ -39,7 +39,7 @@ Creating a truly self-hosted dynamic system required a uniform data representati
 ## 3. Architecture
 
 ### 3.1 The Compiler (`compiler.ar`)
-The compiler is a monolithic application written in Argon (~1930 lines).
+The compiler is a monolithic application written in Cryo (~1930 lines).
 1.  **Lexer**: Tokenizes source code (`.ar` files), handling complex string escapes and operators.
 2.  **Parser**: Recursive Descent parser generating a lightweight AST. Includes support for `if/else if/else`, `while` loops, `break/continue`, and function definitions.
 3.  **Code Generator**: Emits LLVM IR (Text format). Uses tagged integer arithmetic.
@@ -48,15 +48,15 @@ The compiler is a monolithic application written in Argon (~1930 lines).
 4.  **Backend**: Invokes `clang++` to optimize LLVM IR and link with the runtime.
 
 ### 3.2 The Runtime (`runtime.rs`)
-A minimal runtime written in Rust (compiled to `libruntime_argon.a`).
-- Provides Intrinsics: `argon_str_new`, `argon_print`, `argon_add`, `argon_eq`.
-- File I/O: `argon_read_file`, `argon_write_file`, `argon_file_exists`.
-- Networking: `argon_listen`, `argon_accept`, `argon_socket_read`.
+A minimal runtime written in Rust (compiled to `libruntime_cryo.a`).
+- Provides Intrinsics: `cryo_str_new`, `cryo_print`, `cryo_add`, `cryo_eq`.
+- File I/O: `cryo_read_file`, `cryo_write_file`, `cryo_file_exists`.
+- Networking: `cryo_listen`, `cryo_accept`, `cryo_socket_read`.
 - Memory: Bump allocator primitives.
 
-### 3.3 The Toolchain (`argon`)
+### 3.3 The Toolchain (`cryo`)
 A Docker-based wrapper ensuring consistent builds across Windows, Linux, and Mac.
-- **Scaffolding**: `argon new` generates MVC project structures.
+- **Scaffolding**: `cryo new` generates MVC project structures.
 - **Bundler**: Merges source files for compilation.
 - **Builder**: Compiles and Links native binaries.
 
@@ -73,7 +73,7 @@ Stage 2: stage1.out compiles compiler.ar → compiler.ar.ll (IDENTICAL to Stage 
 
 ### 4.2 Key Challenges Solved
 1. **Number Tagging Consistency**: Stage 0 (Rust) returns raw integers from `parseInt()`, while Stage 1+ returns tagged integers. Solved with `detectStage()` function.
-2. **String Comparison**: Runtime `argon_eq` compares string *content*, not pointer addresses.
+2. **String Comparison**: Runtime `cryo_eq` compares string *content*, not pointer addresses.
 3. **Control Flow**: Proper handling of `if/else`, `while`, `break`, `continue` with correct LLVM IR basic blocks.
 
 ### 4.3 Verification
@@ -95,12 +95,12 @@ fn main() {
 ### 5.2 Networking (v2.1)
 ```typescript
 fn startServer() {
-    let s = argonListen(3000);
+    let s = cryoListen(3000);
     while (1) {
-        let c = argonAccept(s);
+        let c = cryoAccept(s);
         if (c != -1) {
-             argonSocketWrite(c, "HTTP/1.1 200 OK\r\n\r\nHello");
-             argonSocketClose(c);
+             cryoSocketWrite(c, "HTTP/1.1 200 OK\r\n\r\nHello");
+             cryoSocketClose(c);
         }
     }
 }
@@ -115,32 +115,32 @@ fn worker() {
 
 fn main() {
     // Atomic operations
-    let counter = argonAtomicNew(0);
-    argonAtomicAdd(counter, 1);
-    let val = argonAtomicLoad(counter);
+    let counter = cryoAtomicNew(0);
+    cryoAtomicAdd(counter, 1);
+    let val = cryoAtomicLoad(counter);
     
     // Compare-and-swap
-    argonAtomicCas(counter, 1, 100);
+    cryoAtomicCas(counter, 1, 100);
     
     // Sleep
-    argonSleep(1000); // 1 second
+    cryoSleep(1000); // 1 second
 }
 ```
 
 **Threading Functions:**
 | Function | Description |
 |----------|-------------|
-| `argonThreadSpawn(fn)` | Spawn thread with function pointer |
-| `argonThreadJoin(id)` | Wait for thread completion |
-| `argonMutexNew()` | Create mutex |
-| `argonMutexLock(id)` | Lock mutex |
-| `argonMutexUnlock(id)` | Unlock mutex |
-| `argonAtomicNew(v)` | Create atomic integer |
-| `argonAtomicLoad(id)` | Load atomic value |
-| `argonAtomicStore(id, v)` | Store atomic value |
-| `argonAtomicAdd(id, v)` | Atomic add, returns old |
-| `argonAtomicCas(id, exp, new)` | Compare-and-swap |
-| `argonSleep(ms)` | Sleep milliseconds |
+| `cryoThreadSpawn(fn)` | Spawn thread with function pointer |
+| `cryoThreadJoin(id)` | Wait for thread completion |
+| `cryoMutexNew()` | Create mutex |
+| `cryoMutexLock(id)` | Lock mutex |
+| `cryoMutexUnlock(id)` | Unlock mutex |
+| `cryoAtomicNew(v)` | Create atomic integer |
+| `cryoAtomicLoad(id)` | Load atomic value |
+| `cryoAtomicStore(id, v)` | Store atomic value |
+| `cryoAtomicAdd(id, v)` | Atomic add, returns old |
+| `cryoAtomicCas(id, exp, new)` | Compare-and-swap |
+| `cryoSleep(ms)` | Sleep milliseconds |
 
 ### 5.4 Structs (v2.4)
 ```typescript
@@ -164,7 +164,7 @@ fn main() {
 ```
 
 ### 5.5 MVC Structure
-Argon v2.1 promotes structured backend development:
+Cryo v2.1 promotes structured backend development:
 - `controllers/`: Request handling.
 - `services/`: Business logic.
 - `models/`: Data persistence.
@@ -186,7 +186,7 @@ Argon v2.1 promotes structured backend development:
     - init, build, run commands
     - Local path dependencies
     - Git dependencies with tags
-    - argon.lock generation
+    - cryo.lock generation
     - publish, search, list, update commands
 12. [ ] Generic types (`Array<T>`)
 13. [ ] LSP (Language Server Protocol) for IDE support

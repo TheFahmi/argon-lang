@@ -1,0 +1,453 @@
+// ============================================
+// CRYO STANDARD LIBRARY: HTTP (v3.0.0)
+// HTTP utilities, routing, and server helpers
+// ============================================
+
+// ============================================
+// CONSTANTS
+// ============================================
+
+let HTTP_VERSION = "3.0.0";
+
+// HTTP Status Codes
+let HTTP_OK = 200;
+let HTTP_CREATED = 201;
+let HTTP_ACCEPTED = 202;
+let HTTP_NO_CONTENT = 204;
+let HTTP_MOVED_PERMANENTLY = 301;
+let HTTP_FOUND = 302;
+let HTTP_NOT_MODIFIED = 304;
+let HTTP_BAD_REQUEST = 400;
+let HTTP_UNAUTHORIZED = 401;
+let HTTP_FORBIDDEN = 403;
+let HTTP_NOT_FOUND = 404;
+let HTTP_METHOD_NOT_ALLOWED = 405;
+let HTTP_CONFLICT = 409;
+let HTTP_GONE = 410;
+let HTTP_UNPROCESSABLE_ENTITY = 422;
+let HTTP_TOO_MANY_REQUESTS = 429;
+let HTTP_INTERNAL_ERROR = 500;
+let HTTP_NOT_IMPLEMENTED = 501;
+let HTTP_BAD_GATEWAY = 502;
+let HTTP_SERVICE_UNAVAILABLE = 503;
+
+// HTTP Methods
+let METHOD_GET = "GET";
+let METHOD_POST = "POST";
+let METHOD_PUT = "PUT";
+let METHOD_PATCH = "PATCH";
+let METHOD_DELETE = "DELETE";
+let METHOD_HEAD = "HEAD";
+let METHOD_OPTIONS = "OPTIONS";
+
+// Content Types
+let CONTENT_TYPE_JSON = "application/json";
+let CONTENT_TYPE_HTML = "text/html";
+let CONTENT_TYPE_TEXT = "text/plain";
+let CONTENT_TYPE_XML = "application/xml";
+let CONTENT_TYPE_FORM = "application/x-www-form-urlencoded";
+let CONTENT_TYPE_MULTIPART = "multipart/form-data";
+
+// ============================================
+// STRUCTS
+// ============================================
+
+// HTTP Request object
+struct Request {
+    method: string,
+    path: string,
+    headers: any,
+    body: string,
+    params: any,
+    query: any,
+    cookies: any,
+    ip: string,
+    userAgent: string
+}
+
+// HTTP Response object
+struct Response {
+    status: int,
+    headers: any,
+    body: string,
+    cookies: [any]
+}
+
+// Cookie struct
+struct Cookie {
+    name: string,
+    value: string,
+    path: string,
+    domain: string,
+    maxAge: int,
+    httpOnly: bool,
+    secure: bool
+}
+
+// Route struct
+struct Route {
+    method: string,
+    path: string,
+    handler: any,
+    middleware: [any]
+}
+
+// Router struct
+struct Router {
+    routes: [Route],
+    prefix: string,
+    middleware: [any]
+}
+
+// ============================================
+// RESPONSE HELPERS
+// ============================================
+
+// Create basic response
+fn response(status: int, body: string) -> Response {
+    return Response {
+        status: status,
+        headers: {},
+        body: body,
+        cookies: []
+    };
+}
+
+// Create JSON response
+fn jsonResponse(status: int, data: any) -> Response {
+    let res = response(status, jsonStringify(data));
+    res.headers["Content-Type"] = CONTENT_TYPE_JSON;
+    return res;
+}
+
+// Create HTML response
+fn htmlResponse(status: int, html: string) -> Response {
+    let res = response(status, html);
+    res.headers["Content-Type"] = CONTENT_TYPE_HTML;
+    return res;
+}
+
+// Create text response
+fn textResponse(status: int, text: string) -> Response {
+    let res = response(status, text);
+    res.headers["Content-Type"] = CONTENT_TYPE_TEXT;
+    return res;
+}
+
+// Create redirect response
+fn redirect(url: string) -> Response {
+    let res = response(HTTP_FOUND, "");
+    res.headers["Location"] = url;
+    return res;
+}
+
+// Create permanent redirect
+fn redirectPermanent(url: string) -> Response {
+    let res = response(HTTP_MOVED_PERMANENTLY, "");
+    res.headers["Location"] = url;
+    return res;
+}
+
+// Error responses
+fn badRequest(message: string) -> Response {
+    return jsonResponse(HTTP_BAD_REQUEST, { error: message });
+}
+
+fn unauthorized(message: string) -> Response {
+    return jsonResponse(HTTP_UNAUTHORIZED, { error: message });
+}
+
+fn forbidden(message: string) -> Response {
+    return jsonResponse(HTTP_FORBIDDEN, { error: message });
+}
+
+fn notFound(message: string) -> Response {
+    return jsonResponse(HTTP_NOT_FOUND, { error: message });
+}
+
+fn internalError(message: string) -> Response {
+    return jsonResponse(HTTP_INTERNAL_ERROR, { error: message });
+}
+
+// ============================================
+// STATUS TEXT
+// ============================================
+
+fn statusText(code: int) -> string {
+    if (code == 200) { return "OK"; }
+    if (code == 201) { return "Created"; }
+    if (code == 202) { return "Accepted"; }
+    if (code == 204) { return "No Content"; }
+    if (code == 301) { return "Moved Permanently"; }
+    if (code == 302) { return "Found"; }
+    if (code == 304) { return "Not Modified"; }
+    if (code == 400) { return "Bad Request"; }
+    if (code == 401) { return "Unauthorized"; }
+    if (code == 403) { return "Forbidden"; }
+    if (code == 404) { return "Not Found"; }
+    if (code == 405) { return "Method Not Allowed"; }
+    if (code == 409) { return "Conflict"; }
+    if (code == 410) { return "Gone"; }
+    if (code == 422) { return "Unprocessable Entity"; }
+    if (code == 429) { return "Too Many Requests"; }
+    if (code == 500) { return "Internal Server Error"; }
+    if (code == 501) { return "Not Implemented"; }
+    if (code == 502) { return "Bad Gateway"; }
+    if (code == 503) { return "Service Unavailable"; }
+    return "Unknown";
+}
+
+// ============================================
+// ROUTER
+// ============================================
+
+fn createRouter() -> Router {
+    return Router {
+        routes: [],
+        prefix: "",
+        middleware: []
+    };
+}
+
+fn createRouterWithPrefix(prefix: string) -> Router {
+    return Router {
+        routes: [],
+        prefix: prefix,
+        middleware: []
+    };
+}
+
+fn addRoute(router: Router, method: string, path: string, handler: any) {
+    let fullPath = router.prefix + path;
+    let route = Route {
+        method: method,
+        path: fullPath,
+        handler: handler,
+        middleware: []
+    };
+    push(router.routes, route);
+}
+
+fn addRouteWithMiddleware(router: Router, method: string, path: string, handler: any, middleware: [any]) {
+    let fullPath = router.prefix + path;
+    let route = Route {
+        method: method,
+        path: fullPath,
+        handler: handler,
+        middleware: middleware
+    };
+    push(router.routes, route);
+}
+
+// HTTP method shortcuts
+fn get(router: Router, path: string, handler: any) {
+    addRoute(router, METHOD_GET, path, handler);
+}
+
+fn post(router: Router, path: string, handler: any) {
+    addRoute(router, METHOD_POST, path, handler);
+}
+
+fn put(router: Router, path: string, handler: any) {
+    addRoute(router, METHOD_PUT, path, handler);
+}
+
+fn patch(router: Router, path: string, handler: any) {
+    addRoute(router, METHOD_PATCH, path, handler);
+}
+
+fn deleteRoute(router: Router, path: string, handler: any) {
+    addRoute(router, METHOD_DELETE, path, handler);
+}
+
+fn options(router: Router, path: string, handler: any) {
+    addRoute(router, METHOD_OPTIONS, path, handler);
+}
+
+// ============================================
+// URL PARSING
+// ============================================
+
+// Parse query string to object
+fn parseQuery(queryString: string) -> any {
+    let result = {};
+    if (len(queryString) == 0) {
+        return result;
+    }
+    
+    let pairs = split(queryString, "&");
+    let i = 0;
+    while (i < len(pairs)) {
+        let pair = split(pairs[i], "=");
+        if (len(pair) == 2) {
+            result[pair[0]] = urlDecode(pair[1]);
+        } else if (len(pair) == 1) {
+            result[pair[0]] = "";
+        }
+        i = i + 1;
+    }
+    return result;
+}
+
+// Parse URL path with parameters
+fn parsePath(pattern: string, path: string) -> any {
+    let params = {};
+    let patternParts = split(pattern, "/");
+    let pathParts = split(path, "/");
+    
+    if (len(patternParts) != len(pathParts)) {
+        return null;
+    }
+    
+    let i = 0;
+    while (i < len(patternParts)) {
+        let pp = patternParts[i];
+        if (len(pp) > 0) {
+            if (charAt(pp, 0) == ":") {
+                let paramName = substr(pp, 1, len(pp) - 1);
+                params[paramName] = pathParts[i];
+            } else if (pp != pathParts[i]) {
+                return null;
+            }
+        }
+        i = i + 1;
+    }
+    
+    return params;
+}
+
+// URL decode
+fn urlDecode(s: string) -> string {
+    // Simplified: replace + with space
+    let result = replace(s, "+", " ");
+    // Note: Full URL decode would need %XX handling
+    return result;
+}
+
+// URL encode
+fn urlEncode(s: string) -> string {
+    // Simplified: replace space with +
+    let result = replace(s, " ", "+");
+    return result;
+}
+
+// ============================================
+// COOKIE HANDLING
+// ============================================
+
+fn createCookie(name: string, value: string) -> Cookie {
+    return Cookie {
+        name: name,
+        value: value,
+        path: "/",
+        domain: "",
+        maxAge: 0,
+        httpOnly: false,
+        secure: false
+    };
+}
+
+fn createSecureCookie(name: string, value: string, maxAge: int) -> Cookie {
+    return Cookie {
+        name: name,
+        value: value,
+        path: "/",
+        domain: "",
+        maxAge: maxAge,
+        httpOnly: true,
+        secure: true
+    };
+}
+
+fn cookieToString(cookie: Cookie) -> string {
+    let result = cookie.name + "=" + cookie.value;
+    if (len(cookie.path) > 0) {
+        result = result + "; Path=" + cookie.path;
+    }
+    if (len(cookie.domain) > 0) {
+        result = result + "; Domain=" + cookie.domain;
+    }
+    if (cookie.maxAge > 0) {
+        result = result + "; Max-Age=" + toString(cookie.maxAge);
+    }
+    if (cookie.httpOnly) {
+        result = result + "; HttpOnly";
+    }
+    if (cookie.secure) {
+        result = result + "; Secure";
+    }
+    return result;
+}
+
+// ============================================
+// CORS HEADERS
+// ============================================
+
+fn addCorsHeaders(res: Response, origin: string) {
+    res.headers["Access-Control-Allow-Origin"] = origin;
+    res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+    res.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization";
+    res.headers["Access-Control-Max-Age"] = "86400";
+}
+
+fn addCorsHeadersWildcard(res: Response) {
+    addCorsHeaders(res, "*");
+}
+
+// ============================================
+// CACHING HEADERS
+// ============================================
+
+fn noCacheHeaders(res: Response) {
+    res.headers["Cache-Control"] = "no-store, no-cache, must-revalidate";
+    res.headers["Pragma"] = "no-cache";
+    res.headers["Expires"] = "0";
+}
+
+fn cacheHeaders(res: Response, maxAge: int) {
+    res.headers["Cache-Control"] = "public, max-age=" + toString(maxAge);
+}
+
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
+
+fn isSuccess(status: int) -> bool {
+    return status >= 200 && status < 300;
+}
+
+fn isRedirect(status: int) -> bool {
+    return status >= 300 && status < 400;
+}
+
+fn isClientError(status: int) -> bool {
+    return status >= 400 && status < 500;
+}
+
+fn isServerError(status: int) -> bool {
+    return status >= 500;
+}
+
+// Simple string replace
+fn replace(s: string, from: string, to: string) -> string {
+    let result = "";
+    let i = 0;
+    while (i < len(s)) {
+        let match = true;
+        let j = 0;
+        while (j < len(from) && i + j < len(s)) {
+            if (charAt(s, i + j) != charAt(from, j)) {
+                match = false;
+            }
+            j = j + 1;
+        }
+        if (match && j == len(from)) {
+            result = result + to;
+            i = i + len(from);
+        } else {
+            result = result + charAt(s, i);
+            i = i + 1;
+        }
+    }
+    return result;
+}

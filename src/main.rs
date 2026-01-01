@@ -1,5 +1,5 @@
-// Argon Native v3.2.1
-// High-performance native execution engine for Argon
+// Cryo v4.0.0
+// High-performance self-hosted systems programming language
 // Default mode: Native compilation via LLVM for maximum performance
 
 mod lexer;
@@ -23,8 +23,8 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 2 {
-        println!("Argon Native v3.2.1 - High-Performance Systems Language");
-        println!("USAGE: argon [OPTIONS] [FILE]");
+        println!("Cryo v4.0.0 - High-Performance Systems Language");
+        println!("USAGE: cryo [OPTIONS] [FILE]");
         println!("OPTIONS:");
         println!("    -h, --help          Print help");
         println!("    -v, --version       Print version");
@@ -52,13 +52,13 @@ fn main() {
         } else {
             match args[i].as_str() {
                 "-h" | "--help" => {
-                    println!("Argon Native v3.2.1");
+                    println!("Cryo v4.0.0");
                     println!("Default: Native compilation for maximum performance");
                     println!("Use --interpret for tree-walking interpreter mode");
                     return;
                 }
                 "-v" | "--version" => {
-                    println!("Argon Native v3.2.1");
+                    println!("Cryo v4.0.0");
                     return;
                 }
                 "--interpret" => {
@@ -98,16 +98,16 @@ fn main() {
 
     // Native benchmark mode - shows target performance
     if let Some(n) = native_bench {
-        println!("Argon Native: Running Fib({})...", n);
+        println!("Cryo Native: Running Fib({})...", n);
         let (result, elapsed) = fast_vm::run_native_fib_bench(n);
-        println!("Argon Native: Result = {}", result);
-        println!("Argon Native: Time = {}ms", elapsed.as_millis());
+        println!("Cryo Native: Result = {}", result);
+        println!("Cryo Native: Time = {}ms", elapsed.as_millis());
         return;
     }
 
     // Fast path: bytecode VM benchmark mode
     if let Some(n) = vm_bench {
-        println!("Argon VM: Running Fib({})...", n);
+        println!("Cryo VM: Running Fib({})...", n);
         let start = std::time::Instant::now();
         
         let mut vm = bytecode_vm::BytecodeVM::new();
@@ -116,10 +116,10 @@ fn main() {
         
         let elapsed = start.elapsed();
         match result {
-            bytecode_vm::VMValue::Int(r) => println!("Argon VM: Result = {}", r),
-            _ => println!("Argon VM: Result = {:?}", result),
+            bytecode_vm::VMValue::Int(r) => println!("Cryo VM: Result = {}", r),
+            _ => println!("Cryo VM: Result = {:?}", result),
         }
-        println!("Argon VM: Time = {}ms", elapsed.as_millis());
+        println!("Cryo VM: Time = {}ms", elapsed.as_millis());
         return;
     }
 

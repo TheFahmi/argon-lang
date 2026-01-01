@@ -1,0 +1,637 @@
+// ============================================
+// CRYO STANDARD LIBRARY: CRYOWEB (v3.1.0)
+// NestJS-inspired Web Framework
+// ============================================
+
+// ============================================
+// IMPORTS
+// ============================================
+
+let CRYOWEB_VERSION = "3.1.0";
+
+// ============================================
+// HTTP STATUS CODES
+// ============================================
+
+let HTTP_OK = 200;
+let HTTP_CREATED = 201;
+let HTTP_NO_CONTENT = 204;
+let HTTP_BAD_REQUEST = 400;
+let HTTP_UNAUTHORIZED = 401;
+let HTTP_FORBIDDEN = 403;
+let HTTP_NOT_FOUND = 404;
+let HTTP_METHOD_NOT_ALLOWED = 405;
+let HTTP_CONFLICT = 409;
+let HTTP_INTERNAL_ERROR = 500;
+
+// ============================================
+// HELPER STRUCTS
+// ============================================
+
+struct RouteMap {}
+struct MiddlewareList {}
+struct ParamsMap {}
+
+// ============================================
+// REQUEST STRUCT
+// ============================================
+
+struct Request {
+    method: string,
+    path: string,
+    headers: any,
+    body: string,
+    params: ParamsMap,
+    query: any,
+    rawRequest: any
+}
+
+fn createRequest(raw) -> Request {
+    let method = "";
+    let path = "";
+    let headers = {};
+    let body = "";
+    
+    if (raw != null && len(raw) >= 4) {
+        method = raw[0];
+        path = raw[1];
+        headers = raw[2];
+        body = raw[3];
+    }
+    
+    // Parse query string
+    let queryParams = {};
+    let pathOnly = path;
+    let queryIdx = indexOf(path, "?");
+    if (queryIdx > 0) {
+        pathOnly = substr(path, 0, queryIdx);
+        let queryStr = substr(path, queryIdx + 1, len(path) - queryIdx - 1);
+        queryParams = parseQueryString(queryStr);
+    }
+    
+    return Request {
+        method: method,
+        path: pathOnly,
+        headers: headers,
+        body: body,
+        params: ParamsMap {},
+        query: queryParams,
+        rawRequest: raw
+    };
+}
+
+fn parseQueryString(qs: string) -> any {
+    let result = {};
+    if (len(qs) == 0) { return result; }
+    
+    let pairs = split(qs, "&");
+    let i = 0;
+    while (i < len(pairs)) {
+        let pair = split(pairs[i], "=");
+        if (len(pair) >= 2) {
+            result[pair[0]] = pair[1];
+        } else if (len(pair) == 1) {
+            result[pair[0]] = "";
+        }
+        i = i + 1;
+    }
+    return result;
+}
+
+// ============================================
+// CONTEXT STRUCT (Express/Koa-style)
+// ============================================
+
+struct Context {
+    req: Request,
+    response_body: string,
+    status: int,
+    content_type: string,
+    headers: any,
+    locals: any
+}
+
+impl Context {
+    fn new(raw) -> Context {
+        return Context {
+            req: createRequest(raw),
+            response_body: "",
+            status: 200,
+            content_type: "text/plain",
+            headers: {},
+            locals: {}
+        };
+    }
+    
+    // Response methods
+    fn json(self, data: any) {
+        self.status = 200;
+        self.response_body = jsonStringify(data);
+        self.content_type = "application/json";
+    }
+    
+    fn jsonStatus(self, status: int, data: any) {
+        self.status = status;
+        self.response_body = jsonStringify(data);
+        self.content_type = "application/json";
+    }
+    
+    fn html(self, content: string) {
+        self.status = 200;
+        self.response_body = content;
+        self.content_type = "text/html";
+    }
+    
+    fn text(self, content: string) {
+        self.status = 200;
+        self.response_body = content;
+        self.content_type = "text/plain";
+    }
+    
+    fn send(self, body: string) {
+        self.response_body = body;
+    }
+    
+    fn sendStatus(self, status: int) {
+        self.status = status;
+        self.response_body = statusText(status);
+    }
+    
+    fn redirect(self, url: string) {
+        self.status = 302;
+        self.headers["Location"] = url;
+        self.response_body = "";
+    }
+    
+    fn setHeader(self, name: string, value: string) {
+        self.headers[name] = value;
+    }
+    
+    // Error responses
+    fn badRequest(self, message: string) {
+        self.jsonStatus(400, { success: false, error: message });
+    }
+    
+    fn unauthorized(self, message: string) {
+        self.jsonStatus(401, { success: false, error: message });
+    }
+    
+    fn forbidden(self, message: string) {
+        self.jsonStatus(403, { success: false, error: message });
+    }
+    
+    fn notFound(self, message: string) {
+        self.jsonStatus(404, { success: false, error: message });
+    }
+    
+    fn internalError(self, message: string) {
+        self.jsonStatus(500, { success: false, error: message });
+    }
+    
+    // Param helpers
+    fn param(self, name: string) -> string {
+        return self.req.params[name];
+    }
+    
+    fn queryParam(self, name: string) -> string {
+        return self.req.query[name];
+    }
+    
+    fn header(self, name: string) -> string {
+        return self.req.headers[name];
+    }
+}
+
+fn statusText(code: int) -> string {
+    if (code == 200) { return "OK"; }
+    if (code == 201) { return "Created"; }
+    if (code == 204) { return "No Content"; }
+    if (code == 301) { return "Moved Permanently"; }
+    if (code == 302) { return "Found"; }
+    if (code == 400) { return "Bad Request"; }
+    if (code == 401) { return "Unauthorized"; }
+    if (code == 403) { return "Forbidden"; }
+    if (code == 404) { return "Not Found"; }
+    if (code == 405) { return "Method Not Allowed"; }
+    if (code == 500) { return "Internal Server Error"; }
+    return "Unknown";
+}
+
+// ============================================
+// ROUTE STRUCT
+// ============================================
+
+struct Route {
+    method: string,
+    path: string,
+    pattern: string,
+    paramNames: [string],
+    handler: any,
+    middlewares: [any]
+}
+
+fn createRoute(method: string, path: string, handler: any) -> Route {
+    let paramNames = [];
+    let pattern = path;
+    
+    // Extract param names from path like /users/:id/posts/:postId
+    let parts = split(path, "/");
+    let i = 0;
+    while (i < len(parts)) {
+        let part = parts[i];
+        if (len(part) > 0 && charAt(part, 0) == ":") {
+            push(paramNames, substr(part, 1, len(part) - 1));
+        }
+        i = i + 1;
+    }
+    
+    return Route {
+        method: method,
+        path: path,
+        pattern: pattern,
+        paramNames: paramNames,
+        handler: handler,
+        middlewares: []
+    };
+}
+
+// ============================================
+// ROUTER STRUCT
+// ============================================
+
+struct Router {
+    routes: [Route],
+    prefix: string,
+    middlewares: [any]
+}
+
+impl Router {
+    fn new() -> Router {
+        return Router { routes: [], prefix: "", middlewares: [] };
+    }
+    
+    fn withPrefix(prefix: string) -> Router {
+        return Router { routes: [], prefix: prefix, middlewares: [] };
+    }
+    
+    // Route registration
+    fn add(self, method: string, path: string, handler: any) {
+        let fullPath = self.prefix + path;
+        let route = createRoute(method, fullPath, handler);
+        push(self.routes, route);
+    }
+    
+    fn get(self, path: string, handler: any) {
+        self.add("GET", path, handler);
+    }
+    
+    fn post(self, path: string, handler: any) {
+        self.add("POST", path, handler);
+    }
+    
+    fn put(self, path: string, handler: any) {
+        self.add("PUT", path, handler);
+    }
+    
+    fn patch(self, path: string, handler: any) {
+        self.add("PATCH", path, handler);
+    }
+    
+    fn delete(self, path: string, handler: any) {
+        self.add("DELETE", path, handler);
+    }
+    
+    fn options(self, path: string, handler: any) {
+        self.add("OPTIONS", path, handler);
+    }
+    
+    // Middleware
+    fn use(self, middleware: any) {
+        push(self.middlewares, middleware);
+    }
+    
+    // Route matching
+    fn matchRoute(self, method: string, path: string) -> Route {
+        let i = 0;
+        while (i < len(self.routes)) {
+            let route = self.routes[i];
+            if (route.method == method) {
+                if (matchPath(route.path, path)) {
+                    return route;
+                }
+            }
+            i = i + 1;
+        }
+        return null;
+    }
+    
+    // Handle request
+    fn handle(self, raw_req: any) -> string {
+        if (raw_req == null) { return ""; }
+        
+        let ctx = Context::new(raw_req);
+        let method = ctx.req.method;
+        let path = ctx.req.path;
+        
+        // Find matching route
+        let route = self.matchRoute(method, path);
+        
+        if (route != null) {
+            // Extract params
+            ctx.req.params = extractParams(route.path, path);
+            
+            // Execute global middlewares
+            let i = 0;
+            while (i < len(self.middlewares)) {
+                let mw = self.middlewares[i];
+                let result = mw(ctx);
+                if (result == false) {
+                    // Middleware rejected request
+                    return buildResponse(ctx);
+                }
+                i = i + 1;
+            }
+            
+            // Execute route middlewares
+            i = 0;
+            while (i < len(route.middlewares)) {
+                let mw = route.middlewares[i];
+                let result = mw(ctx);
+                if (result == false) {
+                    return buildResponse(ctx);
+                }
+                i = i + 1;
+            }
+            
+            // Execute handler
+            route.handler(ctx);
+            return buildResponse(ctx);
+        }
+        
+        // 404 Not Found
+        ctx.notFound("Route not found: " + method + " " + path);
+        return buildResponse(ctx);
+    }
+}
+
+fn matchPath(pattern: string, path: string) -> bool {
+    let patternParts = split(pattern, "/");
+    let pathParts = split(path, "/");
+    
+    if (len(patternParts) != len(pathParts)) {
+        return false;
+    }
+    
+    let i = 0;
+    while (i < len(patternParts)) {
+        let pp = patternParts[i];
+        let pa = pathParts[i];
+        
+        // Skip empty parts
+        if (len(pp) == 0 && len(pa) == 0) {
+            i = i + 1;
+            continue;
+        }
+        
+        // Param match (starts with :)
+        if (len(pp) > 0 && charAt(pp, 0) == ":") {
+            i = i + 1;
+            continue;
+        }
+        
+        // Exact match
+        if (pp != pa) {
+            return false;
+        }
+        
+        i = i + 1;
+    }
+    
+    return true;
+}
+
+fn extractParams(pattern: string, path: string) -> ParamsMap {
+    let params = ParamsMap {};
+    let patternParts = split(pattern, "/");
+    let pathParts = split(path, "/");
+    
+    let i = 0;
+    while (i < len(patternParts) && i < len(pathParts)) {
+        let pp = patternParts[i];
+        if (len(pp) > 0 && charAt(pp, 0) == ":") {
+            let paramName = substr(pp, 1, len(pp) - 1);
+            params[paramName] = pathParts[i];
+        }
+        i = i + 1;
+    }
+    
+    return params;
+}
+
+fn buildResponse(ctx: Context) -> string {
+    let statusLine = "HTTP/1.1 " + ctx.status + " " + statusText(ctx.status) + "\r\n";
+    let headers = "Content-Type: " + ctx.content_type + "\r\n";
+    headers = headers + "Content-Length: " + len(ctx.response_body) + "\r\n";
+    headers = headers + "Connection: close\r\n";
+    headers = headers + "X-Powered-By: CryoWeb/" + CRYOWEB_VERSION + "\r\n";
+    
+    // Custom headers
+    // TODO: iterate ctx.headers
+    
+    return statusLine + headers + "\r\n" + ctx.response_body;
+}
+
+// ============================================
+// SERVER STRUCT
+// ============================================
+
+struct Server {
+    port: int,
+    router: Router,
+    name: string
+}
+
+impl Server {
+    fn new(port: int) -> Server {
+        return Server {
+            port: port,
+            router: Router::new(),
+            name: "CryoWeb"
+        };
+    }
+    
+    fn withName(port: int, name: string) -> Server {
+        return Server {
+            port: port,
+            router: Router::new(),
+            name: name
+        };
+    }
+    
+    // Route shortcuts
+    fn get(self, path: string, handler: any) {
+        self.router.get(path, handler);
+    }
+    
+    fn post(self, path: string, handler: any) {
+        self.router.post(path, handler);
+    }
+    
+    fn put(self, path: string, handler: any) {
+        self.router.put(path, handler);
+    }
+    
+    fn delete(self, path: string, handler: any) {
+        self.router.delete(path, handler);
+    }
+    
+    // Middleware
+    fn use(self, middleware: any) {
+        self.router.use(middleware);
+    }
+    
+    // Start server
+    fn start(self) {
+        print("");
+        print("  " + self.name + " v" + CRYOWEB_VERSION);
+        print("  Server running on http://localhost:" + self.port);
+        print("");
+        
+        let listener = cryoListen(self.port);
+        
+        if (listener < 0) {
+            print("FATAL: Failed to bind to port " + self.port);
+            return;
+        }
+        
+        // Event loop
+        while (true) {
+            let client = cryoAccept(listener);
+            
+            if (client >= 0) {
+                defer cryoSocketClose(client);
+                
+                let req_str = cryoSocketRead(client);
+                
+                if (len(req_str) > 0) {
+                    let req = httpParseRequest(req_str);
+                    let resp = self.router.handle(req);
+                    cryoSocketWrite(client, resp);
+                }
+            }
+        }
+    }
+    
+    fn listen(self, callback: any) {
+        callback(self.port);
+        self.start();
+    }
+}
+
+// ============================================
+// MIDDLEWARE HELPERS
+// ============================================
+
+// Logger middleware
+fn loggerMiddleware(ctx: Context) -> bool {
+    let method = ctx.req.method;
+    let path = ctx.req.path;
+    print("[" + dateNow() + "] " + method + " " + path);
+    return true;
+}
+
+// CORS middleware
+fn corsMiddleware(ctx: Context) -> bool {
+    ctx.setHeader("Access-Control-Allow-Origin", "*");
+    ctx.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    ctx.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    
+    if (ctx.req.method == "OPTIONS") {
+        ctx.sendStatus(204);
+        return false;  // Stop chain for preflight
+    }
+    
+    return true;
+}
+
+// JSON body parser middleware
+fn jsonBodyParserMiddleware(ctx: Context) -> bool {
+    let contentType = ctx.header("Content-Type");
+    if (contentType == "application/json" && len(ctx.req.body) > 0) {
+        ctx.locals["body"] = jsonParse(ctx.req.body);
+    }
+    return true;
+}
+
+// ============================================
+// RESPONSE HELPERS (NestJS-style)
+// ============================================
+
+fn responseOk(data: any) -> any {
+    return {
+        success: true,
+        data: data
+    };
+}
+
+fn responseCreated(data: any) -> any {
+    return {
+        success: true,
+        message: "Created successfully",
+        data: data
+    };
+}
+
+fn responseError(message: string, code: int) -> any {
+    return {
+        success: false,
+        error: {
+            message: message,
+            code: code
+        }
+    };
+}
+
+fn responseNotFound(resource: string) -> any {
+    return responseError(resource + " not found", 404);
+}
+
+fn responseBadRequest(message: string) -> any {
+    return responseError(message, 400);
+}
+
+fn responseUnauthorized() -> any {
+    return responseError("Unauthorized", 401);
+}
+
+fn responseForbidden() -> any {
+    return responseError("Forbidden", 403);
+}
+
+// ============================================
+// DECORATOR-STYLE MACROS
+// ============================================
+
+macro Controller(router, prefix) {
+    let $router = Router::withPrefix($prefix);
+}
+
+macro Get(router, path, handler) {
+    $router.get($path, $handler);
+}
+
+macro Post(router, path, handler) {
+    $router.post($path, $handler);
+}
+
+macro Put(router, path, handler) {
+    $router.put($path, $handler);
+}
+
+macro Delete(router, path, handler) {
+    $router.delete($path, $handler);
+}
+
+macro Middleware(router, middleware) {
+    $router.use($middleware);
+}

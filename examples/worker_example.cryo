@@ -1,0 +1,171 @@
+// ============================================
+// Worker Example - Parallel Task Execution
+// Demonstrates Cryo's worker-based parallelism
+// ============================================
+
+import "stdlib/worker.cryo";
+
+fn main() {
+    print("=== Cryo Worker Example ===\n");
+    
+    // 1. Basic Spawn/Join
+    print("1. Basic Spawn/Join:");
+    
+    let worker1 = spawn(computeFactorial(5));
+    let worker2 = spawn(computeFibonacci(10));
+    
+    print("   Spawned 2 workers");
+    print("   Worker 1 ID: " + worker1.id);
+    print("   Worker 2 ID: " + worker2.id);
+    
+    // Join workers
+    let result1 = join(worker1);
+    let result2 = join(worker2);
+    
+    print("   Worker 1 result: " + toString(result1));
+    print("   Worker 2 result: " + toString(result2));
+    print("   Worker 1 state: " + stateToString(worker1.state));
+    
+    print("");
+    
+    // 2. Worker Pool
+    print("2. Worker Pool:");
+    let pool = createPool(4);
+    
+    // Submit multiple tasks
+    submit(pool, computeSum(1, 100));
+    submit(pool, computeSum(101, 200));
+    submit(pool, computeSum(201, 300));
+    submit(pool, computeSum(301, 400));
+    
+    print("   Submitted 4 tasks to pool");
+    print("   Active workers: " + toString(activeWorkers(pool)));
+    
+    // Wait for all
+    let results = awaitAll(pool);
+    print("   All tasks completed");
+    print("   Results: " + toString(len(results)) + " items");
+    
+    print("");
+    
+    // 3. Worker Status
+    print("3. Worker Status:");
+    let w = createWorker();
+    print("   Initial state: " + stateToString(w.state));
+    
+    w.state = WORKER_RUNNING;
+    w.startTime = time();
+    print("   After start: " + stateToString(w.state));
+    
+    // Simulate work
+    sleep(100);
+    
+    w.state = WORKER_COMPLETED;
+    w.endTime = time();
+    print("   After complete: " + stateToString(w.state));
+    print("   Duration: " + toString(duration(w)) + "ms");
+    
+    print("");
+    
+    // 4. Worker Cancellation
+    print("4. Worker Cancellation:");
+    let cancelWorker = createWorker();
+    print("   Created worker, state: " + stateToString(cancelWorker.state));
+    
+    let cancelled = cancel(cancelWorker);
+    print("   Cancel result: " + toString(cancelled));
+    print("   After cancel: " + stateToString(cancelWorker.state));
+    print("   isCancelled: " + toString(isCancelled(cancelWorker)));
+    
+    print("");
+    
+    // 5. Work Queue (Work-Stealing)
+    print("5. Work Queue (Work-Stealing Pattern):");
+    let queue = createWorkQueue();
+    
+    // Add work items
+    pushWork(queue, "Task A");
+    pushWork(queue, "Task B");
+    pushWork(queue, "Task C");
+    pushWork(queue, "Task D");
+    
+    print("   Added 4 work items");
+    
+    // Owner pops from back (LIFO)
+    let ownWork = popWork(queue);
+    print("   Owner popped: " + ownWork);
+    
+    // Thief steals from front (FIFO)
+    let stolenWork = stealWork(queue);
+    print("   Thief stole: " + stolenWork);
+    print("   Stolen count: " + toString(queue.stolen));
+    
+    // Remaining
+    print("   Remaining items: " + toString(len(queue.items)));
+    
+    print("");
+    
+    // 6. Future Pattern
+    print("6. Future Pattern:");
+    let futureWorker = spawn(longComputation());
+    let future = futureFromWorker(futureWorker);
+    
+    print("   Created future from worker");
+    print("   isReady: " + toString(isReady(future)));
+    
+    let futureResult = await(future);
+    print("   Awaited result: " + toString(futureResult));
+    print("   isReady after await: " + toString(isReady(future)));
+    
+    print("");
+    print("=== Worker Example Complete ===");
+    
+    return 0;
+}
+
+// Helper functions for example
+
+fn computeFactorial(n: int) -> int {
+    let result = 1;
+    let i = 1;
+    while (i <= n) {
+        result = result * i;
+        i = i + 1;
+    }
+    return result;
+}
+
+fn computeFibonacci(n: int) -> int {
+    if (n <= 1) { return n; }
+    let a = 0;
+    let b = 1;
+    let i = 2;
+    while (i <= n) {
+        let temp = a + b;
+        a = b;
+        b = temp;
+        i = i + 1;
+    }
+    return b;
+}
+
+fn computeSum(start: int, end: int) -> int {
+    let sum = 0;
+    let i = start;
+    while (i <= end) {
+        sum = sum + i;
+        i = i + 1;
+    }
+    return sum;
+}
+
+fn longComputation() -> int {
+    // Simulate long computation
+    let result = 0;
+    let i = 0;
+    while (i < 1000) {
+        result = result + i;
+        i = i + 1;
+    }
+    return result;
+}

@@ -1,0 +1,197 @@
+// ============================================
+// CRYO STANDARD LIBRARY: COLOR (v2.19.0)
+// ANSI color codes for terminal output
+// Note: Uses octal escape for ESC character
+// ============================================
+
+// ESC character (ASCII 27)
+// In Cryo, we build it from string concatenation
+// This is a workaround since \x1b might not be supported
+
+// For now, return plain text since ANSI codes need runtime support
+// These functions wrap text with markers that could be processed later
+
+// ============================================
+// Wrapper functions (no ANSI for now)
+// ============================================
+
+fn red(text) {
+    return "[RED]" + text + "[/RED]";
+}
+
+fn green(text) {
+    return "[GREEN]" + text + "[/GREEN]";
+}
+
+fn yellow(text) {
+    return "[YELLOW]" + text + "[/YELLOW]";
+}
+
+fn blue(text) {
+    return "[BLUE]" + text + "[/BLUE]";
+}
+
+fn magenta(text) {
+    return "[MAGENTA]" + text + "[/MAGENTA]";
+}
+
+fn cyan(text) {
+    return "[CYAN]" + text + "[/CYAN]";
+}
+
+fn white(text) {
+    return text;
+}
+
+fn black(text) {
+    return "[BLACK]" + text + "[/BLACK]";
+}
+
+// Bright versions
+fn brightRed(text) {
+    return "[BRIGHT_RED]" + text + "[/BRIGHT_RED]";
+}
+
+fn brightGreen(text) {
+    return "[BRIGHT_GREEN]" + text + "[/BRIGHT_GREEN]";
+}
+
+fn brightYellow(text) {
+    return "[BRIGHT_YELLOW]" + text + "[/BRIGHT_YELLOW]";
+}
+
+fn brightBlue(text) {
+    return "[BRIGHT_BLUE]" + text + "[/BRIGHT_BLUE]";
+}
+
+fn brightCyan(text) {
+    return "[BRIGHT_CYAN]" + text + "[/BRIGHT_CYAN]";
+}
+
+// Styles
+fn bold(text) {
+    return "[BOLD]" + text + "[/BOLD]";
+}
+
+fn dim(text) {
+    return "[DIM]" + text + "[/DIM]";
+}
+
+fn italic(text) {
+    return "[ITALIC]" + text + "[/ITALIC]";
+}
+
+fn underline(text) {
+    return "[UNDERLINE]" + text + "[/UNDERLINE]";
+}
+
+fn strikethrough(text) {
+    return "[STRIKE]" + text + "[/STRIKE]";
+}
+
+// Combined styles
+fn boldRed(text) {
+    return "[BOLD][RED]" + text + "[/RED][/BOLD]";
+}
+
+fn boldGreen(text) {
+    return "[BOLD][GREEN]" + text + "[/GREEN][/BOLD]";
+}
+
+fn boldYellow(text) {
+    return "[BOLD][YELLOW]" + text + "[/YELLOW][/BOLD]";
+}
+
+fn boldBlue(text) {
+    return "[BOLD][BLUE]" + text + "[/BLUE][/BOLD]";
+}
+
+// ============================================
+// Semantic colors
+// ============================================
+
+fn colorSuccess(text) {
+    return "[SUCCESS] " + text;
+}
+
+fn colorError(text) {
+    return "[ERROR] " + text;
+}
+
+fn colorWarning(text) {
+    return "[WARNING] " + text;
+}
+
+fn colorInfo(text) {
+    return "[INFO] " + text;
+}
+
+fn colorDebug(text) {
+    return "[DEBUG] " + text;
+}
+
+fn highlight(text) {
+    return ">>> " + text + " <<<";
+}
+
+// ============================================
+// Print helpers
+// ============================================
+
+fn printSuccess(msg) {
+    print("[SUCCESS] " + msg);
+}
+
+fn printError(msg) {
+    print("[ERROR] " + msg);
+}
+
+fn printWarning(msg) {
+    print("[WARNING] " + msg);
+}
+
+fn printInfo(msg) {
+    print("[INFO] " + msg);
+}
+
+fn printDebug(msg) {
+    print("[DEBUG] " + msg);
+}
+
+// ============================================
+// Box drawing
+// ============================================
+
+fn printBox(title, content) {
+    let width = 40;
+    let top = "+" + repeatChar("-", width - 2) + "+";
+    
+    print(top);
+    print("| " + padRight(title, width - 4) + " |");
+    print("+" + repeatChar("-", width - 2) + "+");
+    print("| " + padRight(content, width - 4) + " |");
+    print(top);
+}
+
+fn repeatChar(c, n) {
+    let result = "";
+    let i = 0;
+    while (i < n) {
+        result = result + c;
+        i = i + 1;
+    }
+    return result;
+}
+
+fn padRight(s, width) {
+    let result = s;
+    while (len(result) < width) {
+        result = result + " ";
+    }
+    return result;
+}
+
+// Rainbow text (simplified)
+fn rainbow(text) {
+    return "~*~ " + text + " ~*~";
+}

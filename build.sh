@@ -1,22 +1,22 @@
 #!/bin/bash
-# Argon Build Script v2.25.0
+# Cryo Build Script v2.25.0
 
 set -e
 
-if [ -f "./argon.exe" ]; then
-    ARGON="./argon.exe"
-elif command -v argon &> /dev/null; then
-    ARGON="argon"
+if [ -f "./cryo.exe" ]; then
+    CRYO="./cryo.exe"
+elif command -v cryo &> /dev/null; then
+    CRYO="cryo"
 else
-    ARGON="./target/release/argon"
+    CRYO="./target/release/cryo"
 fi
-COMPILER="./self-host/compiler.ar"
+COMPILER="./self-host/compiler.cryo"
 BUILD_DIR="./build"
 
 mkdir -p "$BUILD_DIR/llvm" "$BUILD_DIR/wasm" "$BUILD_DIR/bin"
 
 usage() {
-    echo "Argon Build Tool v2.25.0"
+    echo "Cryo Build Tool v2.25.0"
     echo ""
     echo "Usage: ./build.sh [command] [file]"
     echo ""
@@ -30,9 +30,9 @@ usage() {
     echo "  clean                 Clean build directory"
     echo ""
     echo "Examples:"
-    echo "  ./build.sh run examples/hello.ar"
-    echo "  ./build.sh compile examples/fib.ar"
-    echo "  ./build.sh native examples/fib.ar"
+    echo "  ./build.sh run examples/hello.cryo"
+    echo "  ./build.sh compile examples/fib.cryo"
+    echo "  ./build.sh native examples/fib.cryo"
 }
 
 get_basename() {
@@ -46,7 +46,7 @@ compile_llvm() {
     local output="$BUILD_DIR/llvm/${base}.ll"
     
     echo "Compiling: $input -> $output"
-    $ARGON $COMPILER "$input" -o "$output"
+    $CRYO $COMPILER "$input" -o "$output"
 }
 
 # Compile to Native Binary
@@ -77,7 +77,7 @@ compile_wasm() {
     local output="$BUILD_DIR/wasm/${base}.wat"
     
     echo "Compiling: $input -> $output"
-    $ARGON $COMPILER "$input" --target wasm32-wasi -o "$output"
+    $CRYO $COMPILER "$input" --target wasm32-wasi -o "$output"
     
     # Convert to binary if wat2wasm available
     if command -v wat2wasm &> /dev/null; then
@@ -89,7 +89,7 @@ compile_wasm() {
 case "$1" in
     run)
         [ -z "$2" ] && { echo "Error: No input file"; exit 1; }
-        $ARGON "$2"
+        $CRYO "$2"
         ;;
     compile)
         [ -z "$2" ] && { echo "Error: No input file"; exit 1; }
@@ -104,21 +104,21 @@ case "$1" in
         compile_wasm "$2"
         ;;
     test)
-        echo "=== Argon Standard Library Tests ==="
-        $ARGON test_stdlib.ar
+        echo "=== Cryo Standard Library Tests ==="
+        $CRYO test_stdlib.ar
         ;;
     bench)
         N="${2:-35}"
         echo "=== Fibonacci Benchmark (n=$N) ==="
         echo ""
         echo "Native:"
-        $ARGON --native-bench $N
+        $CRYO --native-bench $N
         echo ""
         echo "Bytecode VM:"
-        $ARGON --vm-bench $N
+        $CRYO --vm-bench $N
         ;;
     docker)
-        docker build -t argon-bench . && docker run --rm argon-bench
+        docker build -t cryo-bench . && docker run --rm cryo-bench
         ;;
     clean)
         rm -rf "$BUILD_DIR"
@@ -129,6 +129,6 @@ case "$1" in
         usage
         ;;
     *)
-        $ARGON "$1"
+        $CRYO "$1"
         ;;
 esac

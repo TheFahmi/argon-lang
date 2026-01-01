@@ -1,4 +1,4 @@
-# Session Summary - Argon Language v2.24.0
+# Session Summary - Cryo Language v2.24.0
 
 ## Date: 31 December 2025
 
@@ -29,7 +29,7 @@
 
 ### 3. Defer Statement (v2.23.0)
 - **Modules**: Implemented `import` statement support in `interpreter.rs` (recursive loading).
-- **Networking**: Added blocking TCP built-ins (`argon_listen`, `accept`, `read`, `write`, `close`).
+- **Networking**: Added blocking TCP built-ins (`cryo_listen`, `accept`, `read`, `write`, `close`).
 - **Parser Enhancements**: 
     - Fixed empty struct initialization (`Str {}`).
     - Implemented `impl Type { ... }` support.
@@ -37,7 +37,7 @@
 - **Critical Fixes**: 
     - Fixed `expander.rs` macro substitution bug (missing recursion for `Field`, `MethodCall`).
     - Fixed `interpreter.rs` error swallowing (now prints Runtime Errors).
-- **Framework**: Created `examples/argon_web.ar` (ArgonWeb) with Router, Context, and Middleware-like macros.
+- **Framework**: Created `examples/cryo_web.ar` (CryoWeb) with Router, Context, and Middleware-like macros.
 - **Demo**: Developed `examples/todo_server.ar` showcasing the full stack.
 - Implemented `defer` keyword for RAII-style cleanup.
 
@@ -52,7 +52,7 @@
 
 ### 6. Ecosystem & Tooling (Completed)
 - **Built-in Functions**: Added `bcrypt`, `jwt`, `timestamp`, `uuid`, etc. to `interpreter.rs`.
-- **ArgonWeb CLI**: Created `argonweb-cli.sh` for NestJS-style project scaffolding.
+- **CryoWeb CLI**: Created `cryoweb-cli.sh` for NestJS-style project scaffolding.
 - **REST API Demo**: Verified full stack capability with `examples/api_server.ar`.
 - **Documentation**: Updated README with CLI usage and API references.
 
@@ -64,10 +64,10 @@
 | File | Description |
 |------|-------------|
 | `examples/macros_test.ar` | Test for Macros |
-| `examples/argon_web.ar` | Web Framework Core |
+| `examples/cryo_web.ar` | Web Framework Core |
 | `examples/todo_server.ar` | Todo API Demo |
 | `examples/api_server.ar` | Full REST API Demo |
-| `argonweb-cli.sh` | Project Generator CLI |
+| `cryoweb-cli.sh` | Project Generator CLI |
 | `docs/macros_design.md` | Design Doc |
 | `src/expander.rs` | Macro Expander |
 

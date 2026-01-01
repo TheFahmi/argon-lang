@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Argon WASM Demo</title>
+    <title>Cryo WASM Demo</title>
     <style>
         :root {
             --bg-primary: #0d1117;
@@ -300,7 +300,7 @@
     <header>
         <div class="logo">
             <div class="logo-icon">Ar</div>
-            <div class="logo-text">Argon <span>WASM</span></div>
+            <div class="logo-text">Cryo <span>WASM</span></div>
         </div>
     </header>
 
@@ -373,15 +373,15 @@
 
     <footer>
         <p>
-            Argon Language v2.24.0 |
-            <a href="https://github.com/TheFahmi/argon-lang" target="_blank">GitHub</a> |
+            Cryo Language v2.24.0 |
+            <a href="https://github.com/TheFahmi/cryo-lang" target="_blank">GitHub</a> |
             Compiled to WebAssembly
         </p>
     </footer>
 
-    <script src="argon_loader.js"></script>
+    <script src="cryo_loader.js"></script>
     <script>
-        let argon = null;
+        let cryo = null;
         const output = document.getElementById('output');
         const status = document.getElementById('status');
 
@@ -438,7 +438,7 @@
                 return result;
             },
             main: function () {
-                log("=== Argon WASM Demo ===");
+                log("=== Cryo WASM Demo ===");
                 log("");
                 log("5 + 3 = " + this.add(5, 3));
                 log("5 * 3 = " + this.multiply(5, 3));
@@ -461,34 +461,34 @@
         };
 
         // Set as our module
-        argon = wasmModule;
+        cryo = wasmModule;
         status.textContent = 'WASM Demo Ready';
 
         function runAdd() {
             const a = parseInt(document.getElementById('add-a').value);
             const b = parseInt(document.getElementById('add-b').value);
-            const result = argon.add(a, b);
+            const result = cryo.add(a, b);
             document.getElementById('add-result').textContent = `Result: ${result}`;
             log(`add(${a}, ${b}) = ${result}`);
         }
 
         function runFactorial() {
             const n = parseInt(document.getElementById('fact-n').value);
-            const result = argon.factorial(n);
+            const result = cryo.factorial(n);
             document.getElementById('fact-result').textContent = `Result: ${result}`;
             log(`factorial(${n}) = ${result}`);
         }
 
         function runFibonacci() {
             const n = parseInt(document.getElementById('fib-n').value);
-            const result = argon.fibonacci(n);
+            const result = cryo.fibonacci(n);
             document.getElementById('fib-result').textContent = `Result: ${result}`;
             log(`fibonacci(${n}) = ${result}`);
         }
 
         function runIsPrime() {
             const n = parseInt(document.getElementById('prime-n').value);
-            const result = argon.is_prime(n);
+            const result = cryo.is_prime(n);
             const text = result ? `true (${n} is prime)` : `false (${n} is not prime)`;
             document.getElementById('prime-result').textContent = `Result: ${text}`;
             log(`is_prime(${n}) = ${result}`);
@@ -497,18 +497,18 @@
         function runGCD() {
             const a = parseInt(document.getElementById('gcd-a').value);
             const b = parseInt(document.getElementById('gcd-b').value);
-            const result = argon.gcd(a, b);
+            const result = cryo.gcd(a, b);
             document.getElementById('gcd-result').textContent = `Result: ${result}`;
             log(`gcd(${a}, ${b}) = ${result}`);
         }
 
         function runMain() {
             clearOutput();
-            argon.main();
+            cryo.main();
         }
 
         // Initial log
-        log('Argon WASM Demo initialized');
+        log('Cryo WASM Demo initialized');
         log('Click "Run Main" or try the interactive functions');
         log('');
     </script>

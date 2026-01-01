@@ -1,0 +1,188 @@
+// ============================================
+// CRYO STANDARD LIBRARY: RANDOM (v2.19.0)
+// Random number generation
+// Uses Linear Congruential Generator (LCG)
+// ============================================
+
+// Global seed for random number generator
+let _random_seed = 12345;
+
+// Set random seed
+fn randomSeed(seed) {
+    _random_seed = seed;
+}
+
+// Get next random number (0 to 2^31-1)
+fn randomNext() {
+    // LCG parameters (same as glibc)
+    // seed = (a * seed + c) mod m
+    // a = 1103515245, c = 12345, m = 2^31
+    let a = 1103515245;
+    let c = 12345;
+    let m = 2147483648; // 2^31
+    
+    _random_seed = (a * _random_seed + c) - ((a * _random_seed + c) / m) * m;
+    if (_random_seed < 0) {
+        _random_seed = 0 - _random_seed;
+    }
+    return _random_seed;
+}
+
+// Random integer in range [min, max]
+fn randomInt(min_val, max_val) {
+    let range = (max_val - min_val) + 1;
+    let r = randomNext();
+    // Modulo to get in range
+    let result = r - (r / range) * range;
+    return min_val + result;
+}
+
+// Random boolean
+fn randomBool() {
+    return randomInt(0, 1) == 1;
+}
+
+// Random float 0.0 to 1.0 (approximated as integer / 1000)
+fn randomFloat() {
+    return randomInt(0, 1000);
+}
+
+// Random element from array
+fn randomChoice(arr) {
+    let idx = randomInt(0, len(arr) - 1);
+    return arr[idx];
+}
+
+// Shuffle array (Fisher-Yates)
+fn randomShuffle(arr) {
+    let result = [];
+    let i = 0;
+    while (i < len(arr)) {
+        result = push(result, arr[i]);
+        i = i + 1;
+    }
+    
+    i = len(result) - 1;
+    while (i > 0) {
+        let j = randomInt(0, i);
+        // Swap result[i] and result[j]
+        let temp = result[i];
+        result = arraySetAt(result, i, result[j]);
+        result = arraySetAt(result, j, temp);
+        i = i - 1;
+    }
+    return result;
+}
+
+// Helper: set array element at index
+fn arraySetAt(arr, idx, val) {
+    let result = [];
+    let i = 0;
+    while (i < len(arr)) {
+        if (i == idx) {
+            result = push(result, val);
+        } else {
+            result = push(result, arr[i]);
+        }
+        i = i + 1;
+    }
+    return result;
+}
+
+// Generate random string of given length
+fn randomString(length) {
+    let chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let result = "";
+    let i = 0;
+    while (i < length) {
+        let idx = randomInt(0, len(chars) - 1);
+        result = result + chars[idx];
+        i = i + 1;
+    }
+    return result;
+}
+
+// Generate UUID v4 (random)
+fn randomUuid() {
+    let hex = "0123456789abcdef";
+    let result = "";
+    let i = 0;
+    
+    // 8-4-4-4-12 format
+    while (i < 8) {
+        result = result + hex[randomInt(0, 15)];
+        i = i + 1;
+    }
+    result = result + "-";
+    
+    i = 0;
+    while (i < 4) {
+        result = result + hex[randomInt(0, 15)];
+        i = i + 1;
+    }
+    result = result + "-4"; // Version 4
+    
+    i = 0;
+    while (i < 3) {
+        result = result + hex[randomInt(0, 15)];
+        i = i + 1;
+    }
+    result = result + "-";
+    
+    // Variant (8, 9, a, or b)
+    result = result + hex[randomInt(8, 11)];
+    i = 0;
+    while (i < 3) {
+        result = result + hex[randomInt(0, 15)];
+        i = i + 1;
+    }
+    result = result + "-";
+    
+    i = 0;
+    while (i < 12) {
+        result = result + hex[randomInt(0, 15)];
+        i = i + 1;
+    }
+    
+    return result;
+}
+
+// Sample n random elements from array (without replacement)
+fn randomSample(arr, n) {
+    let shuffled = randomShuffle(arr);
+    let result = [];
+    let i = 0;
+    let max_n = n;
+    if (max_n > len(arr)) {
+        max_n = len(arr);
+    }
+    while (i < max_n) {
+        result = push(result, shuffled[i]);
+        i = i + 1;
+    }
+    return result;
+}
+
+// Roll dice (1 to sides)
+fn randomDice(sides) {
+    return randomInt(1, sides);
+}
+
+// Roll multiple dice and sum
+fn randomDiceSum(count, sides) {
+    let total = 0;
+    let i = 0;
+    while (i < count) {
+        total = total + randomDice(sides);
+        i = i + 1;
+    }
+    return total;
+}
+
+// Coin flip: returns "heads" or "tails"
+fn randomCoin() {
+    if (randomBool()) {
+        return "heads";
+    }
+    return "tails";
+}

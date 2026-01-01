@@ -2,8 +2,8 @@
   "version": 1,
   "packages": {
     "math-extra": {
-      "description": "Extended math functions for Argon",
-      "repository": "https://github.com/argon-lang/pkg-math-extra",
+      "description": "Extended math functions for Cryo",
+      "repository": "https://github.com/cryo-lang/pkg-math-extra",
       "versions": {
         "1.0.0": {
           "commit": "abc123",
@@ -18,7 +18,7 @@
     },
     "json-utils": {
       "description": "JSON parsing and serialization",
-      "repository": "https://github.com/argon-lang/pkg-json-utils",
+      "repository": "https://github.com/cryo-lang/pkg-json-utils",
       "versions": {
         "1.0.0": {
           "commit": "111222",
@@ -29,7 +29,7 @@
     },
     "http-client": {
       "description": "HTTP client library",
-      "repository": "https://github.com/argon-lang/pkg-http-client",
+      "repository": "https://github.com/cryo-lang/pkg-http-client",
       "versions": {
         "0.1.0": {
           "commit": "aaa111",
@@ -42,7 +42,7 @@
     },
     "test-framework": {
       "description": "Testing utilities and assertions",
-      "repository": "https://github.com/argon-lang/pkg-test-framework",
+      "repository": "https://github.com/cryo-lang/pkg-test-framework",
       "versions": {
         "0.1.0": {
           "commit": "test01",
@@ -53,7 +53,7 @@
     },
     "cli-colors": {
       "description": "Terminal colors and styling",
-      "repository": "https://github.com/argon-lang/pkg-cli-colors",
+      "repository": "https://github.com/cryo-lang/pkg-cli-colors",
       "versions": {
         "1.0.0": {
           "commit": "col100",

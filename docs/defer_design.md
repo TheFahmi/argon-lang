@@ -1,8 +1,8 @@
-# Argon Defer Statement Design (v2.23.0)
+# Cryo Defer Statement Design (v2.23.0)
 
 ## Motivation
 Resource management (closing files, freeing memory) is critical, especially with the new FFI system.
-Full RAII (Destructors) is difficult to implement in the current Interpreter architecture because Rust's `Drop` trait cannot access the Interpreter state to execute Argon code.
+Full RAII (Destructors) is difficult to implement in the current Interpreter architecture because Rust's `Drop` trait cannot access the Interpreter state to execute Cryo code.
 
 **Solution**: Go-style `defer` statement.
 

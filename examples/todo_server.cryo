@@ -1,0 +1,54 @@
+import "cryo_web"
+import "json" 
+
+// --- Handlers ---
+
+fn homeHandler(ctx) {
+    ctx.html("<h1>Cryo Todo App</h1><p>Powered by Cryo v2.24.0</p>");
+}
+
+fn apiStatus(ctx) {
+    // Use proper JSON constructors
+    let data = jsonObject([
+        ["status", jsonString("ok")],
+        ["version", jsonString("2.24.0")]
+    ]);
+    ctx.json(data);
+}
+
+fn todoList(ctx) {
+    let t1 = jsonObject([
+        ["id", jsonNumber(1)], 
+        ["task", jsonString("Implement Macros")], 
+        ["done", jsonBool(true)]
+    ]);
+    let t2 = jsonObject([
+        ["id", jsonNumber(2)], 
+        ["task", jsonString("Build Web Framework")], 
+        ["done", jsonBool(true)]
+    ]);
+    
+    let todos = [t1, t2];
+    ctx.json(jsonArray(todos));
+}
+
+// --- Macros ---
+
+macro route(server, method, path, handler) {
+    let r = $server.router;
+    r.add($method, $path, $handler);
+}
+
+// --- Main ---
+
+fn main() {
+    print("Starting Todo Server...");
+    let app = Server::new(8080);
+    
+    print("Registering routes...");
+    route(app, "GET", "/", home_handler);
+    route(app, "GET", "/status", api_status);
+    route(app, "GET", "/todos", todo_list);
+    
+    app.start();
+}

@@ -1,4 +1,4 @@
-// Argon AST Optimizer
+// Cryo AST Optimizer
 // Performs primitive constant folding
 
 use crate::parser::{Expr, Stmt, TopLevel};

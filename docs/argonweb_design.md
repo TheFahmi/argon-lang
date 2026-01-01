@@ -1,11 +1,11 @@
-# ArgonWeb Framework
+# CryoWeb Framework
 
 **Version:** v3.2.1  
 **Status:** ✅ Implemented
 
 ## Overview
 
-ArgonWeb is a **NestJS-inspired** web framework for Argon. It provides an elegant, modular architecture for building REST APIs and web applications.
+CryoWeb is a **NestJS-inspired** web framework for Cryo. It provides an elegant, modular architecture for building REST APIs and web applications.
 
 ## Features
 
@@ -19,14 +19,14 @@ ArgonWeb is a **NestJS-inspired** web framework for Argon. It provides an elegan
 
 ## Quick Start
 
-```argon
-import "argonweb"
+```cryo
+import "cryoweb"
 
 fn main() {
     let app = Server::new(3000);
     
     app.get("/", fn(ctx) {
-        ctx.html("<h1>Hello ArgonWeb!</h1>");
+        ctx.html("<h1>Hello CryoWeb!</h1>");
     });
     
     app.get("/api/users", fn(ctx) {
@@ -44,7 +44,7 @@ fn main() {
 
 ### Server
 
-```argon
+```cryo
 // Create server
 let app = Server::new(3000);
 
@@ -68,7 +68,7 @@ app.start();
 
 The request context passed to handlers:
 
-```argon
+```cryo
 fn myHandler(ctx: Context) {
     // Request info
     let method = ctx.req.method;       // "GET", "POST", etc.
@@ -111,7 +111,7 @@ fn myHandler(ctx: Context) {
 
 For modular route organization:
 
-```argon
+```cryo
 // Create router with prefix
 let usersRouter = Router::withPrefix("/api/users");
 
@@ -126,7 +126,7 @@ usersRouter.use(authMiddleware);
 
 ### Route Parameters
 
-```argon
+```cryo
 // Define route with params
 app.get("/users/:id/posts/:postId", fn(ctx) {
     let userId = ctx.param("id");
@@ -141,7 +141,7 @@ app.get("/users/:id/posts/:postId", fn(ctx) {
 
 ### Query Strings
 
-```argon
+```cryo
 // URL: /api/todos?status=completed&page=1
 app.get("/api/todos", fn(ctx) {
     let status = ctx.queryParam("status");  // "completed"
@@ -153,7 +153,7 @@ app.get("/api/todos", fn(ctx) {
 
 ### Middleware
 
-```argon
+```cryo
 // Custom middleware
 fn authMiddleware(ctx: Context) -> bool {
     let token = ctx.header("Authorization");
@@ -174,7 +174,7 @@ app.use(authMiddleware);
 
 ### Built-in Middleware
 
-```argon
+```cryo
 // Logger - logs all requests
 app.use(loggerMiddleware);
 // Output: [2024-01-01] GET /api/users
@@ -189,7 +189,7 @@ app.use(jsonBodyParserMiddleware);
 
 ### Response Helpers
 
-```argon
+```cryo
 // Standard responses (NestJS-style)
 ctx.json(responseOk(data));
 // { success: true, data: {...} }
@@ -210,8 +210,8 @@ ctx.json(responseForbidden());
 
 ## Complete Example
 
-```argon
-import "argonweb"
+```cryo
+import "cryoweb"
 import "json"
 
 // Database
@@ -298,17 +298,17 @@ my-api/
 
 ## CLI Tool
 
-Generate new projects with the ArgonWeb CLI:
+Generate new projects with the CryoWeb CLI:
 
 ```bash
-./argonweb-cli.sh new my-project
+./cryoweb-cli.sh new my-project
 cd my-project
-argon src/main.ar
+cryo src/main.ar
 ```
 
 ## Performance
 
-ArgonWeb runs on Argon's native runtime, leveraging:
+CryoWeb runs on Cryo's native runtime, leveraging:
 - Direct TCP socket handling
 - Zero external dependencies
 - Optimized request parsing
@@ -318,4 +318,4 @@ ArgonWeb runs on Argon's native runtime, leveraging:
 - [HTTP Module](./stdlib/http.ar) - Low-level HTTP utilities
 - [JSON Module](./stdlib/json.ar) - JSON parsing/stringifying
 - [Example: api_server.ar](./examples/api_server.ar) - Full API demo
-- [Example: argonweb_demo.ar](./examples/argonweb_demo.ar) - NestJS-style demo
+- [Example: cryoweb_demo.ar](./examples/cryoweb_demo.ar) - NestJS-style demo

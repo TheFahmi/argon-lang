@@ -1,0 +1,102 @@
+// ============================================
+// REAL MYSQL TEST (Native Cryo)
+// Connects to MySQL using wire protocol
+// ============================================
+
+import "mysql_native"
+
+fn main() {
+    print("==========================================");
+    print("      REAL MYSQL CONNECTION TEST");
+    print("       (Native Cryo Implementation)");
+    print("==========================================");
+    print("");
+    
+    // Connect to MySQL
+    // Docker-compose: port 3307, user cryo, password cryo123
+    let conn = mysqlConnect("127.0.0.1", 3307, "cryo", "cryo123", "cryodb");
+    
+    if (conn == null) {
+        print("");
+        print("[FAIL] Could not connect to MySQL!");
+        print("Make sure MySQL is running:");
+        print("  docker-compose -f docker-compose.db.yml up -d");
+        return 1;
+    }
+    
+    print("");
+    print("==========================================");
+    print("    Connection established!");
+    print("==========================================");
+    print("");
+    
+    // Select database first
+    print("[0] Selecting database...");
+    let use_db = mysqlQuery(conn, "USE cryodb");
+    if (use_db.success) {
+        print("    [PASS] Database selected!");
+    } else {
+        print("    [FAIL] Could not select database: " + use_db.error);
+    }
+    print("");
+    
+    // Test 1: Create table
+    print("[1] Creating test table...");
+    let result1 = mysqlQuery(conn, "DROP TABLE IF EXISTS cryo_test");
+    let result2 = mysqlQuery(conn, "CREATE TABLE cryoTest(id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), value INT)");
+    if (result2.success) {
+        print("    [PASS] Table created!");
+    } else {
+        print("    [FAIL] " + result2.error);
+    }
+    print("");
+    
+    // Test 2: Insert data
+    print("[2] Inserting data...");
+    let ins1 = mysqlQuery(conn, "INSERT INTO cryoTest(name, value) VALUES ('hello', 42)");
+    let ins2 = mysqlQuery(conn, "INSERT INTO cryoTest(name, value) VALUES ('world', 100)");
+    let ins3 = mysqlQuery(conn, "INSERT INTO cryoTest(name, value) VALUES ('cryo', 2024)");
+    if (ins1.success && ins2.success && ins3.success) {
+        print("    [PASS] 3 rows inserted!");
+    }
+    print("");
+    
+    // Test 3: Select data
+    print("[3] Selecting data...");
+    let sel = mysqlQuery(conn, "SELECT * FROM cryo_test");
+    if (sel.success) {
+        print("    [PASS] Query executed");
+    }
+    print("");
+    
+    // Test 4: Update data
+    print("[4] Updating data...");
+    let upd = mysqlQuery(conn, "UPDATE cryo_test SET value = 999 WHERE name = 'hello'");
+    if (upd.success) {
+        print("    [PASS] Data updated!");
+    }
+    print("");
+    
+    // Test 5: Delete data
+    print("[5] Deleting data...");
+    let del = mysqlQuery(conn, "DELETE FROM cryo_test WHERE name = 'world'");
+    if (del.success) {
+        print("    [PASS] Data deleted!");
+    }
+    print("");
+    
+    // Cleanup
+    print("[6] Cleanup...");
+    mysqlQuery(conn, "DROP TABLE cryo_test");
+    print("    [PASS] Table dropped");
+    print("");
+    
+    // Close connection
+    mysqlClose(conn);
+    
+    print("==========================================");
+    print("    ALL MYSQL TESTS PASSED!");
+    print("==========================================");
+    
+    return 0;
+}

@@ -1,0 +1,360 @@
+// ============================================
+// CRYO STANDARD LIBRARY: CHANNEL (v3.0.0)
+// Channel-based communication for concurrency
+// Inspired by Go channels and Rust mpsc
+// ============================================
+
+let CHANNEL_VERSION = "3.0.0";
+
+// ============================================
+// CHANNEL STRUCT
+// ============================================
+
+// Channel for message passing between concurrent tasks
+struct Channel {
+    buffer: [any],      // Message buffer
+    capacity: int,      // Max buffer size (0 = unbuffered)
+    closed: bool,       // Whether channel is closed
+    senders: int,       // Number of active senders
+    receivers: int      // Number of active receivers
+}
+
+// ============================================
+// CHANNEL CREATION
+// ============================================
+
+// Create an unbuffered channel (synchronous)
+fn channel() -> Channel {
+    return Channel {
+        buffer: [],
+        capacity: 0,
+        closed: false,
+        senders: 1,
+        receivers: 1
+    };
+}
+
+// Create a buffered channel with capacity
+fn bufferedChannel(capacity: int) -> Channel {
+    return Channel {
+        buffer: [],
+        capacity: capacity,
+        closed: false,
+        senders: 1,
+        receivers: 1
+    };
+}
+
+// ============================================
+// SEND OPERATIONS
+// ============================================
+
+// Send a value to the channel
+// Returns true if sent successfully, false if channel closed
+fn send(ch: Channel, value: any) -> bool {
+    if (ch.closed) {
+        return false;
+    }
+    
+    // For buffered channels, check capacity
+    if (ch.capacity > 0) {
+        if (len(ch.buffer) >= ch.capacity) {
+            // Buffer full - in real impl would block
+            // For now, we'll wait/spin
+            while (len(ch.buffer) >= ch.capacity && !ch.closed) {
+                // Spin wait - real impl would yield
+                sleep(1);
+            }
+            if (ch.closed) {
+                return false;
+            }
+        }
+    }
+    
+    push(ch.buffer, value);
+    return true;
+}
+
+// Try to send without blocking
+// Returns true if sent, false if would block or closed
+fn trySend(ch: Channel, value: any) -> bool {
+    if (ch.closed) {
+        return false;
+    }
+    
+    if (ch.capacity > 0 && len(ch.buffer) >= ch.capacity) {
+        return false;
+    }
+    
+    push(ch.buffer, value);
+    return true;
+}
+
+// ============================================
+// RECEIVE OPERATIONS
+// ============================================
+
+// Result from receive operation
+struct RecvResult {
+    value: any,
+    ok: bool
+}
+
+// Receive a value from the channel
+// Returns RecvResult with ok=false if channel closed and empty
+fn recv(ch: Channel) -> RecvResult {
+    // Wait for message or close
+    while (len(ch.buffer) == 0 && !ch.closed) {
+        // Spin wait - real impl would yield
+        sleep(1);
+    }
+    
+    if (len(ch.buffer) == 0 && ch.closed) {
+        return RecvResult { value: null, ok: false };
+    }
+    
+    // Get first element (FIFO)
+    let value = ch.buffer[0];
+    // Remove first element
+    let newBuffer = [];
+    let i = 1;
+    while (i < len(ch.buffer)) {
+        push(newBuffer, ch.buffer[i]);
+        i = i + 1;
+    }
+    ch.buffer = newBuffer;
+    
+    return RecvResult { value: value, ok: true };
+}
+
+// Try to receive without blocking
+fn tryRecv(ch: Channel) -> RecvResult {
+    if (len(ch.buffer) == 0) {
+        return RecvResult { value: null, ok: false };
+    }
+    
+    let value = ch.buffer[0];
+    let newBuffer = [];
+    let i = 1;
+    while (i < len(ch.buffer)) {
+        push(newBuffer, ch.buffer[i]);
+        i = i + 1;
+    }
+    ch.buffer = newBuffer;
+    
+    return RecvResult { value: value, ok: true };
+}
+
+// Receive with timeout (ms)
+fn recvTimeout(ch: Channel, timeoutMs: int) -> RecvResult {
+    let elapsed = 0;
+    let interval = 10;
+    
+    while (len(ch.buffer) == 0 && !ch.closed && elapsed < timeoutMs) {
+        sleep(interval);
+        elapsed = elapsed + interval;
+    }
+    
+    if (len(ch.buffer) == 0) {
+        return RecvResult { value: null, ok: false };
+    }
+    
+    return recv(ch);
+}
+
+// ============================================
+// CHANNEL CONTROL
+// ============================================
+
+// Close the channel - no more sends allowed
+fn close(ch: Channel) {
+    ch.closed = true;
+}
+
+// Check if channel is closed
+fn isClosed(ch: Channel) -> bool {
+    return ch.closed;
+}
+
+// Check if channel has pending messages
+fn hasPending(ch: Channel) -> bool {
+    return len(ch.buffer) > 0;
+}
+
+// Get number of pending messages
+fn pending(ch: Channel) -> int {
+    return len(ch.buffer);
+}
+
+// Check if channel is empty
+fn isEmpty(ch: Channel) -> bool {
+    return len(ch.buffer) == 0;
+}
+
+// ============================================
+// SELECT OPERATION (Simplified)
+// ============================================
+
+// Select result
+struct SelectResult {
+    index: int,
+    value: any,
+    ok: bool
+}
+
+// Select from multiple channels (returns first available)
+fn select(channels: [Channel]) -> SelectResult {
+    // Poll all channels
+    while (true) {
+        let i = 0;
+        while (i < len(channels)) {
+            let ch = channels[i];
+            if (len(ch.buffer) > 0) {
+                let result = recv(ch);
+                return SelectResult {
+                    index: i,
+                    value: result.value,
+                    ok: result.ok
+                };
+            }
+            if (ch.closed) {
+                return SelectResult {
+                    index: i,
+                    value: null,
+                    ok: false
+                };
+            }
+            i = i + 1;
+        }
+        // Small sleep to prevent busy-wait
+        sleep(1);
+    }
+    // Unreachable
+    return SelectResult { index: -1, value: null, ok: false };
+}
+
+// Try select (non-blocking)
+fn trySelect(channels: [Channel]) -> SelectResult {
+    let i = 0;
+    while (i < len(channels)) {
+        let ch = channels[i];
+        let result = tryRecv(ch);
+        if (result.ok) {
+            return SelectResult {
+                index: i,
+                value: result.value,
+                ok: true
+            };
+        }
+        i = i + 1;
+    }
+    return SelectResult { index: -1, value: null, ok: false };
+}
+
+// ============================================
+// MULTI-PRODUCER MULTI-CONSUMER (MPMC)
+// ============================================
+
+// Clone channel for additional sender
+fn cloneSender(ch: Channel) -> Channel {
+    ch.senders = ch.senders + 1;
+    return ch;
+}
+
+// Clone channel for additional receiver
+fn cloneReceiver(ch: Channel) -> Channel {
+    ch.receivers = ch.receivers + 1;
+    return ch;
+}
+
+// Drop sender - closes when all senders dropped
+fn dropSender(ch: Channel) {
+    ch.senders = ch.senders - 1;
+    if (ch.senders <= 0) {
+        close(ch);
+    }
+}
+
+// Drop receiver
+fn dropReceiver(ch: Channel) {
+    ch.receivers = ch.receivers - 1;
+}
+
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
+
+// Drain all messages from channel
+fn drain(ch: Channel) -> [any] {
+    let messages = [];
+    while (len(ch.buffer) > 0) {
+        let result = tryRecv(ch);
+        if (result.ok) {
+            push(messages, result.value);
+        }
+    }
+    return messages;
+}
+
+// Fan-out: send same message to multiple channels
+fn fanOut(channels: [Channel], value: any) -> int {
+    let sent = 0;
+    let i = 0;
+    while (i < len(channels)) {
+        if (send(channels[i], value)) {
+            sent = sent + 1;
+        }
+        i = i + 1;
+    }
+    return sent;
+}
+
+// Fan-in: receive from multiple channels into one
+fn fanIn(sources: [Channel], dest: Channel) {
+    let running = true;
+    while (running) {
+        let allClosed = true;
+        let i = 0;
+        while (i < len(sources)) {
+            let result = tryRecv(sources[i]);
+            if (result.ok) {
+                send(dest, result.value);
+                allClosed = false;
+            } else if (!isClosed(sources[i])) {
+                allClosed = false;
+            }
+            i = i + 1;
+        }
+        if (allClosed) {
+            running = false;
+        } else {
+            sleep(1);
+        }
+    }
+    close(dest);
+}
+
+// ============================================
+// PIPELINE PATTERN
+// ============================================
+
+// Pipeline stage result
+struct PipelineStage {
+    input: Channel,
+    output: Channel
+}
+
+// Create a pipeline stage
+fn pipelineStage(bufferSize: int) -> PipelineStage {
+    return PipelineStage {
+        input: bufferedChannel(bufferSize),
+        output: bufferedChannel(bufferSize)
+    };
+}
+
+// Connect two stages
+fn connectStages(from: PipelineStage, to: PipelineStage) {
+    // Link output of 'from' to input of 'to'
+    // In practice, they share the same channel
+    to.input = from.output;
+}

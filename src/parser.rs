@@ -1,4 +1,4 @@
-// Argon Parser - Parses tokens into AST
+// Cryo Parser - Parses tokens into AST
 // Compatible with compiler.ar v3.0.0
 
 #![allow(dead_code)]

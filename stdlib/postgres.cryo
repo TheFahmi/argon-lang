@@ -1,0 +1,446 @@
+// ============================================
+// CRYO STANDARD LIBRARY: POSTGRES (v3.1.0)
+// PostgreSQL Database Driver
+// ============================================
+
+let PG_VERSION = "3.1.0";
+
+// ============================================
+// Connection Configuration
+// ============================================
+
+struct PgConfig {
+    host: string,
+    port: int,
+    database: string,
+    user: string,
+    password: string,
+    sslMode: string,
+    connectionTimeout: int,
+    poolSize: int
+}
+
+fn pgConfig() -> PgConfig {
+    return PgConfig {
+        host: "localhost",
+        port: 5432,
+        database: "postgres",
+        user: "postgres",
+        password: "",
+        sslMode: "prefer",
+        connectionTimeout: 30,
+        poolSize: 10
+    };
+}
+
+fn pgConfigFromEnv() -> PgConfig {
+    return PgConfig {
+        host: env("PGHOST", "localhost"),
+        port: parseInt(env("PGPORT", "5432")),
+        database: env("PGDATABASE", "postgres"),
+        user: env("PGUSER", "postgres"),
+        password: env("PGPASSWORD", ""),
+        sslMode: env("PGSSLMODE", "prefer"),
+        connectionTimeout: 30,
+        poolSize: 10
+    };
+}
+
+fn pgConfigFromUrl(url: string) -> PgConfig {
+    // Parse: postgres://user:pass@host:port/database
+    let config = pgConfig();
+    
+    // Remove protocol
+    let rest = url;
+    if (startsWith(url, "postgres://")) {
+        rest = substr(url, 11, len(url) - 11);
+    } else if (startsWith(url, "postgresql://")) {
+        rest = substr(url, 13, len(url) - 13);
+    }
+    
+    // Split user:pass@host:port/database
+    let atIdx = indexOf(rest, "@");
+    if (atIdx > 0) {
+        let userPass = substr(rest, 0, atIdx);
+        rest = substr(rest, atIdx + 1, len(rest) - atIdx - 1);
+        
+        let colonIdx = indexOf(userPass, ":");
+        if (colonIdx > 0) {
+            config.user = substr(userPass, 0, colonIdx);
+            config.password = substr(userPass, colonIdx + 1, len(userPass) - colonIdx - 1);
+        } else {
+            config.user = userPass;
+        }
+    }
+    
+    // Split host:port/database
+    let slashIdx = indexOf(rest, "/");
+    if (slashIdx > 0) {
+        config.database = substr(rest, slashIdx + 1, len(rest) - slashIdx - 1);
+        rest = substr(rest, 0, slashIdx);
+    }
+    
+    let colonIdx = indexOf(rest, ":");
+    if (colonIdx > 0) {
+        config.host = substr(rest, 0, colonIdx);
+        config.port = parseInt(substr(rest, colonIdx + 1, len(rest) - colonIdx - 1));
+    } else {
+        config.host = rest;
+    }
+    
+    return config;
+}
+
+// ============================================
+// Connection
+// ============================================
+
+struct PgConnection {
+    id: int,
+    config: PgConfig,
+    connected: bool,
+    inTransaction: bool,
+    lastError: string
+}
+
+fn pgConnect(config: PgConfig) -> PgConnection {
+    let conn = PgConnection {
+        id: generateConnectionId(),
+        config: config,
+        connected: false,
+        inTransaction: false,
+        lastError: ""
+    };
+    
+    // Simulate connection (real impl would use FFI to libpq)
+    print("[PG] Connecting to " + config.host + ":" + config.port + "/" + config.database);
+    conn.connected = true;
+    print("[PG] Connected successfully");
+    
+    return conn;
+}
+
+fn pgConnectUrl(url: string) -> PgConnection {
+    let config = pgConfigFromUrl(url);
+    return pgConnect(config);
+}
+
+fn generateConnectionId() -> int {
+    return timestampMs() % 1000000;
+}
+
+impl PgConnection {
+    fn close(self) {
+        if (self.connected) {
+            print("[PG] Closing connection " + self.id);
+            self.connected = false;
+        }
+    }
+    
+    fn isConnected(self) -> bool {
+        return self.connected;
+    }
+    
+    fn ping(self) -> bool {
+        if (!self.connected) { return false; }
+        // Simulate ping
+        return true;
+    }
+}
+
+// ============================================
+// Query Results
+// ============================================
+
+struct PgRow {
+    columns: [string],
+    values: [any]
+}
+
+struct PgResult {
+    rows: [PgRow],
+    rowCount: int,
+    affectedRows: int,
+    lastInsertId: int,
+    error: string
+}
+
+fn createPgResult() -> PgResult {
+    return PgResult {
+        rows: [],
+        rowCount: 0,
+        affectedRows: 0,
+        lastInsertId: 0,
+        error: ""
+    };
+}
+
+impl PgRow {
+    fn get(self, column: string) -> any {
+        let i = 0;
+        while (i < len(self.columns)) {
+            if (self.columns[i] == column) {
+                return self.values[i];
+            }
+            i = i + 1;
+        }
+        return null;
+    }
+    
+    fn getInt(self, column: string) -> int {
+        let val = self.get(column);
+        if (val == null) { return 0; }
+        return parseInt("" + val);
+    }
+    
+    fn getString(self, column: string) -> string {
+        let val = self.get(column);
+        if (val == null) { return ""; }
+        return "" + val;
+    }
+    
+    fn getBool(self, column: string) -> bool {
+        let val = self.get(column);
+        return val == true || val == "true" || val == "t" || val == 1;
+    }
+}
+
+impl PgResult {
+    fn hasRows(self) -> bool {
+        return self.rowCount > 0;
+    }
+    
+    fn first(self) -> PgRow {
+        if (self.rowCount > 0) {
+            return self.rows[0];
+        }
+        return null;
+    }
+    
+    fn isEmpty(self) -> bool {
+        return self.rowCount == 0;
+    }
+    
+    fn hasError(self) -> bool {
+        return len(self.error) > 0;
+    }
+}
+
+// ============================================
+// Query Execution
+// ============================================
+
+fn pgQuery(conn: PgConnection, sql: string) -> PgResult {
+    let result = createPgResult();
+    
+    if (!conn.connected) {
+        result.error = "Not connected";
+        return result;
+    }
+    
+    print("[PG] Query: " + sql);
+    
+    // Simulate query execution
+    // Real implementation would use FFI to libpq
+    
+    // Parse simple queries for demo
+    if (startsWith(toUpperCase(sql), "SELECT")) {
+        // Return demo data
+        result.rowCount = 1;
+        let row = PgRow {
+            columns: ["id", "name", "created_at"],
+            values: [1, "Demo Row", "2024-01-01"]
+        };
+        push(result.rows, row);
+    } else if (startsWith(toUpperCase(sql), "INSERT")) {
+        result.affectedRows = 1;
+        result.lastInsertId = timestampMs() % 10000;
+    } else if (startsWith(toUpperCase(sql), "UPDATE") || startsWith(toUpperCase(sql), "DELETE")) {
+        result.affectedRows = 1;
+    }
+    
+    return result;
+}
+
+fn pgQueryParams(conn: PgConnection, sql: string, params: [any]) -> PgResult {
+    // Replace $1, $2, etc. with actual params
+    let finalSql = sql;
+    let i = 0;
+    while (i < len(params)) {
+        let placeholder = "$" + (i + 1);
+        let value = formatParam(params[i]);
+        finalSql = replace(finalSql, placeholder, value);
+        i = i + 1;
+    }
+    
+    return pgQuery(conn, finalSql);
+}
+
+fn formatParam(value: any) -> string {
+    if (value == null) {
+        return "NULL";
+    }
+    // String values need quoting
+    let str = "" + value;
+    // Escape single quotes
+    str = replace(str, "'", "''");
+    return "'" + str + "'";
+}
+
+fn pgExecute(conn: PgConnection, sql: string) -> int {
+    let result = pgQuery(conn, sql);
+    return result.affectedRows;
+}
+
+// ============================================
+// Transaction Support
+// ============================================
+
+fn pgBegin(conn: PgConnection) -> bool {
+    if (conn.inTransaction) {
+        conn.lastError = "Already in transaction";
+        return false;
+    }
+    
+    pgQuery(conn, "BEGIN");
+    conn.inTransaction = true;
+    print("[PG] Transaction started");
+    return true;
+}
+
+fn pgCommit(conn: PgConnection) -> bool {
+    if (!conn.inTransaction) {
+        conn.lastError = "Not in transaction";
+        return false;
+    }
+    
+    pgQuery(conn, "COMMIT");
+    conn.inTransaction = false;
+    print("[PG] Transaction committed");
+    return true;
+}
+
+fn pgRollback(conn: PgConnection) -> bool {
+    if (!conn.inTransaction) {
+        conn.lastError = "Not in transaction";
+        return false;
+    }
+    
+    pgQuery(conn, "ROLLBACK");
+    conn.inTransaction = false;
+    print("[PG] Transaction rolled back");
+    return true;
+}
+
+// ============================================
+// Query Builder
+// ============================================
+
+struct PgQueryBuilder {
+    table: string,
+    selectCols: [string],
+    whereClauses: [string],
+    orderBy: string,
+    limitVal: int,
+    offsetVal: int
+}
+
+fn pgTable(tableName: string) -> PgQueryBuilder {
+    return PgQueryBuilder {
+        table: tableName,
+        selectCols: [],
+        whereClauses: [],
+        orderBy: "",
+        limitVal: 0,
+        offsetVal: 0
+    };
+}
+
+impl PgQueryBuilder {
+    fn select(self, columns: [string]) -> PgQueryBuilder {
+        self.selectCols = columns;
+        return self;
+    }
+    
+    fn where(self, condition: string) -> PgQueryBuilder {
+        push(self.whereClauses, condition);
+        return self;
+    }
+    
+    fn whereEq(self, column: string, value: any) -> PgQueryBuilder {
+        let cond = column + " = " + formatParam(value);
+        push(self.whereClauses, cond);
+        return self;
+    }
+    
+    fn order(self, column: string, direction: string) -> PgQueryBuilder {
+        self.orderBy = column + " " + direction;
+        return self;
+    }
+    
+    fn limit(self, n: int) -> PgQueryBuilder {
+        self.limitVal = n;
+        return self;
+    }
+    
+    fn offset(self, n: int) -> PgQueryBuilder {
+        self.offsetVal = n;
+        return self;
+    }
+    
+    fn toSql(self) -> string {
+        let sql = "SELECT ";
+        
+        if (len(self.selectCols) == 0) {
+            sql = sql + "*";
+        } else {
+            sql = sql + join(self.selectCols, ", ");
+        }
+        
+        sql = sql + " FROM " + self.table;
+        
+        if (len(self.whereClauses) > 0) {
+            sql = sql + " WHERE " + join(self.whereClauses, " AND ");
+        }
+        
+        if (len(self.orderBy) > 0) {
+            sql = sql + " ORDER BY " + self.orderBy;
+        }
+        
+        if (self.limitVal > 0) {
+            sql = sql + " LIMIT " + self.limitVal;
+        }
+        
+        if (self.offsetVal > 0) {
+            sql = sql + " OFFSET " + self.offsetVal;
+        }
+        
+        return sql;
+    }
+    
+    fn run(self, conn: PgConnection) -> PgResult {
+        return pgQuery(conn, self.toSql());
+    }
+}
+
+// ============================================
+// Helper Functions
+// ============================================
+
+fn pgEscape(value: string) -> string {
+    let result = value;
+    result = replace(result, "\\", "\\\\");
+    result = replace(result, "'", "''");
+    result = replace(result, "\n", "\\n");
+    result = replace(result, "\r", "\\r");
+    result = replace(result, "\t", "\\t");
+    return result;
+}
+
+fn pgQuote(value: string) -> string {
+    return "'" + pgEscape(value) + "'";
+}
+
+fn pgQuoteIdent(identifier: string) -> string {
+    return "\"" + replace(identifier, "\"", "\"\"") + "\"";
+}

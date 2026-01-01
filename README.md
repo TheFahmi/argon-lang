@@ -1,7 +1,7 @@
-# Argon Programming Language
+# Cryo Programming Language
 
 <p align="center">
-  <img src="logo.png" alt="Argon Logo" width="150" height="auto">
+  <img src="logo.png" alt="Cryo Logo" width="150" height="auto">
 </p>
 
 <p align="center">
@@ -11,14 +11,14 @@
 <p align="center">
   <a href="http://makeapullrequest.com"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square" alt="PRs Welcome"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square" alt="License"></a>
-  <img src="https://img.shields.io/badge/Argon-v3.2.1-crimson?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/Cryo-v3.2.1-crimson?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/build-passing-brightgreen?style=flat-square" alt="Build Status">
   <img src="https://img.shields.io/badge/platform-win%20%7C%20linux%20%7C%20macos-lightgrey?style=flat-square" alt="Platform">
 </p>
 
 ---
 
-Argon is a self-hosted, high-performance systems programming language designed for modern development. Since v3.2.1, Argon uses **native compilation by default** for maximum performance, achieving near C++ speeds.
+Cryo is a self-hosted, high-performance systems programming language designed for modern development. Since v3.2.1, Cryo uses **native compilation by default** for maximum performance, achieving near C++ speeds.
 
 ## Table of Contents
 
@@ -28,7 +28,7 @@ Argon is a self-hosted, high-performance systems programming language designed f
 - [Language Guide](#language-guide)
 - [Standard Library](#standard-library)
 - [Performance](#performance)
-- [ArgonWeb Framework](#argonweb-framework)
+- [CryoWeb Framework](#cryoweb-framework)
 - [Tooling](#tooling)
 - [Version History](#version-history)
 - [Documentation](#documentation)
@@ -40,7 +40,7 @@ Argon is a self-hosted, high-performance systems programming language designed f
 
 ### Core Language
 - **Native Compilation**: Compiles to LLVM IR for near-C++ performance
-- **Self-Hosted**: Compiler written in Argon itself
+- **Self-Hosted**: Compiler written in Cryo itself
 - **Strong Type System**: Static typing with type inference
 - **Traits & Generics**: Rust-inspired trait system with generic programming
 - **Async/Await**: First-class asynchronous programming support
@@ -76,26 +76,26 @@ Argon is a self-hosted, high-performance systems programming language designed f
 
 ```bash
 # Clone the repository
-git clone https://github.com/TheFahmi/argon-lang.git
-cd argon-lang
+git clone https://github.com/TheFahmi/cryo-lang.git
+cd cryo-lang
 
 # Build release binary
 cargo build --release
 
 # Verify installation
-./target/release/argon --version
-# Output: Argon Native v3.2.1
+./target/release/cryo --version
+# Output: Cryo Native v3.2.1
 
 # (Optional) Copy to project root
-cp target/release/argon.exe argon.exe   # Windows
-cp target/release/argon ./argon         # Linux/Mac
+cp target/release/cryo.exe cryo.exe   # Windows
+cp target/release/cryo ./cryo         # Linux/Mac
 ```
 
 ### Using Docker
 
 ```bash
-docker build -t argon .
-docker run --rm argon ./argon --version
+docker build -t cryo .
+docker run --rm cryo ./cryo --version
 ```
 
 ---
@@ -108,14 +108,14 @@ Create `hello.ar`:
 
 ```javascript
 fn main() {
-    print("Hello, Argon!");
+    print("Hello, Cryo!");
 }
 ```
 
 Run:
 
 ```bash
-./argon hello.ar
+./cryo hello.ar
 ```
 
 ### Variables and Types
@@ -123,7 +123,7 @@ Run:
 ```javascript
 fn main() {
     // Type inference
-    let name = "Argon";
+    let name = "Cryo";
     let version = 3;
     let pi = 3.14159;
     let active = true;
@@ -385,13 +385,13 @@ typeof(value)             // Get type name
 
 ## Performance
 
-Argon achieves near-C++ performance through LLVM compilation.
+Cryo achieves near-C++ performance through LLVM compilation.
 
 ### Benchmark Results
 
 Tested on Intel Xeon E5-2660 v4 @ 2.00GHz:
 
-| Benchmark | C++ | Argon | Rust | Go | Python |
+| Benchmark | C++ | Cryo | Rust | Go | Python |
 |-----------|-----|-------|------|-----|--------|
 | Fibonacci(35) | 35ms | **40ms** | 50ms | 65ms | 2800ms |
 | Fibonacci(45) | 4.1s | 5.1s | 6.3s | 8.2s | 280s |
@@ -404,28 +404,28 @@ Tested on Intel Xeon E5-2660 v4 @ 2.00GHz:
 
 ```bash
 # Native Rust baseline (target: ~40ms for Fib35)
-./argon --native-bench 35
+./cryo --native-bench 35
 
 # Bytecode VM benchmark
-./argon --vm-bench 35
+./cryo --vm-bench 35
 
 # Full comparison suite (requires Docker)
-docker build -t argon-bench .
-docker run --rm argon-bench
+docker build -t cryo-bench .
+docker run --rm cryo-bench
 ```
 
 ---
 
-## ArgonWeb Framework
+## CryoWeb Framework
 
 A NestJS-inspired web framework for building REST APIs.
 
 ### Create New Project
 
 ```bash
-./argonweb-cli.sh new my-api
+./cryoweb-cli.sh new my-api
 cd my-api
-../argon src/main.ar
+../cryo src/main.ar
 ```
 
 ### Project Structure
@@ -455,7 +455,7 @@ my-api/
 ### Example Controller
 
 ```javascript
-import { Controller, Get, Post } from "argonweb";
+import { Controller, Get, Post } from "cryoweb";
 
 @Controller("/users")
 struct UsersController {
@@ -515,7 +515,7 @@ let json = swaggerToJson(api);
 **Run Swagger UI Server:**
 
 ```bash
-./target/release/argon.exe examples/swagger_server.ar
+./target/release/cryo.exe examples/swagger_server.ar
 # Open: http://localhost:8888/docs
 ```
 
@@ -544,7 +544,7 @@ Full VS Code integration with:
 - Find references
 - Error diagnostics
 
-Install the Argon extension from the `lsp/vscode-extension` directory.
+Install the Cryo extension from the `lsp/vscode-extension` directory.
 
 ### Package Manager (APM)
 
@@ -590,7 +590,7 @@ Install the Argon extension from the `lsp/vscode-extension` directory.
 |---------|---------|--------------|
 | v3.2.1 | 2026-01 | Native mode default, Decorators support, AI agent documentation |
 | v3.0.0 | 2025-12 | LSP, Debugger, Bytecode VM, LLVM compilation |
-| v2.24.0 | 2025-11 | Macros, ArgonWeb CLI, Crypto module |
+| v2.24.0 | 2025-11 | Macros, CryoWeb CLI, Crypto module |
 | v2.23.0 | 2025-10 | Defer statement |
 | v2.22.0 | 2025-09 | Optimization pass (constant folding) |
 | v2.21.0 | 2025-08 | Garbage collection |

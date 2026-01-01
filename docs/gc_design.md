@@ -1,7 +1,7 @@
-# Argon Garbage Collection & Memory Model Design (v2.21.0)
+# Cryo Garbage Collection & Memory Model Design (v2.21.0)
 
 ## Motivation
-Currently, Argon (v2.20.0) reference interpreter uses **Copy Semantics** for all types.
+Currently, Cryo (v2.20.0) reference interpreter uses **Copy Semantics** for all types.
 - `let a = [1, 2]; let b = a;` creates a deep copy. Modifying `b` does not affect `a`.
 - Passing arrays/structs to functions copies them.
 
@@ -23,7 +23,7 @@ We will split types into two categories:
 - `Float` (f64) - *Proposed addition*
 
 **Reference Types (Pointer Semantics):**
-- `String` (Immutable reference or Copy? Usually Copy in primitive-like languages, Ref in Java. We'll stick to **Copy** for Strings for now or **Ref**? String mutation `s[0] = 'a'`? Argon strings seem immutable in stdlib `to_upper` returns new string. Let's keep Strings immutable value-like).
+- `String` (Immutable reference or Copy? Usually Copy in primitive-like languages, Ref in Java. We'll stick to **Copy** for Strings for now or **Ref**? String mutation `s[0] = 'a'`? Cryo strings seem immutable in stdlib `to_upper` returns new string. Let's keep Strings immutable value-like).
 - `Array` (Mutable Reference)
 - `Struct` (Mutable Reference)
 - `Function` (Reference)

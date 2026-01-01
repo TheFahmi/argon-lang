@@ -1,10 +1,10 @@
 /**
- * Argon WASM Loader
- * JavaScript helper for loading and interacting with Argon WASM modules
+ * Cryo WASM Loader
+ * JavaScript helper for loading and interacting with Cryo WASM modules
  * Version: 2.24.0
  */
 
-class ArgonWASM {
+class CryoWASM {
     constructor() {
         this.instance = null;
         this.memory = null;
@@ -196,16 +196,16 @@ class ArgonWASM {
 }
 
 /**
- * Helper function to load Argon WASM module
+ * Helper function to load Cryo WASM module
  * @param {string} wasmPath - Path to WASM file
  * @returns {Promise<object>} - Exported functions
  */
-async function loadArgonModule(wasmPath) {
-    const argon = new ArgonWASM();
-    return await argon.load(wasmPath);
+async function loadCryoModule(wasmPath) {
+    const cryo = new CryoWASM();
+    return await cryo.load(wasmPath);
 }
 
 // Export for Node.js
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { ArgonWASM, loadArgonModule };
+    module.exports = { CryoWASM, loadCryoModule };
 }

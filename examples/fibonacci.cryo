@@ -1,0 +1,15 @@
+fn fib(n) {
+    if (n < 2) { return n; }
+    return fib(n - 1) + fib(n - 2);
+}
+
+fn main() {
+    let n = 40;
+    print("Calculating Fibonacci sequence for n=" + n + "...");
+    
+    // Cryo is fast!
+    let result = fib(n);
+    
+    print("Result:");
+    print(result);
+}

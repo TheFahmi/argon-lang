@@ -1,4 +1,4 @@
-// Argon Macro Expander
+// Cryo Macro Expander
 // Performs AST transformation (Macro Expansion)
 
 use crate::parser::{Expr, Stmt, TopLevel, MacroDef};

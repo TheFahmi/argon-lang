@@ -1,0 +1,228 @@
+// ============================================
+// CRYO STANDARD LIBRARY: MAP (v2.19.0)
+// HashMap/Dictionary implementation
+// Uses simple linear search (for small maps)
+// ============================================
+
+// Map is represented as [[key1, val1], [key2, val2], ...]
+
+// Helper: create a key-value pair
+fn _map_pair(k, v) {
+    let p = [];
+    p = push(p, k);
+    p = push(p, v);
+    return p;
+}
+
+// Create empty map
+fn mapNew() {
+    let m = [];
+    return m;
+}
+
+// Get number of entries
+fn mapSize(m) {
+    return len(m);
+}
+
+// Check if map is empty
+fn mapIsEmpty(m) {
+    return len(m) == 0;
+}
+
+// Check if key exists
+fn mapHas(m, key) {
+    let i = 0;
+    while (i < len(m)) {
+        let entry = m[i];
+        if (entry[0] == key) {
+            return true;
+        }
+        i = i + 1;
+    }
+    return false;
+}
+
+// Get value by key (returns null if not found)
+fn mapGet(m, key) {
+    let i = 0;
+    while (i < len(m)) {
+        let entry = m[i];
+        if (entry[0] == key) {
+            return entry[1];
+        }
+        i = i + 1;
+    }
+    return null;
+}
+
+// Get value by key with default
+fn mapGetOr(m, key, default_val) {
+    let i = 0;
+    while (i < len(m)) {
+        let entry = m[i];
+        if (entry[0] == key) {
+            return entry[1];
+        }
+        i = i + 1;
+    }
+    return default_val;
+}
+
+// Set key-value pair (returns new map)
+fn mapSet(m, key, value) {
+    let result = [];
+    let found = false;
+    let i = 0;
+    
+    while (i < len(m)) {
+        let entry = m[i];
+        if (entry[0] == key) {
+            let pair = _map_pair(key, value);
+            result = push(result, pair);
+            found = true;
+        } else {
+            result = push(result, entry);
+        }
+        i = i + 1;
+    }
+    
+    if (found == false) {
+        let pair = _map_pair(key, value);
+        result = push(result, pair);
+    }
+    
+    return result;
+}
+
+// Remove key (returns new map)
+fn mapRemove(m, key) {
+    let result = [];
+    let i = 0;
+    while (i < len(m)) {
+        let entry = m[i];
+        if (entry[0] != key) {
+            result = push(result, entry);
+        }
+        i = i + 1;
+    }
+    return result;
+}
+
+// Get all keys
+fn mapKeys(m) {
+    let result = [];
+    let i = 0;
+    while (i < len(m)) {
+        let entry = m[i];
+        result = push(result, entry[0]);
+        i = i + 1;
+    }
+    return result;
+}
+
+// Get all values
+fn mapValues(m) {
+    let result = [];
+    let i = 0;
+    while (i < len(m)) {
+        let entry = m[i];
+        result = push(result, entry[1]);
+        i = i + 1;
+    }
+    return result;
+}
+
+// Get all entries
+fn mapEntries(m) {
+    return m;
+}
+
+// Clear map
+fn mapClear() {
+    let m = [];
+    return m;
+}
+
+// Merge two maps (second overwrites first)
+fn mapMerge(m1, m2) {
+    let result = m1;
+    let i = 0;
+    while (i < len(m2)) {
+        let entry = m2[i];
+        result = mapSet(result, entry[0], entry[1]);
+        i = i + 1;
+    }
+    return result;
+}
+
+// Create map from arrays of keys and values
+fn mapFromArrays(keys, values) {
+    let result = [];
+    let i = 0;
+    let n = len(keys);
+    if (len(values) < n) {
+        n = len(values);
+    }
+    while (i < n) {
+        let pair = _map_pair(keys[i], values[i]);
+        result = push(result, pair);
+        i = i + 1;
+    }
+    return result;
+}
+
+// Filter map entries by value
+fn mapFilterByValue(m, value) {
+    let result = [];
+    let i = 0;
+    while (i < len(m)) {
+        let entry = m[i];
+        if (entry[1] == value) {
+            result = push(result, entry);
+        }
+        i = i + 1;
+    }
+    return result;
+}
+
+// Invert map (swap keys and values)
+fn mapInvert(m) {
+    let result = [];
+    let i = 0;
+    while (i < len(m)) {
+        let entry = m[i];
+        let pair = _map_pair(entry[1], entry[0]);
+        result = push(result, pair);
+        i = i + 1;
+    }
+    return result;
+}
+
+// Count occurrences in array
+fn mapCount(arr) {
+    let result = [];
+    let i = 0;
+    while (i < len(arr)) {
+        let key = arr[i];
+        let count = mapGetOr(result, key, 0);
+        result = mapSet(result, key, count + 1);
+        i = i + 1;
+    }
+    return result;
+}
+
+// Convert map to string
+fn mapToString(m) {
+    let result = "{";
+    let i = 0;
+    while (i < len(m)) {
+        if (i > 0) {
+            result = result + ", ";
+        }
+        let entry = m[i];
+        result = result + entry[0] + ": " + entry[1];
+        i = i + 1;
+    }
+    return result + "}";
+}

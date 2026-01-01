@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ============================================
-// ARGON LANGUAGE SERVER v2.0.0
+// CRYO LANGUAGE SERVER v2.0.0
 // Language Server Protocol implementation
 // With Navigation and Autocomplete support
 // ============================================
@@ -18,7 +18,7 @@ let symbolCache = new Map(); // uri -> symbols[]
 
 // Logging
 function log(msg) {
-    console.error(`[argon-lsp] ${msg}`);
+    console.error(`[cryo-lsp] ${msg}`);
 }
 
 // Send JSON-RPC response
@@ -49,7 +49,7 @@ function sendNotification(method, params) {
 // PARSING & SYMBOLS
 // ============================================
 
-// Parse Argon source for symbols with detailed info
+// Parse Cryo source for symbols with detailed info
 function parseSymbols(text, uri) {
     const symbols = [];
     const lines = text.split('\n');
@@ -561,7 +561,7 @@ function getDiagnostics(text, uri) {
                         },
                         severity: 2,
                         message: 'Possible missing semicolon',
-                        source: 'argon'
+                        source: 'cryo'
                     });
                 }
             }
@@ -577,7 +577,7 @@ function getDiagnostics(text, uri) {
                 },
                 severity: 2,
                 message: 'print() called without arguments',
-                source: 'argon'
+                source: 'cryo'
             });
         }
     }
@@ -591,7 +591,7 @@ function getDiagnostics(text, uri) {
             },
             severity: 1,
             message: braceDepth > 0 ? 'Unmatched opening brace' : 'Unmatched closing brace',
-            source: 'argon'
+            source: 'cryo'
         });
     }
 
@@ -627,19 +627,19 @@ function getHover(text, line, character) {
         return {
             contents: {
                 kind: 'markdown',
-                value: '```argon\n' + builtinDocs[word] + '\n```'
+                value: '```cryo\n' + builtinDocs[word] + '\n```'
             }
         };
     }
 
     // Keywords
     const keywordDocs = {
-        'fn': 'Define a function\n\n```argon\nfn name(params) {\n    // body\n}\n```',
-        'let': 'Declare a variable\n\n```argon\nlet x = 10;\n```',
-        'struct': 'Define a struct type\n\n```argon\nstruct Point {\n    x: int,\n    y: int\n}\n```',
-        'enum': 'Define an enum type\n\n```argon\nenum Option {\n    Some(value),\n    None\n}\n```',
-        'match': 'Pattern matching\n\n```argon\nmatch expr {\n    Pattern => { body }\n}\n```',
-        'import': 'Import a module\n\n```argon\nimport "module.ar";\n```'
+        'fn': 'Define a function\n\n```cryo\nfn name(params) {\n    // body\n}\n```',
+        'let': 'Declare a variable\n\n```cryo\nlet x = 10;\n```',
+        'struct': 'Define a struct type\n\n```cryo\nstruct Point {\n    x: int,\n    y: int\n}\n```',
+        'enum': 'Define an enum type\n\n```cryo\nenum Option {\n    Some(value),\n    None\n}\n```',
+        'match': 'Pattern matching\n\n```cryo\nmatch expr {\n    Pattern => { body }\n}\n```',
+        'import': 'Import a module\n\n```cryo\nimport "module.cryo";\n```'
     };
 
     if (keywordDocs[word]) {
@@ -659,7 +659,7 @@ function getHover(text, line, character) {
             return {
                 contents: {
                     kind: 'markdown',
-                    value: `\`\`\`argon\nfn ${word}(${match[1]})\n\`\`\`\n*Defined on line ${i + 1}*`
+                    value: `\`\`\`cryo\nfn ${word}(${match[1]})\n\`\`\`\n*Defined on line ${i + 1}*`
                 }
             };
         }
@@ -683,7 +683,7 @@ function getHover(text, line, character) {
             return {
                 contents: {
                     kind: 'markdown',
-                    value: `\`\`\`argon\nstruct ${word} {\n${fields.join(',\n')}\n}\n\`\`\`\n*Defined on line ${i + 1}*`
+                    value: `\`\`\`cryo\nstruct ${word} {\n${fields.join(',\n')}\n}\n\`\`\`\n*Defined on line ${i + 1}*`
                 }
             };
         }
@@ -701,7 +701,7 @@ function handleRequest(message) {
 
     switch (method) {
         case 'initialize':
-            log('Initializing Argon Language Server v2.0.0');
+            log('Initializing Cryo Language Server v2.0.0');
             initialized = true;
             if (params.rootUri) {
                 workspaceRoot = params.rootUri;
@@ -724,7 +724,7 @@ function handleRequest(message) {
                     documentFormattingProvider: true
                 },
                 serverInfo: {
-                    name: 'argon-lsp',
+                    name: 'cryo-lsp',
                     version: '2.0.0'
                 }
             });
@@ -920,5 +920,5 @@ function readMessages() {
 }
 
 // Main
-log('Argon Language Server v2.0.0 starting...');
+log('Cryo Language Server v2.0.0 starting...');
 readMessages();

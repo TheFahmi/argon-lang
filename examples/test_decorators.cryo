@@ -1,0 +1,39 @@
+
+// Mocking CryoWeb decorators definition (since they are built-in syntax now, we don't need to import them as functions/macros from userland necessarily, 
+// but if they were just metadata, the parser handles them. 
+// However, typically in other languages decorators are also functions. 
+// In our implementation, they are native syntax tokens `@Name`. 
+// So imports might be needed only if we want type checking or if they desugar to function calls.
+// For now, let's assume they are just syntax sugar for metadata.)
+
+@Controller("/users")
+struct UsersController {
+    service: String
+}
+
+@Injectable
+struct UsersService {
+    db: String
+}
+
+impl UsersController {
+    @Post("/create")
+    fn create(self) -> String {
+        return "User Created";
+    }
+}
+
+@Get("/profile")
+fn getProfile() -> String {
+    return "User Profile";
+}
+
+fn main() {
+    print("CryoWeb Decorators Test");
+    let controller = UsersController { service: "UserService" };
+    print("Controller created successfully");
+    
+    print(controller.create());
+    
+    print(getProfile());
+}

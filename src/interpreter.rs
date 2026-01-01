@@ -1,4 +1,4 @@
-// Argon Interpreter - Executes AST
+// Cryo Interpreter - Executes AST
 // Compatible with compiler.ar v3.2.1 (GC + FFI)
 
 #![allow(dead_code)]
@@ -225,15 +225,15 @@ impl Interpreter {
         
         // First priority: relative to main file's directory
         if !self.base_path.is_empty() {
-            possible_paths.push(format!("{}/{}.ar", self.base_path, path));
+            possible_paths.push(format!("{}/{}.cryo", self.base_path, path));
         }
         
         // Standard paths
-        possible_paths.push(format!("d:/rust/stdlib/{}.ar", path));
-        possible_paths.push(format!("stdlib/{}.ar", path));
-        possible_paths.push(format!("{}.ar", path));
-        possible_paths.push(format!("examples/{}.ar", path));
-        possible_paths.push(format!("libs/{}.ar", path));
+        possible_paths.push(format!("d:/rust/stdlib/{}.cryo", path));
+        possible_paths.push(format!("stdlib/{}.cryo", path));
+        possible_paths.push(format!("{}.cryo", path));
+        possible_paths.push(format!("examples/{}.cryo", path));
+        possible_paths.push(format!("libs/{}.cryo", path));
         
         let mut source = String::new();
         let mut found = false;
@@ -281,13 +281,13 @@ impl Interpreter {
         // Build search paths
         let mut possible_paths = vec![];
         if !self.base_path.is_empty() {
-            possible_paths.push(format!("{}/{}.ar", self.base_path, path));
+            possible_paths.push(format!("{}/{}.cryo", self.base_path, path));
         }
-        possible_paths.push(format!("d:/rust/stdlib/{}.ar", path));
-        possible_paths.push(format!("stdlib/{}.ar", path));
-        possible_paths.push(format!("{}.ar", path));
-        possible_paths.push(format!("examples/{}.ar", path));
-        possible_paths.push(format!("libs/{}.ar", path));
+        possible_paths.push(format!("d:/rust/stdlib/{}.cryo", path));
+        possible_paths.push(format!("stdlib/{}.cryo", path));
+        possible_paths.push(format!("{}.cryo", path));
+        possible_paths.push(format!("examples/{}.cryo", path));
+        possible_paths.push(format!("libs/{}.cryo", path));
         
         let mut source = String::new();
         let mut found = false;
@@ -505,7 +505,7 @@ impl Interpreter {
                 let arg_vals: Vec<Value> = self.program_args.iter().map(|s| Value::String(s.clone())).collect();
                 return Ok(Value::Array(Rc::new(RefCell::new(arg_vals))));
             }
-            "argon_listen" => {
+            "cryo_listen" => {
                 if let Some(Value::Int(port)) = args.first() {
                      if let Ok(listener) = TcpListener::bind(format!("0.0.0.0:{}", port)) {
                          let id = self.next_sock_id;
@@ -516,7 +516,7 @@ impl Interpreter {
                 }
                 return Ok(Value::Int(-1));
             }
-            "tcp_connect" | "argon_tcp_connect" => {
+            "tcp_connect" | "cryo_tcp_connect" => {
                 // Connect to remote host:port
                 // Args: host (string), port (int)
                 if args.len() >= 2 {
@@ -540,7 +540,7 @@ impl Interpreter {
                 }
                 return Ok(Value::Int(-1));
             }
-            "tcp_read_line" | "argon_socket_readline" => {
+            "tcp_read_line" | "cryo_socket_readline" => {
                 // Read until newline (byte by byte to avoid buffer issues)
                 if let Some(Value::Int(id)) = args.first() {
                     if let Some(stream) = self.sockets.get_mut(id) {
@@ -565,7 +565,7 @@ impl Interpreter {
                 }
                 return Ok(Value::String("".to_string()));
             }
-            "tcp_write" | "argon_tcp_write" | "tcpWrite" => {
+            "tcp_write" | "cryo_tcp_write" | "tcpWrite" => {
                 // Write string with newline
                 if args.len() >= 2 {
                     if let (Value::Int(id), Value::String(s)) = (&args[0], &args[1]) {
@@ -580,7 +580,7 @@ impl Interpreter {
                 }
                 return Ok(Value::Bool(false));
             }
-            "tcp_read_bytes" | "argon_socket_read_bytes" | "tcpReadBytes" => {
+            "tcp_read_bytes" | "cryo_socket_read_bytes" | "tcpReadBytes" => {
                 // Read exact number of bytes
                 if args.len() >= 2 {
                     if let (Value::Int(id), Value::Int(count)) = (&args[0], &args[1]) {
@@ -736,7 +736,7 @@ impl Interpreter {
                 }
                 return Ok(Value::Array(Rc::new(RefCell::new(Vec::new()))));
             }
-            "argon_accept" => {
+            "cryo_accept" => {
                 if let Some(Value::Int(id)) = args.first() {
                     if let Some(listener) = self.listeners.get(id) {
                          if let Ok((stream, _)) = listener.accept() {
@@ -749,7 +749,7 @@ impl Interpreter {
                 }
                 return Ok(Value::Int(-1));
             }
-            "argon_socket_read" => {
+            "cryo_socket_read" => {
                 if let Some(Value::Int(id)) = args.first() {
                     if let Some(stream) = self.sockets.get_mut(id) {
                         let mut buf = [0; 2048];
@@ -761,7 +761,7 @@ impl Interpreter {
                 }
                 return Ok(Value::String("".to_string()));
             }
-            "argon_socket_write" => {
+            "cryo_socket_write" => {
                  if args.len() >= 2 {
                      if let (Value::Int(id), Value::String(s)) = (&args[0], &args[1]) {
                          if let Some(stream) = self.sockets.get_mut(id) {
@@ -771,7 +771,7 @@ impl Interpreter {
                  }
                  return Ok(Value::Null);
             }
-            "argon_socket_close" => {
+            "cryo_socket_close" => {
                 if let Some(Value::Int(id)) = args.first() {
                     self.sockets.remove(id);
                     self.listeners.remove(id); 

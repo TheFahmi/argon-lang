@@ -1,16 +1,16 @@
-# Argon vs Rust: Benchmark & Comparison
+# Cryo vs Rust: Benchmark & Comparison
 
-## Quick Benchmark Results (Argon v2.1 Native)
+## Quick Benchmark Results (Cryo v2.1 Native)
 
 ### Startup & Overhead
 
-| Metric | Argon (Native) | Rust (Native) | Notes |
+| Metric | Cryo (Native) | Rust (Native) | Notes |
 |--------|----------------|---------------|-------|
 | Startup time | < 5ms | < 2ms | Negligible difference |
-| Binary Size | ~4MB (Static Linked) | ~2MB | Argon includes runtime intrinsics |
-| Allocation | Instant (Bump Ptr) | Malloc/Free | Argon 10x faster in batch alloc |
+| Binary Size | ~4MB (Static Linked) | ~2MB | Cryo includes runtime intrinsics |
+| Allocation | Instant (Bump Ptr) | Malloc/Free | Cryo 10x faster in batch alloc |
 
-**Note**: Argon v2.1 uses LLVM Backend, achieving native performance comparable to C/Rust.
+**Note**: Cryo v2.1 uses LLVM Backend, achieving native performance comparable to C/Rust.
 
 ### Memory Management Advantage
 
@@ -20,7 +20,7 @@ Rust (Box allocation):
   10,000 deallocations: 534.7µs (individual drops)
   Total:                1.37ms
 
-Argon (Region/Bump allocation):
+Cryo (Region/Bump allocation):
   10,000 allocations:   ~100µs (bump pointer)
   10,000 deallocations: ~0.1µs (single free)
   Total:                ~100µs  → 13x FASTER
@@ -30,7 +30,7 @@ Argon (Region/Bump allocation):
 
 ## Executive Summary
 
-| Aspect | Argon | Rust |
+| Aspect | Cryo | Rust |
 |--------|-------|------|
 | Memory Safety | ✓ Compile-time (Region-based) | ✓ Compile-time (Borrow Checker) |
 | Garbage Collector | ✗ None | ✗ None |
@@ -52,7 +52,7 @@ for i in 0..1_000_000 {
 // Drop iterates all 1M items
 ```
 
-### Argon Code (`bench.ar`)
+### Cryo Code (`bench.ar`)
 ```typescript
 region batch {
     // Allocates in batch region (Bump Ptr)
@@ -63,7 +63,7 @@ region batch {
 // Free happens instantly here (reset pointer)
 ```
 
-**Result:** Argon's region-based approach is significantly faster for batch workloads because it avoids `malloc` overhead for every object and `free` overhead for every object.
+**Result:** Cryo's region-based approach is significantly faster for batch workloads because it avoids `malloc` overhead for every object and `free` overhead for every object.
 
 ---
 
@@ -78,7 +78,7 @@ error[E0597]: `data` does not live long enough
    |              ^^^^^ borrowed value does not live long enough
 ```
 
-### Argon (Region Escape)
+### Cryo (Region Escape)
 ```text
 error: Reference escapes region
   --> main.ar:10:5

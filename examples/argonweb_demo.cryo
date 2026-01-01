@@ -1,0 +1,381 @@
+// ============================================
+// CryoWeb NestJS-style Demo
+// Full REST API with all features
+// ============================================
+//
+// Run: ./target/release/cryo.exe examples/cryoweb_demo.ar
+// Test: 
+//   curl http://localhost:3000/
+//   curl http://localhost:3000/api
+//   curl http://localhost:3000/api/users
+//   curl http://localhost:3000/api/users/1
+//   curl http://localhost:3000/api/todos
+//   curl http://localhost:3000/api/todos?status=completed
+//
+// ============================================
+
+import "cryoweb"
+import "json"
+
+// ============================================
+// Configuration
+// ============================================
+
+let APP_NAME = "CryoWeb Demo API";
+let APP_VERSION = "1.0.0";
+let APP_PORT = 3000;
+
+// ============================================
+// In-Memory Database
+// ============================================
+
+let users = [];
+let todos = [];
+let nextUserId = 1;
+let nextTodoId = 1;
+
+fn seedDatabase() {
+    print("[DB] Seeding database...");
+    
+    // Users
+    push(users, { id: 1, name: "Admin", email: "admin@example.com", role: "admin" });
+    push(users, { id: 2, name: "John Doe", email: "john@example.com", role: "user" });
+    push(users, { id: 3, name: "Jane Smith", email: "jane@example.com", role: "user" });
+    nextUserId = 4;
+    
+    // Todos
+    push(todos, { id: 1, title: "Setup CryoWeb", completed: true, userId: 1 });
+    push(todos, { id: 2, title: "Build REST API", completed: true, userId: 1 });
+    push(todos, { id: 3, title: "Add authentication", completed: false, userId: 2 });
+    push(todos, { id: 4, title: "Write tests", completed: false, userId: 2 });
+    push(todos, { id: 5, title: "Deploy to production", completed: false, userId: 1 });
+    nextTodoId = 6;
+    
+    print("[DB] Seeded " + len(users) + " users, " + len(todos) + " todos");
+}
+
+// ============================================
+// User Service
+// ============================================
+
+fn findAllUsers() {
+    return users;
+}
+
+fn findUserById(id: int) {
+    let i = 0;
+    while (i < len(users)) {
+        if (users[i].id == id) {
+            return users[i];
+        }
+        i = i + 1;
+    }
+    return null;
+}
+
+fn createUser(name: string, email: string) {
+    let user = {
+        id: nextUserId,
+        name: name,
+        email: email,
+        role: "user"
+    };
+    nextUserId = nextUserId + 1;
+    push(users, user);
+    return user;
+}
+
+// ============================================
+// Todo Service
+// ============================================
+
+fn findAllTodos() {
+    return todos;
+}
+
+fn findTodoById(id: int) {
+    let i = 0;
+    while (i < len(todos)) {
+        if (todos[i].id == id) {
+            return todos[i];
+        }
+        i = i + 1;
+    }
+    return null;
+}
+
+fn findTodosByUser(userId: int) {
+    let result = [];
+    let i = 0;
+    while (i < len(todos)) {
+        if (todos[i].userId == userId) {
+            push(result, todos[i]);
+        }
+        i = i + 1;
+    }
+    return result;
+}
+
+fn findTodosByStatus(completed: bool) {
+    let result = [];
+    let i = 0;
+    while (i < len(todos)) {
+        if (todos[i].completed == completed) {
+            push(result, todos[i]);
+        }
+        i = i + 1;
+    }
+    return result;
+}
+
+fn createTodo(title: string, userId: int) {
+    let todo = {
+        id: nextTodoId,
+        title: title,
+        completed: false,
+        userId: userId
+    };
+    nextTodoId = nextTodoId + 1;
+    push(todos, todo);
+    return todo;
+}
+
+fn toggleTodo(id: int) {
+    let i = 0;
+    while (i < len(todos)) {
+        if (todos[i].id == id) {
+            todos[i].completed = !todos[i].completed;
+            return todos[i];
+        }
+        i = i + 1;
+    }
+    return null;
+}
+
+fn getTodoStats() {
+    let total = len(todos);
+    let completed = 0;
+    let i = 0;
+    while (i < len(todos)) {
+        if (todos[i].completed) {
+            completed = completed + 1;
+        }
+        i = i + 1;
+    }
+    return {
+        total: total,
+        completed: completed,
+        pending: total - completed
+    };
+}
+
+// ============================================
+// Controllers (Route Handlers)
+// ============================================
+
+// Root Controller
+fn handleRoot(ctx: Context) {
+    let html = "<!DOCTYPE html>
+<html>
+<head>
+    <title>" + APP_NAME + "</title>
+    <style>
+        body { font-family: system-ui; max-width: 800px; margin: 50px auto; padding: 20px; }
+        h1 { color: #333; }
+        .endpoint { background: #f5f5f5; padding: 10px; margin: 5px 0; border-radius: 5px; }
+        .method { font-weight: bold; color: #2196F3; }
+        .get { color: #4CAF50; }
+        .post { color: #FF9800; }
+    </style>
+</head>
+<body>
+    <h1>" + APP_NAME + "</h1>
+    <p>Version " + APP_VERSION + " | Powered by CryoWeb</p>
+    <h2>Endpoints</h2>
+    <div class='endpoint'><span class='method get'>GET</span> <a href='/api'>/api</a> - API Info</div>
+    <div class='endpoint'><span class='method get'>GET</span> <a href='/api/users'>/api/users</a> - List users</div>
+    <div class='endpoint'><span class='method get'>GET</span> /api/users/:id - Get user by ID</div>
+    <div class='endpoint'><span class='method get'>GET</span> <a href='/api/todos'>/api/todos</a> - List todos</div>
+    <div class='endpoint'><span class='method get'>GET</span> <a href='/api/todos/stats'>/api/todos/stats</a> - Todo stats</div>
+    <div class='endpoint'><span class='method get'>GET</span> /api/todos/:id - Get todo by ID</div>
+    <div class='endpoint'><span class='method get'>GET</span> /api/users/:id/todos - User's todos</div>
+</body>
+</html>";
+    ctx.html(html);
+}
+
+fn handleApiInfo(ctx: Context) {
+    ctx.json(responseOk({
+        name: APP_NAME,
+        version: APP_VERSION,
+        framework: "CryoWeb " + CRYOWEB_VERSION,
+        endpoints: [
+            "GET /api/users",
+            "GET /api/users/:id",
+            "GET /api/todos",
+            "GET /api/todos/:id",
+            "GET /api/todos/stats",
+            "GET /api/users/:id/todos"
+        ]
+    }));
+}
+
+fn handleHealth(ctx: Context) {
+    ctx.json({
+        status: "healthy",
+        uptime: timestamp(),
+        version: APP_VERSION
+    });
+}
+
+// Users Controller
+fn handleGetUsers(ctx: Context) {
+    let allUsers = findAllUsers();
+    ctx.json(responseOk(allUsers));
+}
+
+fn handleGetUser(ctx: Context) {
+    let id = parseInt(ctx.param("id"));
+    let user = findUserById(id);
+    
+    if (user == null) {
+        ctx.json(responseNotFound("User"));
+        return;
+    }
+    
+    ctx.json(responseOk(user));
+}
+
+fn handleCreateUser(ctx: Context) {
+    // In real app, parse body for name/email
+    let user = createUser("New User " + random(), "user" + random() + "@example.com");
+    ctx.jsonStatus(201, responseCreated(user));
+}
+
+// Todos Controller
+fn handleGetTodos(ctx: Context) {
+    // Check for query params
+    let statusFilter = ctx.queryParam("status");
+    
+    let result = [];
+    if (statusFilter == "completed") {
+        result = findTodosByStatus(true);
+    } else if (statusFilter == "pending") {
+        result = findTodosByStatus(false);
+    } else {
+        result = findAllTodos();
+    }
+    
+    ctx.json(responseOk(result));
+}
+
+fn handleGetTodo(ctx: Context) {
+    let id = parseInt(ctx.param("id"));
+    let todo = findTodoById(id);
+    
+    if (todo == null) {
+        ctx.json(responseNotFound("Todo"));
+        return;
+    }
+    
+    ctx.json(responseOk(todo));
+}
+
+fn handleGetTodoStats(ctx: Context) {
+    ctx.json(responseOk(getTodoStats()));
+}
+
+fn handleToggleTodo(ctx: Context) {
+    let id = parseInt(ctx.param("id"));
+    let todo = toggleTodo(id);
+    
+    if (todo == null) {
+        ctx.json(responseNotFound("Todo"));
+        return;
+    }
+    
+    ctx.json(responseOk(todo));
+}
+
+fn handleCreateTodo(ctx: Context) {
+    // In real app, parse body
+    let todo = createTodo("New Task " + random(), 1);
+    ctx.jsonStatus(201, responseCreated(todo));
+}
+
+fn handleGetUserTodos(ctx: Context) {
+    let userId = parseInt(ctx.param("id"));
+    let user = findUserById(userId);
+    
+    if (user == null) {
+        ctx.json(responseNotFound("User"));
+        return;
+    }
+    
+    let userTodos = findTodosByUser(userId);
+    ctx.json(responseOk({
+        user: user,
+        todos: userTodos
+    }));
+}
+
+// ============================================
+// Custom Middleware
+// ============================================
+
+fn requestTimerMiddleware(ctx: Context) -> bool {
+    ctx.locals["startTime"] = timestampMs();
+    return true;
+}
+
+// ============================================
+// Main Application
+// ============================================
+
+fn main() {
+    print("================================================");
+    print("   " + APP_NAME);
+    print("   Version " + APP_VERSION);
+    print("================================================");
+    print("");
+    
+    // Seed database
+    seedDatabase();
+    
+    // Create server
+    let app = Server::new(APP_PORT);
+    
+    // Global middleware
+    app.use(loggerMiddleware);
+    app.use(requestTimerMiddleware);
+    
+    print("");
+    print("[Routes] Registering endpoints...");
+    
+    // Root routes
+    app.get("/", handleRoot);
+    app.get("/health", handleHealth);
+    app.get("/api", handleApiInfo);
+    
+    // Users routes
+    app.get("/api/users", handleGetUsers);
+    app.get("/api/users/:id", handleGetUser);
+    app.get("/api/users/:id/todos", handleGetUserTodos);
+    app.post("/api/users", handleCreateUser);
+    
+    // Todos routes
+    app.get("/api/todos", handleGetTodos);
+    app.get("/api/todos/stats", handleGetTodoStats);
+    app.get("/api/todos/:id", handleGetTodo);
+    app.get("/api/todos/:id/toggle", handleToggleTodo);
+    app.post("/api/todos", handleCreateTodo);
+    
+    print("[Routes] 13 endpoints registered");
+    print("");
+    print("Server running on http://localhost:" + APP_PORT);
+    print("Press Ctrl+C to stop");
+    print("");
+    
+    // Start
+    app.start();
+}

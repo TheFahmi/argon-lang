@@ -1,4 +1,4 @@
-// Argon Garbage Collector Module
+// Cryo Garbage Collector Module
 // Mark-and-Sweep GC for managing heap-allocated objects
 
 #![allow(dead_code)]

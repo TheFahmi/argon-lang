@@ -1,4 +1,4 @@
-# Argon Standard Library Reference
+# Cryo Standard Library Reference
 
 ## Math Functions
 
@@ -114,17 +114,17 @@
 
 | Function | Description |
 |----------|-------------|
-| `argonListen(port)` | Start TCP listener |
-| `argonAccept(listener_id)` | Accept connection |
-| `argonSocketRead(socket_id)` | Read from socket |
-| `argonSocketWrite(socket_id, data)` | Write to socket |
-| `argonSocketClose(socket_id)` | Close socket |
+| `cryoListen(port)` | Start TCP listener |
+| `cryoAccept(listener_id)` | Accept connection |
+| `cryoSocketRead(socket_id)` | Read from socket |
+| `cryoSocketWrite(socket_id, data)` | Write to socket |
+| `cryoSocketClose(socket_id)` | Close socket |
 
 ---
 
 ## Type Reference
 
-Argon supports the following types:
+Cryo supports the following types:
 
 - `null` - Null value
 - `int` - 64-bit integer

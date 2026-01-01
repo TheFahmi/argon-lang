@@ -1,4 +1,4 @@
-# Argon Generic Types Design
+# Cryo Generic Types Design
 
 ## Status: Phase 1 - Syntax Parsing ✅
 
@@ -13,7 +13,7 @@ Generic types allow writing code that works with multiple types while maintainin
 
 ### Generic Functions
 
-```argon
+```cryo
 // Generic identity function
 fn identity<T>(x: T) -> T {
     return x;
@@ -26,7 +26,7 @@ let b = identity<string>("hello");
 
 ### Generic Structs
 
-```argon
+```cryo
 // Generic Pair struct
 struct Pair<T, U> {
     first: T,
@@ -46,7 +46,7 @@ We use monomorphization - generating specialized code for each concrete type use
 ### Example Transformation
 
 **Input:**
-```argon
+```cryo
 fn identity<T>(x: T) -> T {
     return x;
 }
@@ -58,7 +58,7 @@ fn main() {
 ```
 
 **Generated:**
-```argon
+```cryo
 fn identityInt(x) {
     return x;
 }
@@ -134,7 +134,7 @@ For each instantiation, generate a concrete function with:
 
 ## Compiler Data Structures
 
-```argon
+```cryo
 // Store generic function definitions
 let generic_funcs = [];  // [[name, type_params, params, body], ...]
 

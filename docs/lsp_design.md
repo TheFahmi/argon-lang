@@ -1,8 +1,8 @@
-# Argon Language Server Protocol (LSP) v2.0.0
+# Cryo Language Server Protocol (LSP) v2.0.0
 
 ## Overview
 
-The Argon LSP provides full IDE support for Argon programming language.
+The Cryo LSP provides full IDE support for Cryo programming language.
 
 ## Features
 
@@ -25,7 +25,7 @@ The Argon LSP provides full IDE support for Argon programming language.
 
 ```
 ┌─────────────────┐     ┌─────────────────┐
-│   VS Code /     │────▶│   argon-lsp     │
+│   VS Code /     │────▶│   cryo-lsp     │
 │   Any Editor    │◀────│   (Node.js)     │
 └─────────────────┘     └────────┬────────┘
                                  │
@@ -60,11 +60,11 @@ The LSP uses JSON-RPC over stdin/stdout.
 ## Usage
 
 ### VS Code Extension
-Install the Argon extension from marketplace (coming soon).
+Install the Cryo extension from marketplace (coming soon).
 
 ### Manual Setup
 1. Install Node.js
-2. Run: `node lsp/argon-lsp.js --stdio`
+2. Run: `node lsp/cryo-lsp.js --stdio`
 3. Configure your editor to use this command
 
 ## Features Detail

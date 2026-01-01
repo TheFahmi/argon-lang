@@ -99,16 +99,16 @@ fn main() {
 EOF
 
 ###############################################
-# ARGON LLVM FILES
+# CRYO LLVM FILES
 ###############################################
-echo "[3] Creating Argon LLVM IR files..."
+echo "[3] Creating Cryo LLVM IR files..."
 
 # SumLoop LLVM
-cat > sumloop_argon.ll << 'LLVM_EOF'
+cat > sumloop_cryo.ll << 'LLVM_EOF'
 target triple = "x86_64-pc-linux-gnu"
-@.s0 = private constant [29 x i8] c"Argon Sum Loop: Starting...\0A\00"
-@.s1 = private constant [24 x i8] c"Argon Sum Loop: Result=\00"
-@.s2 = private constant [22 x i8] c"Argon Sum Loop: Time=\00"
+@.s0 = private constant [29 x i8] c"Cryo Sum Loop: Starting...\0A\00"
+@.s1 = private constant [24 x i8] c"Cryo Sum Loop: Result=\00"
+@.s2 = private constant [22 x i8] c"Cryo Sum Loop: Time=\00"
 @.s3 = private constant [4 x i8] c"ms\0A\00"
 @.s4 = private constant [6 x i8] c" %ld\0A\00"
 @.s5 = private constant [4 x i8] c"%ld\00"
@@ -155,11 +155,11 @@ entry:
 LLVM_EOF
 
 # Ackermann LLVM
-cat > ack_argon.ll << 'LLVM_EOF'
+cat > ack_cryo.ll << 'LLVM_EOF'
 target triple = "x86_64-pc-linux-gnu"
-@.s0 = private constant [36 x i8] c"Argon Ackermann(3,11): Starting...\0A\00"
-@.s1 = private constant [26 x i8] c"Argon Ackermann: Result =\00"
-@.s2 = private constant [24 x i8] c"Argon Ackermann: Time =\00"
+@.s0 = private constant [36 x i8] c"Cryo Ackermann(3,11): Starting...\0A\00"
+@.s1 = private constant [26 x i8] c"Cryo Ackermann: Result =\00"
+@.s2 = private constant [24 x i8] c"Cryo Ackermann: Time =\00"
 @.s3 = private constant [4 x i8] c"ms\0A\00"
 @.s4 = private constant [6 x i8] c" %ld\0A\00"
 @.s5 = private constant [4 x i8] c"%ld\00"
@@ -227,12 +227,12 @@ g++ -O3 -march=native ack.cpp -o ack_cpp
 rustc -C opt-level=3 -C target-cpu=native sumloop.rs -o sumloop_rs
 rustc -C opt-level=3 -C target-cpu=native ack.rs -o ack_rs
 
-# Argon LLVM
-echo "    Compiling Argon Sum Loop..."
-clang -O3 -march=native sumloop_argon.ll -o sumloop_argon
+# Cryo LLVM
+echo "    Compiling Cryo Sum Loop..."
+clang -O3 -march=native sumloop_cryo.ll -o sumloop_cryo
 
-echo "    Compiling Argon Ackermann..."
-clang -O3 -march=native ack_argon.ll -o ack_argon
+echo "    Compiling Cryo Ackermann..."
+clang -O3 -march=native ack_cryo.ll -o ack_cryo
 
 ###############################################
 # RUN BENCHMARKS
@@ -246,7 +246,7 @@ echo ""
 echo ""
 ./sumloop_rs
 echo ""
-./sumloop_argon
+./sumloop_cryo
 
 echo ""
 echo "=========================================="
@@ -257,7 +257,7 @@ echo ""
 echo ""
 ./ack_rs
 echo ""
-./ack_argon
+./ack_cryo
 
 echo ""
 echo "=========================================="

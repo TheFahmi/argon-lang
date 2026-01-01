@@ -1,11 +1,11 @@
-# Argon WebAssembly Design (v2.19.0)
+# Cryo WebAssembly Design (v2.19.0)
 
 ## Overview
 
-Add WebAssembly compilation target to Argon, enabling:
-- **Compile to WASM** - Run Argon code in browsers
+Add WebAssembly compilation target to Cryo, enabling:
+- **Compile to WASM** - Run Cryo code in browsers
 - **WASI Support** - WebAssembly System Interface for I/O
-- **JavaScript Interop** - Call JS from Argon, export to JS
+- **JavaScript Interop** - Call JS from Cryo, export to JS
 - **Browser Examples** - Demo running in browser
 
 ## Goals
@@ -23,14 +23,14 @@ Add WebAssembly compilation target to Argon, enabling:
 ### Basic Compilation
 ```bash
 # Compile to WASM
-argonc --target wasm32 hello.ar -o hello.wasm
+cryoc --target wasm32 hello.ar -o hello.wasm
 
 # Compile with WASI support
-argonc --target wasm32-wasi hello.ar -o hello.wasm
+cryoc --target wasm32-wasi hello.ar -o hello.wasm
 ```
 
 ### Export Functions to JavaScript
-```argon
+```cryo
 // Export function for JavaScript to call
 @wasmExport("add")
 fn add(a: i32, b: i32) -> i32 {
@@ -44,7 +44,7 @@ fn greet(name: string) {
 ```
 
 ### Import Functions from JavaScript
-```argon
+```cryo
 // Import JavaScript console.log
 @wasmImport("console", "log")
 extern fn jsLog(msg: string);
@@ -54,14 +54,14 @@ extern fn jsLog(msg: string);
 extern fn getTime() -> i64;
 
 fn main() {
-    jsLog("Hello from Argon WASM!");
+    jsLog("Hello from Cryo WASM!");
     let t = getTime();
     print("Time: " + t);
 }
 ```
 
 ### Memory Management
-```argon
+```cryo
 // Allocate WASM linear memory
 let buffer = wasmAlloc(1024);  // 1KB
 
@@ -83,7 +83,7 @@ wasmFree(buffer);
 5. Use `wat2wasm` to convert to binary
 
 ### Phase 2: WASM Instructions
-1. Map Argon types to WASM types
+1. Map Cryo types to WASM types
    - `i32` → `i32`
    - `i64` → `i64`
    - `f32` → `f32`
@@ -150,7 +150,7 @@ AST_ATTRIBUTE = 153    // [153, attr_name, attr_args]
 
 ## WASM Type Mapping
 
-| Argon Type | WASM Type | Note |
+| Cryo Type | WASM Type | Note |
 |------------|-----------|------|
 | `int` | `i64` | 64-bit integer |
 | `i32` | `i32` | 32-bit integer |
@@ -172,8 +172,8 @@ AST_ATTRIBUTE = 153    // [153, attr_name, attr_args]
   ;; Imports from JavaScript
   (import "console" "log" (func $jsLog(param i32 i32)))
   
-  ;; Argon runtime functions
-  (func $argonAlloc(param $size i32) (result i32)
+  ;; Cryo runtime functions
+  (func $cryoAlloc(param $size i32) (result i32)
     ;; Simple bump allocator
     ...
   )
@@ -195,8 +195,8 @@ AST_ATTRIBUTE = 153    // [153, attr_name, attr_args]
 ## WASM Code Generation
 
 ### Arithmetic Operations
-```argon
-// Argon
+```cryo
+// Cryo
 let x = a + b * c;
 ```
 ```wat
@@ -210,8 +210,8 @@ local.set $x
 ```
 
 ### If Statement
-```argon
-// Argon
+```cryo
+// Cryo
 if (x > 0) {
     print("positive");
 }
@@ -227,8 +227,8 @@ end
 ```
 
 ### While Loop
-```argon
-// Argon
+```cryo
+// Cryo
 while (i < 10) {
     i = i + 1;
 }
@@ -254,8 +254,8 @@ end
 ```
 
 ### Function Call
-```argon
-// Argon
+```cryo
+// Cryo
 let result = add(1, 2);
 ```
 ```wat
@@ -297,8 +297,8 @@ local.set $result
 
 ### Auto-generated JS loader
 ```javascript
-// argon_loader.js
-async function loadArgonModule(wasmPath) {
+// cryo_loader.js
+async function loadCryoModule(wasmPath) {
   const memory = new WebAssembly.Memory({ initial: 256 });
   
   const importObject = {
@@ -321,9 +321,9 @@ async function loadArgonModule(wasmPath) {
 }
 
 // Usage
-const argon = await loadArgonModule('hello.wasm');
-argon.main();
-console.log('add result:', argon.add(5, 3));
+const cryo = await loadCryoModule('hello.wasm');
+cryo.main();
+console.log('add result:', cryo.add(5, 3));
 ```
 
 ## Browser Example
@@ -333,14 +333,14 @@ console.log('add result:', argon.add(5, 3));
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Argon WASM Demo</title>
+  <title>Cryo WASM Demo</title>
 </head>
 <body>
-  <h1>Argon WebAssembly Demo</h1>
+  <h1>Cryo WebAssembly Demo</h1>
   <div id="output"></div>
   
   <script>
-    async function runArgon() {
+    async function runCryo() {
       const output = document.getElementById('output');
       
       // Redirect console.log to page
@@ -350,13 +350,13 @@ console.log('add result:', argon.add(5, 3));
         output.innerHTML += args.join(' ') + '<br>';
       };
       
-      const argon = await loadArgonModule('demo.wasm');
-      argon.main();
+      const cryo = await loadCryoModule('demo.wasm');
+      cryo.main();
     }
     
-    runArgon();
+    runCryo();
   </script>
-  <script src="argon_loader.js"></script>
+  <script src="cryo_loader.js"></script>
 </body>
 </html>
 ```
@@ -370,13 +370,13 @@ console.log('add result:', argon.add(5, 3));
 | `stdlib/wasm.ar` | Create | WASM utilities |
 | `examples/wasm_example.ar` | Create | Basic WASM demo |
 | `examples/wasm_demo.html` | Create | Browser demo |
-| `examples/argon_loader.js` | Create | JS loader |
+| `examples/cryo_loader.js` | Create | JS loader |
 
 ## Compiler CLI Changes
 
 ```bash
 # New options
-argonc [OPTIONS] <file.ar>
+cryoc [OPTIONS] <file.ar>
 
 Options:
   --target <target>     Compilation target
@@ -394,26 +394,26 @@ Options:
 
 ```bash
 # 1. Compile to WAT
-argonc --target wasm32 --emit wat hello.ar -o hello.wat
+cryoc --target wasm32 --emit wat hello.ar -o hello.wat
 
 # 2. Convert WAT to WASM (using wabt)
 wat2wasm hello.wat -o hello.wasm
 
 # Or one-step:
-argonc --target wasm32 hello.ar -o hello.wasm
+cryoc --target wasm32 hello.ar -o hello.wasm
 ```
 
 ## Constants
 
 ### Target Constants
-```argon
+```cryo
 let TARGET_NATIVE = 0;
 let TARGET_WASM32 = 1;
 let TARGET_WASM32_WASI = 2;
 ```
 
 ### Token IDs
-```argon
+```cryo
 let TOK_WASM_EXPORT = 82;
 let TOK_WASM_IMPORT = 83;
 let TOK_EXTERN = 84;
@@ -421,7 +421,7 @@ let TOK_AT = 85;
 ```
 
 ### AST Node IDs
-```argon
+```cryo
 let AST_WASM_EXPORT = 150;
 let AST_WASM_IMPORT = 151;
 let AST_EXTERN_FUNC = 152;
@@ -450,15 +450,15 @@ let AST_ATTRIBUTE = 153;
 - ✅ `stdlib/wasm.ar` - WASM standard library  
 - ✅ `examples/wasm_example.ar` - Example program
 - ✅ `examples/wasm_demo.html` - Browser demo
-- ✅ `examples/argon_loader.js` - JavaScript loader
+- ✅ `examples/cryo_loader.js` - JavaScript loader
 
 ### CLI Options Added
 ```bash
-argonc --target wasm32 hello.ar        # Compile to WASM
-argonc --target wasm32-wasi hello.ar   # Compile with WASI
-argonc -o output.wat hello.ar          # Custom output file
-argonc --version                       # Show version
-argonc --help                          # Show help
+cryoc --target wasm32 hello.ar        # Compile to WASM
+cryoc --target wasm32-wasi hello.ar   # Compile with WASI
+cryoc -o output.wat hello.ar          # Custom output file
+cryoc --version                       # Show version
+cryoc --help                          # Show help
 ```
 
 ### Remaining Work
@@ -466,9 +466,9 @@ argonc --help                          # Show help
 
 ## Example Program
 
-```argon
+```cryo
 // examples/wasm_example.ar
-// Compile: argonc --target wasm32 wasm_example.ar -o demo.wasm
+// Compile: cryoc --target wasm32 wasm_example.ar -o demo.wasm
 
 @wasmExport("add")
 fn add(a: i32, b: i32) -> i32 {
@@ -485,7 +485,7 @@ fn factorial(n: i32) -> i32 {
 
 @wasmExport("main")
 fn main() {
-    print("Hello from Argon WASM!");
+    print("Hello from Cryo WASM!");
     print("5 + 3 = " + add(5, 3));
     print("5! = " + factorial(5));
 }

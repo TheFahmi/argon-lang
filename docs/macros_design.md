@@ -1,7 +1,7 @@
-# Argon Macros Design (v2.24.0)
+# Cryo Macros Design (v2.24.0)
 
 ## Motivation
-Macros allow code generation and reduction of boilerplate. They enable Domain Specific Languages (DSLs) within Argon.
+Macros allow code generation and reduction of boilerplate. They enable Domain Specific Languages (DSLs) within Cryo.
 
 ## Syntax
 We will use a simple parameter substitution syntax, similar to C preprocessor but operating on AST nodes.

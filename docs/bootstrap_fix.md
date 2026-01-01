@@ -1,12 +1,12 @@
-# Argon Bootstrap Fix Documentation
+# Cryo Bootstrap Fix Documentation
 
 ## Quick Reference
 
 | Versi | Binary | Status |
 |-------|--------|--------|
-| v2.18.0 | `argonc_v218` | ✅ Legacy (Linux) |
-| v2.19.0 | `argon_v219` | ✅ Bootstrapped via Rust |
-| v2.20.0 | `argon_v220` | ✅ Bootstrapped (FFI/Traits) |
+| v2.18.0 | `cryoc_v218` | ✅ Legacy (Linux) |
+| v2.19.0 | `cryo_v219` | ✅ Bootstrapped via Rust |
+| v2.20.0 | `cryo_v220` | ✅ Bootstrapped (FFI/Traits) |
 
 ---
 
@@ -26,11 +26,11 @@ The bootstrap issue has been resolved by rewriting the Rust interpreter from scr
 cargo build --release
 
 # 2. Run Compiler Source using Interpreter
-./target/release/argon self-host/compiler.ar examples/hello.ar
+./target/release/cryo self-host/compiler.ar examples/hello.ar
 
 # 3. Create Binary (Optional)
 # The rust interpreter acts as the universal binary now
-cp target/release/argon.exe argon_v220.exe
+cp target/release/cryo.exe cryo_v220.exe
 ```
 
 ---
@@ -39,9 +39,9 @@ cp target/release/argon.exe argon_v220.exe
 
 | File | Description |
 |------|-------------|
-| `argon_v220.exe` | Newest Rust Interpreter (Windows) |
+| `cryo_v220.exe` | Newest Rust Interpreter (Windows) |
 | `src/*` | Rust source code for interpreter (Lexer, Parser, AST, Interpreter) |
-| `self-host/compiler.ar` | Argon compiler source (v2.20.0) |
+| `self-host/compiler.ar` | Cryo compiler source (v2.20.0) |
 | `examples/*` | Updated examples for FFI/Traits/WASM |
 
 ---
@@ -50,6 +50,6 @@ cp target/release/argon.exe argon_v220.exe
 
 | Version | Features | Binary Available |
 |---------|----------|-----------------|
-| v2.20.0 | FFI, Traits, Rust Interpreter rewrite | ✅ `argon_v220` |
-| v2.19.0 | WebAssembly, WASM codegen | ✅ `argon_v219` |
-| v2.18.0 | Async/await | ✅ `argonc_v218` |
+| v2.20.0 | FFI, Traits, Rust Interpreter rewrite | ✅ `cryo_v220` |
+| v2.19.0 | WebAssembly, WASM codegen | ✅ `cryo_v219` |
+| v2.18.0 | Async/await | ✅ `cryoc_v218` |

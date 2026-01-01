@@ -1,0 +1,3350 @@
+// ============================================
+// CRYO SELF-HOSTING COMPILER v2.24.0
+// Written entirely in Cryo
+// Complete Lexer, Parser, and Code Generator
+// With FFI, Traits, WebAssembly, Async/Await, Generics, GC, Defer, Macros
+// ============================================
+
+let OPT_UNSAFE = 0; // Optimization flag
+let DEBUG_MODE = 0; // Debug info flag (-g)
+let DBG_FILENAME = ""; // Current source filename for debug
+let DBG_META_ID = 10; // Next debug metadata node ID (0-9 reserved for compile unit)
+let DBG_FUNCS = []; // Store [fn_name, dbg_id, line] for each function
+let DBG_CURRENT_FUNC = 0; // Current function's debug metadata ID
+
+// =================== WASM TARGET ===================
+let TARGET_NATIVE = 0;
+let TARGET_WASM32 = 1;
+let TARGET_WASM32_WASI = 2;
+let COMPILE_TARGET = 0; // Default to native
+let EMIT_WAT = 0; // Emit WAT text format instead of binary
+let OUTPUT_FILE = ""; // Output file name (-o)
+
+// =================== GENERICS (Phase 2) ===================
+// Storage for generic function templates
+// Format: [[name, type_params, params, body], ...]
+let generic_funcs = [];
+
+// Storage for instantiation requests
+// Format: [[generic_name, type_args, mangled_name], ...]
+let instantiations = [];
+
+// Already generated specialized functions
+let generated_specs = [];
+
+// Stage detection: In Stage 0 (Rust), parseInt("1") = 1 (raw).
+// In Stage 1 (compiled), parseInt("1") = 3 (tagged: 1*2+1).
+// So if parseInt("1") > 2, we're in Stage 1.
+let IS_STAGE1 = 0;
+fn detectStage() {
+    let test = parseInt("1");
+    if (test > 2) {
+        IS_STAGE1 = 1;
+    }
+}
+
+// =================== TOKEN TYPE CONSTANTS ===================
+
+let TOK_EOF = 0;
+let TOK_FN = 1;
+let TOK_LET = 2;
+let TOK_RETURN = 3;
+let TOK_IF = 4;
+let TOK_ELSE = 5;
+let TOK_WHILE = 6;
+let TOK_PRINT = 7;
+let TOK_TRUE = 8;
+let TOK_FALSE = 9;
+let TOK_ID = 10;
+let TOK_NUM = 11;
+let TOK_STR = 12;
+let TOK_PLUS = 20;
+let TOK_MINUS = 21;
+let TOK_STAR = 22;
+let TOK_SLASH = 23;
+let TOK_LPAREN = 30;
+let TOK_RPAREN = 31;
+let TOK_LBRACE = 32;
+let TOK_RBRACE = 33;
+let TOK_LBRACK = 34;
+let TOK_RBRACK = 35;
+let TOK_EQ = 40;
+let TOK_EQEQ = 41;
+let TOK_LT = 42;
+let TOK_GT = 43;
+let TOK_SEMI = 50;
+let TOK_COMMA = 51;
+let TOK_COLON = 52;
+let TOK_BREAK = 54;
+let TOK_CONTINUE = 55;
+let TOK_STRUCT = 56;
+let TOK_ENUM = 58;
+let TOK_MATCH = 59;
+let TOK_ARROW = 61;
+let TOK_IMPORT = 62;
+let TOK_FROM = 63;
+let TOK_NOT = 70;
+let TOK_ASYNC = 80;
+let TOK_AWAIT = 81;
+let TOK_AT = 82;        // @ (attribute prefix)
+let TOK_EXTERN = 83;    // extern fn
+let TOK_WASM_EXPORT = 84; // @wasm_export
+let TOK_WASM_IMPORT = 85; // @wasm_import
+// FFI tokens
+let TOK_PTR = 90;       // * for pointers  
+let TOK_REF = 91;       // & for references
+// Trait tokens
+let TOK_TRAIT = 92;     // trait keyword
+let TOK_IMPL = 93;      // impl keyword
+let TOK_FOR = 94;       // for keyword (in impl)
+let TOK_SELF_TYPE = 95; // Self type
+
+// =================== LEXER ===================
+
+fn isDigit(ch: string) {
+    if (ch == "0") { return true; }
+    if (ch == "1") { return true; }
+    if (ch == "2") { return true; }
+    if (ch == "3") { return true; }
+    if (ch == "4") { return true; }
+    if (ch == "5") { return true; }
+    if (ch == "6") { return true; }
+    if (ch == "7") { return true; }
+    if (ch == "8") { return true; }
+    if (ch == "9") { return true; }
+    return false;
+}
+
+fn isLetter(ch: string) {
+    // lowercase a-z
+    if (ch == "a") { return true; }
+    if (ch == "b") { return true; }
+    if (ch == "c") { return true; }
+    if (ch == "d") { return true; }
+    if (ch == "e") { return true; }
+    if (ch == "f") { return true; }
+    if (ch == "g") { return true; }
+    if (ch == "h") { return true; }
+    if (ch == "i") { return true; }
+    if (ch == "j") { return true; }
+    if (ch == "k") { return true; }
+    if (ch == "l") { return true; }
+    if (ch == "m") { return true; }
+    if (ch == "n") { return true; }
+    if (ch == "o") { return true; }
+    if (ch == "p") { return true; }
+    if (ch == "q") { return true; }
+    if (ch == "r") { return true; }
+    if (ch == "s") { return true; }
+    if (ch == "t") { return true; }
+    if (ch == "u") { return true; }
+    if (ch == "v") { return true; }
+    if (ch == "w") { return true; }
+    if (ch == "x") { return true; }
+    if (ch == "y") { return true; }
+    if (ch == "z") { return true; }
+    // uppercase A-Z
+    if (ch == "A") { return true; }
+    if (ch == "B") { return true; }
+    if (ch == "C") { return true; }
+    if (ch == "D") { return true; }
+    if (ch == "E") { return true; }
+    if (ch == "F") { return true; }
+    if (ch == "G") { return true; }
+    if (ch == "H") { return true; }
+    if (ch == "I") { return true; }
+    if (ch == "J") { return true; }
+    if (ch == "K") { return true; }
+    if (ch == "L") { return true; }
+    if (ch == "M") { return true; }
+    if (ch == "N") { return true; }
+    if (ch == "O") { return true; }
+    if (ch == "P") { return true; }
+    if (ch == "Q") { return true; }
+    if (ch == "R") { return true; }
+    if (ch == "S") { return true; }
+    if (ch == "T") { return true; }
+    if (ch == "U") { return true; }
+    if (ch == "V") { return true; }
+    if (ch == "W") { return true; }
+    if (ch == "X") { return true; }
+    if (ch == "Y") { return true; }
+    if (ch == "Z") { return true; }
+    // underscore
+    if (ch == "_") { return true; }
+    return false;
+}
+
+fn isAlnum(ch: string) {
+    if (isLetter(ch)) { return true; }
+    if (isDigit(ch)) { return true; }
+    return false;
+}
+
+// Helper to check if char is double quote (ASCII 34)
+fn isQuote(ch: string) {
+    // Compare with escaped quote character
+    if (ch == "\"") { return true; }
+    return false;
+}
+
+// Helper to check if char is backslash (ASCII 92)  
+fn isBackslash(ch: string) {
+    // Compare with escaped backslash character
+    if (ch == "\\") { return true; }
+    return false;
+}
+
+fn isWhitespace(c: string) {
+    if (c == " ") { return true; }
+    if (c == "\n") { return true; }
+    if (c == "\t") { return true; }
+    if (c == "\r") { return true; }
+    return false;
+}
+
+// Token structure: [type, value, line]
+let tok_line = 1;  // Current line number for debug info
+
+fn makeToken(typ: int, val: string) {
+    return [typ, val, tok_line];
+}
+
+fn tokenize(source: string) {
+    let tokens = [];
+    let pos = 0;
+    tok_line = 1;  // Reset line counter
+    let n = len(source);
+    
+    while (pos < n) {
+        let c = source[pos];
+        
+        // Skip whitespace
+        if (isWhitespace(c)) {
+            if (c == "\n") {
+                tok_line = tok_line + 1;
+            }
+            pos = pos + 1;
+        }
+        // Skip comments
+        else if (c == "/") {
+            if (pos + 1 < n) {
+                if (source[pos + 1] == "/") {
+                    // Skip until end of line
+                    pos = pos + 2;
+                    let in_comment = 1;
+                    while (in_comment == 1) {
+                        if (pos < n) {
+                            if (source[pos] == "\n") {
+                                tok_line = tok_line + 1;
+                                pos = pos + 1;
+                                in_comment = 0;
+                            } else {
+                                pos = pos + 1;
+                            }
+                        } else {
+                            in_comment = 0;
+                        }
+                    }
+                } else {
+                    tokens = push(tokens, makeToken(TOK_SLASH, "/"));
+                    pos = pos + 1;
+                }
+            } else {
+                tokens = push(tokens, makeToken(TOK_SLASH, "/"));
+                pos = pos + 1;
+            }
+        }
+        // String literals
+        else if (isQuote(c)) {
+            pos = pos + 1;
+            let str_val = "";
+            let str_done = 0;
+            while (str_done == 0) {
+                if (pos < n) {
+                    let sc = source[pos];
+                    if (isBackslash(sc)) {
+                        // Backslash - escape sequence
+                        pos = pos + 1;
+                        if (pos < n) {
+                            let esc = source[pos];
+                            if (esc == "n") { str_val = str_val + "\n"; }
+                            else if (esc == "t") { str_val = str_val + "\t"; }
+                            else if (esc == "r") { str_val = str_val + "\r"; }
+                            else if (isQuote(esc)) { str_val = str_val + "\""; }
+                            else if (isBackslash(esc)) { str_val = str_val + "\\"; }
+                            else if (esc == "0") { str_val = str_val + "\0"; }
+                            else { str_val = str_val + esc; }
+                            pos = pos + 1;
+                        } else {
+                            str_done = 1;
+                        }
+                    } else if (isQuote(sc)) {
+                        pos = pos + 1;
+                        str_done = 1;
+                    } else {
+                        str_val = str_val + sc;
+                        pos = pos + 1;
+                    }
+                } else {
+                    str_done = 1;
+                }
+            }
+            tokens = push(tokens, makeToken(TOK_STR, str_val));
+        }
+        // Single char tokens
+        else if (c == "+") { tokens = push(tokens, makeToken(TOK_PLUS, "+")); pos = pos + 1; }
+        else if (c == "-") { tokens = push(tokens, makeToken(TOK_MINUS, "-")); pos = pos + 1; }
+        else if (c == "*") { tokens = push(tokens, makeToken(TOK_STAR, "*")); pos = pos + 1; }
+        else if (c == "(") { tokens = push(tokens, makeToken(TOK_LPAREN, "(")); pos = pos + 1; }
+        else if (c == ")") { tokens = push(tokens, makeToken(TOK_RPAREN, ")")); pos = pos + 1; }
+        else if (c == "{") { tokens = push(tokens, makeToken(TOK_LBRACE, "{")); pos = pos + 1; }
+        else if (c == "}") { tokens = push(tokens, makeToken(TOK_RBRACE, "}")); pos = pos + 1; }
+        else if (c == "[") { tokens = push(tokens, makeToken(TOK_LBRACK, "[")); pos = pos + 1; }
+        else if (c == "]") { tokens = push(tokens, makeToken(TOK_RBRACK, "]")); pos = pos + 1; }
+        else if (c == ";") { tokens = push(tokens, makeToken(TOK_SEMI, ";")); pos = pos + 1; }
+        else if (c == ",") { tokens = push(tokens, makeToken(TOK_COMMA, ",")); pos = pos + 1; }
+        else if (c == ":") { tokens = push(tokens, makeToken(TOK_COLON, ":")); pos = pos + 1; }
+        else if (c == ".") { tokens = push(tokens, makeToken(53, ".")); pos = pos + 1; }
+        // Two-char tokens
+        else if (c == "=") {
+            if (pos + 1 < n) {
+                if (source[pos + 1] == "=") {
+                    tokens = push(tokens, makeToken(TOK_EQEQ, "=="));
+                    pos = pos + 2;
+                } else if (source[pos + 1] == ">") {
+                    tokens = push(tokens, makeToken(TOK_ARROW, "=>"));
+                    pos = pos + 2;
+                } else {
+                    tokens = push(tokens, makeToken(TOK_EQ, "="));
+                    pos = pos + 1;
+                }
+            } else {
+                tokens = push(tokens, makeToken(TOK_EQ, "="));
+                pos = pos + 1;
+            }
+        }
+        else if (c == "!") {
+            if (pos + 1 < n) {
+                if (source[pos + 1] == "=") {
+                    tokens = push(tokens, makeToken(44, "!="));
+                    pos = pos + 2;
+                } else {
+                    // Single ! is NOT operator
+                    tokens = push(tokens, makeToken(70, "!"));
+                    pos = pos + 1;
+                }
+            } else {
+                tokens = push(tokens, makeToken(70, "!"));
+                pos = pos + 1;
+            }
+        }
+        else if (c == "<") { 
+            if (pos + 1 < n) {
+                if (source[pos + 1] == "=") {
+                    tokens = push(tokens, makeToken(45, "<="));
+                    pos = pos + 2;
+                } else {
+                    tokens = push(tokens, makeToken(TOK_LT, "<")); 
+                    pos = pos + 1; 
+                }
+            } else {
+                tokens = push(tokens, makeToken(TOK_LT, "<")); 
+                pos = pos + 1; 
+            }
+        }
+        else if (c == ">") { 
+            if (pos + 1 < n) {
+                if (source[pos + 1] == "=") {
+                    tokens = push(tokens, makeToken(46, ">="));
+                    pos = pos + 2;
+                } else {
+                    tokens = push(tokens, makeToken(TOK_GT, ">")); 
+                    pos = pos + 1; 
+                }
+            } else {
+                tokens = push(tokens, makeToken(TOK_GT, ">")); 
+                pos = pos + 1; 
+            }
+        }
+        // Numbers
+        else if (isDigit(c)) {
+            let num_str = "";
+            let num_done = 0;
+            while (num_done == 0) {
+                if (pos < n) {
+                    let dc = source[pos];
+                    if (isDigit(dc)) {
+                        num_str = num_str + dc;
+                        pos = pos + 1;
+                    } else {
+                        num_done = 1;
+                    }
+                } else {
+                    num_done = 1;
+                }
+            }
+            tokens = push(tokens, makeToken(TOK_NUM, num_str));
+        }
+        // Identifiers & Keywords
+        else if (isLetter(c)) {
+            let id_str = "";
+            let id_done = 0;
+            while (id_done == 0) {
+                if (pos < n) {
+                    let ic = source[pos];
+                    if (isAlnum(ic)) {
+                        id_str = id_str + ic;
+                        pos = pos + 1;
+                    } else {
+                        id_done = 1;
+                    }
+                } else {
+                    id_done = 1;
+                }
+            }
+            // Check keywords
+            if (id_str == "fn") { tokens = push(tokens, makeToken(TOK_FN, "fn")); }
+            else if (id_str == "let") { tokens = push(tokens, makeToken(TOK_LET, "let")); }
+            else if (id_str == "return") { tokens = push(tokens, makeToken(TOK_RETURN, "return")); }
+            else if (id_str == "if") { tokens = push(tokens, makeToken(TOK_IF, "if")); }
+            else if (id_str == "else") { tokens = push(tokens, makeToken(TOK_ELSE, "else")); }
+            else if (id_str == "while") { tokens = push(tokens, makeToken(TOK_WHILE, "while")); }
+            else if (id_str == "print") { tokens = push(tokens, makeToken(TOK_PRINT, "print")); }
+            else if (id_str == "true") { tokens = push(tokens, makeToken(TOK_TRUE, "true")); }
+            else if (id_str == "false") { tokens = push(tokens, makeToken(TOK_FALSE, "false")); }
+            else if (id_str == "null") { tokens = push(tokens, makeToken(60, "null")); }
+            else if (id_str == "break") { tokens = push(tokens, makeToken(TOK_BREAK, "break")); }
+            else if (id_str == "continue") { tokens = push(tokens, makeToken(TOK_CONTINUE, "continue")); }
+            else if (id_str == "struct") { tokens = push(tokens, makeToken(TOK_STRUCT, "struct")); }
+            else if (id_str == "enum") { tokens = push(tokens, makeToken(TOK_ENUM, "enum")); }
+            else if (id_str == "match") { tokens = push(tokens, makeToken(TOK_MATCH, "match")); }
+            else if (id_str == "import") { tokens = push(tokens, makeToken(TOK_IMPORT, "import")); }
+            else if (id_str == "from") { tokens = push(tokens, makeToken(TOK_FROM, "from")); }
+            else if (id_str == "async") { tokens = push(tokens, makeToken(TOK_ASYNC, "async")); }
+            else if (id_str == "await") { tokens = push(tokens, makeToken(TOK_AWAIT, "await")); }
+            else if (id_str == "extern") { tokens = push(tokens, makeToken(TOK_EXTERN, "extern")); }
+            else if (id_str == "trait") { tokens = push(tokens, makeToken(TOK_TRAIT, "trait")); }
+            else if (id_str == "impl") { tokens = push(tokens, makeToken(TOK_IMPL, "impl")); }
+            else if (id_str == "for") { tokens = push(tokens, makeToken(TOK_FOR, "for")); }
+            else if (id_str == "Self") { tokens = push(tokens, makeToken(TOK_SELF_TYPE, "Self")); }
+            else { tokens = push(tokens, makeToken(TOK_ID, id_str)); }
+        }
+        // @ symbol for attributes
+        else if (c == "@") {
+            pos = pos + 1;
+            // Read attribute name
+            let attr_name = "";
+            while (pos < n) {
+                let ac = source[pos];
+                if (isAlnum(ac)) {
+                    attr_name = attr_name + ac;
+                    pos = pos + 1;
+                } else {
+                    break;
+                }
+            }
+            if (attr_name == "wasm_export") {
+                tokens = push(tokens, makeToken(TOK_WASM_EXPORT, "@wasm_export"));
+            } else if (attr_name == "wasm_import") {
+                tokens = push(tokens, makeToken(TOK_WASM_IMPORT, "@wasm_import"));
+            } else {
+                tokens = push(tokens, makeToken(TOK_AT, "@" + attr_name));
+            }
+        }
+        // Skip unknown
+        else {
+            pos = pos + 1;
+        }
+    }
+    
+    tokens = push(tokens, makeToken(TOK_EOF, ""));
+    return tokens;
+}
+
+// =================== AST NODE TYPES ===================
+
+let AST_NUM = 1;
+let AST_VAR = 2;
+let AST_BINOP = 3;
+let AST_CALL = 4;
+let AST_LET = 10;
+let AST_ASSIGN = 11;
+let AST_RETURN = 12;
+let AST_PRINT = 13;
+let AST_IF = 14;
+let AST_WHILE = 15;
+let AST_FUNC = 20;
+let AST_BLOCK = 21;
+let AST_BREAK = 22;
+let AST_CONTINUE = 23;
+
+// Struct-related AST types (using 100+ to avoid conflicts)
+let AST_STRUCT_DEF = 100;
+let AST_STRUCT_INST = 101;
+let AST_FIELD_ACCESS = 102;
+let AST_METHOD_CALL = 103;
+let AST_ENUM_DEF = 110;
+let AST_MATCH = 111;
+let AST_IMPORT = 120;
+let AST_ASYNC_FUNC = 140;  // Async function
+let AST_AWAIT = 141;       // Await expression
+let AST_WASM_EXPORT = 150; // WASM export annotation
+let AST_WASM_IMPORT = 151; // WASM import annotation
+let AST_EXTERN_FUNC = 152; // External function declaration
+// Trait AST types
+let AST_TRAIT_DEF = 160;   // trait Name { methods }
+let AST_IMPL_BLOCK = 161;  // impl Trait for Type { methods }
+let AST_TRAIT_BOUND = 162; // T: Trait
+let AST_SELF_TYPE = 163;   // Self type reference
+// FFI AST types
+let AST_PTR_TYPE = 170;    // *T pointer type
+let AST_DEREF = 171;       // *expr dereference
+let AST_ADDR_OF = 172;     // &expr address-of
+
+// =================== PARSER ===================
+
+// Parser state
+let p_tokens = [];
+let p_pos = 0;
+
+fn pCurrent() {
+    return p_tokens[p_pos];
+}
+
+fn pCurrentType() {
+    let tok = p_tokens[p_pos];
+    return tok[0];
+}
+
+fn pCurrentVal() {
+    let tok = p_tokens[p_pos];
+    return tok[1];
+}
+
+fn pAdvance() {
+    p_pos = p_pos + 1;
+}
+
+fn pMatch(t: int) {
+    if (pCurrentType() == t) {
+        pAdvance();
+        return true;
+    }
+    return false;
+}
+
+fn pExpect(t: int) {
+    if (pCurrentType() == t) {
+        pAdvance();
+        return true;
+    }
+    print("Parse error: unexpected token. Expected type " + t + " got " + pCurrentType() + " val " + pCurrentVal() + " at " + p_pos);
+    return false;
+}
+
+// Node constructors
+fn makeNum(val: int) {
+    return [AST_NUM, val];
+}
+
+fn makeVar(name: string) {
+    return [AST_VAR, name];
+}
+
+fn makeBinop(op: string, left: any, right: any) {
+    return [AST_BINOP, op, left, right];
+}
+
+fn makeCall(name: string, args: any) {
+    return [AST_CALL, name, args];
+}
+
+fn makeLet(name: string, init: any) {
+    return [AST_LET, name, init];
+}
+
+fn makeAssign(name: string, val: any) {
+    return [AST_ASSIGN, name, val];
+}
+
+fn makePrint(expr: any) {
+    return [AST_PRINT, expr];
+}
+
+fn makeReturn(expr: any) {
+    return [AST_RETURN, expr];
+}
+
+fn makeIf(cond: any, then_b: any, else_b: any) {
+    return [AST_IF, cond, then_b, else_b];
+}
+
+fn makeWhile(cond: any, body: any) {
+    return [AST_WHILE, cond, body];
+}
+
+fn makeFunc(name: string, params: any, body: any) {
+    return [AST_FUNC, name, params, body];
+}
+
+fn makeBlock(stmts: any) {
+    return [AST_BLOCK, stmts];
+}
+
+// Expression parsing (recursive descent)
+fn parsePrimary() {
+    let t = pCurrentType();
+    let v = pCurrentVal();
+    
+    // AWAIT expression: await expr
+    if (t == TOK_AWAIT) {
+        pAdvance();
+        let await_expr = parseExpr();
+        return [AST_AWAIT, await_expr];
+    }
+    
+    // NOT operator: !expr
+    if (t == TOK_NOT) {
+        pAdvance();
+        let not_expr = parsePrimary();
+        return [71, not_expr]; // AST_NOT = 71
+    }
+    
+    // String literal
+    if (t == TOK_STR) {
+        pAdvance();
+        return [30, v]; // AST_STR = 30
+    }
+    
+    // Array literal
+    if (t == 34) { // TOK_LBRACK = 34
+        pAdvance();
+        let items = [];
+        if (pCurrentType() != 35) { // TOK_RBRACK
+            items = push(items, parseExpr());
+            while (pCurrentType() == TOK_COMMA) {
+                pAdvance();
+                items = push(items, parseExpr());
+            }
+        }
+        pExpect(35); // TOK_RBRACK
+        return [31, items]; // AST_ARRAY = 31
+    }
+
+    // Number
+    if (t == TOK_NUM) {
+        pAdvance();
+        return makeNum(parseInt(v));
+    }
+    // Variable, function call, struct instantiation, or field access
+    if (t == TOK_ID) {
+        let id_name = v;
+        pAdvance();
+        
+        // Check for struct instantiation: StructName { field: value, ... }
+        if (pCurrentType() == TOK_LBRACE) {
+            pAdvance(); // skip {
+            let inst_fields = [];
+            
+            while (pCurrentType() != TOK_RBRACE) {
+                let inst_fname = pCurrentVal();
+                pAdvance();
+                pExpect(TOK_COLON);
+                let inst_fval = parseExpr();
+                
+                let inst_entry = [];
+                inst_entry = push(inst_entry, inst_fname);
+                inst_entry = push(inst_entry, inst_fval);
+                inst_fields = push(inst_fields, inst_entry);
+                
+                if (pCurrentType() == TOK_COMMA) {
+                    pAdvance();
+                }
+            }
+            pExpect(TOK_RBRACE);
+            return [101, id_name, inst_fields]; // AST_STRUCT_INST = 101
+        }
+        
+        // Check for generic type arguments: func<int, string>(...)
+        let call_type_args = [];
+        if (pCurrentType() == TOK_LT) {
+            // Could be generic call OR comparison (a < b)
+            // Heuristic: if followed by identifier/type and then > or ,, it's generic
+            pAdvance(); // skip <
+            while (pCurrentType() != TOK_GT) {
+                call_type_args = push(call_type_args, pCurrentVal());
+                pAdvance(); // skip type arg
+                if (pCurrentType() == TOK_COMMA) {
+                    pAdvance();
+                }
+            }
+            pExpect(TOK_GT);
+            // Now check for ( - if present, it's a generic call
+        }
+        
+        // Check for function call
+        if (pCurrentType() == TOK_LPAREN) {
+            pAdvance(); // skip (
+            let call_args = [];
+            
+            if (pCurrentType() != TOK_RPAREN) {
+                call_args = push(call_args, parseExpr());
+                while (pCurrentType() == TOK_COMMA) {
+                    pAdvance();
+                    call_args = push(call_args, parseExpr());
+                }
+            }
+            pExpect(TOK_RPAREN);
+            
+            // If we have type args, this is a generic call
+            if (len(call_type_args) > 0) {
+                // Create mangled name: func_int_string
+                let mangled = id_name;
+                let ti = 0;
+                while (ti < len(call_type_args)) {
+                    mangled = mangled + "_" + call_type_args[ti];
+                    ti = ti + 1;
+                }
+                
+                // Record instantiation request
+                let inst = [];
+                inst = push(inst, id_name);
+                inst = push(inst, call_type_args);
+                inst = push(inst, mangled);
+                instantiations = push(instantiations, inst);
+                
+                // Return call to mangled name
+                return makeCall(mangled, call_args);
+            }
+            
+            return makeCall(id_name, call_args);
+        }
+        
+        // Check for index access [expr]
+        if (pCurrentType() == 34) { // TOK_LBRACK
+            pAdvance();
+            let idx_expr = parseExpr();
+            pExpect(35); // TOK_RBRACK
+            let idx_args = [];
+            idx_args = push(idx_args, makeVar(id_name));
+            idx_args = push(idx_args, idx_expr);
+            return [AST_CALL, "cryo_get", idx_args];
+        }
+        
+        // Check for field access .field or method call .method()
+        if (pCurrentType() == 53) { // TOK_DOT = 53
+            let base_obj = makeVar(id_name);
+            
+            while (pCurrentType() == 53) {
+                pAdvance(); // skip .
+                let member_name = pCurrentVal();
+                pAdvance();
+                
+                // Check if this is a method call: .method()
+                if (pCurrentType() == TOK_LPAREN) {
+                    pAdvance(); // skip (
+                    
+                    // Collect method arguments
+                    let method_args = [];
+                    // First arg is always the object (self)
+                    method_args = push(method_args, base_obj);
+                    
+                    if (pCurrentType() != TOK_RPAREN) {
+                        method_args = push(method_args, parseExpr());
+                        while (pCurrentType() == TOK_COMMA) {
+                            pAdvance();
+                            method_args = push(method_args, parseExpr());
+                        }
+                    }
+                    pExpect(TOK_RPAREN);
+                    
+                    // Create method call: [AST_CALL, "StructType_method", args]
+                    // We need to figure out struct type from base_obj
+                    // For now, use a special node AST_METHOD_CALL = 103
+                    // which codegen will resolve
+                    base_obj = [103, base_obj, member_name, method_args]; // AST_METHOD_CALL
+                } else {
+                    // Regular field access
+                    base_obj = [102, base_obj, member_name]; // AST_FIELD_ACCESS
+                }
+            }
+            
+            // Check for array indexing after field access: obj.field[idx]
+            while (pCurrentType() == 34) { // TOK_LBRACK
+                pAdvance();
+                let idx_expr = parseExpr();
+                pExpect(35); // TOK_RBRACK
+                let idx_args = [];
+                idx_args = push(idx_args, base_obj);
+                idx_args = push(idx_args, idx_expr);
+                base_obj = [AST_CALL, "cryo_get", idx_args];
+            }
+            
+            return base_obj;
+        }
+        
+        return makeVar(id_name);
+    }
+    // Parenthesized expression
+    if (t == TOK_LPAREN) {
+        pAdvance();
+        let paren_expr = parseExpr();
+        pExpect(TOK_RPAREN);
+        return paren_expr;
+    }
+    // True/False literals
+    if (t == TOK_TRUE) {
+        pAdvance();
+        return makeNum(1);
+    }
+    if (t == TOK_FALSE) {
+        pAdvance();
+        return makeNum(0);
+    }
+    
+    // Null literal
+    if (t == 60) { // TOK_NULL
+        pAdvance();
+        return makeNum(0);
+    }
+    
+    // Match expression
+    if (t == TOK_MATCH) {
+        // print("DEBUG: Parsing MATCH");
+        pAdvance();
+        // Parse target as simple variable/call, NOT full expr
+        // (to avoid confusing match block { with struct instantiation)
+        let match_target_name = pCurrentVal();
+        pAdvance();
+        // Simple variable for now
+        let match_expr = makeVar(match_target_name);
+        pExpect(TOK_LBRACE);
+        
+        let match_cases = [];
+        while (pCurrentType() != TOK_RBRACE) {
+            // print("DEBUG: Parsing MATCH CASE");
+            // Parse Pattern: ID or ID(var)
+            let pat_typ = pCurrentType();
+            let pat_val = pCurrentVal();
+            
+            // For now, assume pattern is just ID (Enum Variant)
+            // TODO: Handle numeric literals or other patterns
+            pExpect(TOK_ID); 
+            
+            let pat_bind = "";
+            // Check for binding: Variant(var_name)
+            if (pCurrentType() == TOK_LPAREN) {
+                pAdvance();
+                pat_bind = pCurrentVal();
+                pExpect(TOK_ID); // Variable name to bind
+                pExpect(TOK_RPAREN);
+            }
+            
+            pExpect(TOK_ARROW); // =>
+            
+            // Parse Body
+            let case_body_stmts = [];
+            if (pCurrentType() == TOK_LBRACE) {
+                pAdvance();
+                while (pCurrentType() != TOK_RBRACE) {
+                    case_body_stmts = push(case_body_stmts, parseStatement());
+                }
+                pExpect(TOK_RBRACE);
+            } else {
+                // Single statement/expression
+                case_body_stmts = push(case_body_stmts, parseStatement());
+            }
+            
+            let match_case = [];
+            match_case = push(match_case, pat_val); // Pattern Name (Variant)
+            match_case = push(match_case, pat_bind); // Bind Variable (or "")
+            match_case = push(match_case, makeBlock(case_body_stmts)); // Body
+            
+            match_cases = push(match_cases, match_case);
+            
+            if (pCurrentType() == TOK_COMMA) {
+                pAdvance();
+            }
+        }
+        pExpect(TOK_RBRACE);
+        return [111, match_expr, match_cases]; // AST_MATCH = 111
+    }
+
+    print("Parse error at primary: " + v);
+    return makeNum(0);
+}
+
+fn parseFactor() {
+    let left = parsePrimary();
+    
+    while (pCurrentType() == TOK_STAR) {
+        pAdvance();
+        let right = parsePrimary();
+        left = makeBinop("*", left, right);
+    }
+    while (pCurrentType() == TOK_SLASH) {
+        pAdvance();
+        let right = parsePrimary();
+        left = makeBinop("/", left, right);
+    }
+    
+    return left;
+}
+
+fn parseTerm() {
+    let left = parseFactor();
+    
+    while (pCurrentType() == TOK_PLUS) {
+        pAdvance();
+        let right = parseFactor();
+        left = makeBinop("+", left, right);
+    }
+    while (pCurrentType() == TOK_MINUS) {
+        pAdvance();
+        let right = parseFactor();
+        left = makeBinop("-", left, right);
+    }
+    
+    return left;
+}
+
+fn parseComparison() {
+    let left = parseTerm();
+    
+    if (pCurrentType() == TOK_LT) {
+        pAdvance();
+        let right = parseTerm();
+        return makeBinop("<", left, right);
+    }
+    if (pCurrentType() == TOK_GT) {
+        pAdvance();
+        let right = parseTerm();
+        return makeBinop(">", left, right);
+    }
+    if (pCurrentType() == TOK_EQEQ) {
+        pAdvance();
+        let right = parseTerm();
+        return makeBinop("==", left, right);
+    }
+    // Added
+    if (pCurrentType() == 44) { // TOK_NE (!=)
+        pAdvance();
+        let right = parseTerm();
+        return makeBinop("!=", left, right);
+    }
+    if (pCurrentType() == 45) { // TOK_LE (<=)
+        pAdvance();
+        let right = parseTerm();
+        return makeBinop("<=", left, right);
+    }
+    if (pCurrentType() == 46) { // TOK_GE (>=)
+        pAdvance();
+        let right = parseTerm();
+        return makeBinop(">=", left, right);
+    }
+    
+    return left;
+}
+
+fn parseExpr() {
+    return parseComparison();
+}
+
+// Statement parsing
+fn parseStatement() {
+    let t = pCurrentType();
+    
+    // let statement
+    if (t == TOK_LET) {
+        pAdvance();
+        let let_name = pCurrentVal();
+        pExpect(TOK_ID);
+        
+        // Optional type annotation
+        if (pCurrentType() == TOK_COLON) {
+            pAdvance();
+            pAdvance(); // skip type
+        }
+        
+        pExpect(TOK_EQ);
+        let let_init = parseExpr();
+        pExpect(TOK_SEMI);
+        return makeLet(let_name, let_init);
+    }
+    
+    // print statement
+    if (t == TOK_PRINT) {
+        pAdvance();
+        pExpect(TOK_LPAREN);
+        let print_arg = parseExpr();
+        pExpect(TOK_RPAREN);
+        pExpect(TOK_SEMI);
+        return makePrint(print_arg);
+    }
+    
+    // return statement
+    if (t == TOK_RETURN) {
+        pAdvance();
+        let ret_expr = makeNum(0);
+        if (pCurrentType() != TOK_SEMI) {
+            ret_expr = parseExpr();
+        }
+        pExpect(TOK_SEMI);
+        return makeReturn(ret_expr);
+    }
+    
+    // if statement
+    if (t == TOK_IF) {
+        pAdvance();
+        pExpect(TOK_LPAREN);
+        let cond = parseExpr();
+        pExpect(TOK_RPAREN);
+        pExpect(TOK_LBRACE);
+        
+        let then_stmts = [];
+        while (pCurrentType() != TOK_RBRACE) {
+            then_stmts = push(then_stmts, parseStatement());
+        }
+        pExpect(TOK_RBRACE);
+        
+        let else_stmts = [];
+        if (pCurrentType() == TOK_ELSE) {
+            pAdvance();
+            
+            if (pCurrentType() == TOK_IF) {
+                // else if ... -> else { if ... }
+                else_stmts = push(else_stmts, parseStatement());
+            } else {
+                pExpect(TOK_LBRACE);
+                while (pCurrentType() != TOK_RBRACE) {
+                    else_stmts = push(else_stmts, parseStatement());
+                }
+                pExpect(TOK_RBRACE);
+            }
+        }
+        
+        return makeIf(cond, makeBlock(then_stmts), makeBlock(else_stmts));
+    }
+    
+    // while statement
+    if (t == TOK_WHILE) {
+        pAdvance();
+        pExpect(TOK_LPAREN);
+        let cond = parseExpr();
+        pExpect(TOK_RPAREN);
+        pExpect(TOK_LBRACE);
+        
+        let body_stmts = [];
+        while (pCurrentType() != TOK_RBRACE) {
+            body_stmts = push(body_stmts, parseStatement());
+        }
+        pExpect(TOK_RBRACE);
+        
+        return makeWhile(cond, makeBlock(body_stmts));
+    }
+    
+    // break statement
+    if (t == TOK_BREAK) {
+        pAdvance();
+        pExpect(TOK_SEMI);
+        return [AST_BREAK];
+    }
+    
+    // continue statement
+    if (t == TOK_CONTINUE) {
+        pAdvance();
+        pExpect(TOK_SEMI);
+        return [AST_CONTINUE];
+    }
+
+    // Match statement (expression used as statement)
+    if (t == TOK_MATCH) {
+        let match_expr = parseExpr();
+        // Option: allow match without semicolon if likely block-like?
+        // But parse_expr consumes it.
+        // For now, Cryo statements often require semicolons or implicitly handle block-likes.
+        // If we treat it as expr, it might not require semi if it's the last thing?
+        // Let's rely on standard expr stmt rule or specific rule.
+        // Actually, parse_primary consumes match.
+        // So here we need to call parse_expr.
+        // But parse_expr calls parse_comparison -> parse_term -> parse_factor -> parse_primary.
+        // So 'match' IS a primary.
+        
+        // However, parse_statement needs to Trigger on TOK_MATCH.
+        // Since TOK_MATCH is NOT TOK_ID, it falls through to "Unexpected token".
+        return match_expr;
+    }
+    
+    // Assignment or expression statement
+    if (t == TOK_ID) {
+        let assign_name = pCurrentVal();
+        pAdvance();
+        
+        if (pCurrentType() == TOK_EQ) {
+            pAdvance();
+            let assign_val = parseExpr();
+            pExpect(TOK_SEMI);
+            return makeAssign(assign_name, assign_val);
+        }
+        
+        // Expression statement (function call)
+        p_pos = p_pos - 1; // backtrack
+        let stmt_expr = parseExpr();
+        pExpect(TOK_SEMI);
+        return stmt_expr;
+    }
+    
+    print("Unexpected token in statement: " + pCurrentVal());
+    pAdvance();
+    return makeNum(0);
+}
+
+// Parse async fn - wraps parse_function
+fn parseAsyncFunction() {
+    pExpect(TOK_ASYNC);  // consume 'async'
+    // Now parse the rest as normal function
+    let func_node = parseFunction();
+    // Convert to async version: [AST_ASYNC_FUNC, name, params, body]
+    if (func_node[0] == AST_FUNC) {
+        return [AST_ASYNC_FUNC, func_node[1], func_node[2], func_node[3]];
+    }
+    return func_node;  // Return as-is if generic
+}
+
+fn parseFunction() {
+    pExpect(TOK_FN);
+    let fn_name = pCurrentVal();
+    pExpect(TOK_ID);
+    
+    // Check for generic params: fn name<T, U>(...)
+    let fn_type_params = [];
+    if (pCurrentType() == TOK_LT) {
+        pAdvance(); // skip <
+        while (pCurrentType() != TOK_GT) {
+            fn_type_params = push(fn_type_params, pCurrentVal());
+            pAdvance(); // skip T
+            if (pCurrentType() == TOK_COMMA) {
+                pAdvance();
+            }
+        }
+        pExpect(TOK_GT);
+    }
+    
+    // Check for method definition: fn StructName.methodName(...)
+    // If we see a dot, this is a method
+    if (pCurrentType() == 53) { // TOK_DOT = 53
+        pAdvance(); // skip .
+        let method_name = pCurrentVal();
+        pExpect(TOK_ID);
+        // Mangle the name: StructName_method_name
+        fn_name = fn_name + "_" + method_name;
+    }
+    
+    pExpect(TOK_LPAREN);
+    
+    let fn_params = [];
+    if (pCurrentType() == TOK_ID) {
+        fn_params = push(fn_params, pCurrentVal());
+        pAdvance();
+        
+        // Skip type annotation
+        if (pCurrentType() == TOK_COLON) {
+            pAdvance(); // skip :
+            pAdvance(); // skip type name
+            // Skip generic type args: param: Box<int>
+            if (pCurrentType() == TOK_LT) {
+                pAdvance();
+                while (pCurrentType() != TOK_GT) {
+                    pAdvance();
+                    if (pCurrentType() == TOK_COMMA) { pAdvance(); }
+                }
+                pExpect(TOK_GT);
+            }
+        }
+        
+        while (pCurrentType() == TOK_COMMA) {
+            pAdvance();
+            fn_params = push(fn_params, pCurrentVal());
+            pAdvance();
+            if (pCurrentType() == TOK_COLON) {
+                pAdvance(); // skip :
+                pAdvance(); // skip type name
+                // Skip generic type args
+                if (pCurrentType() == TOK_LT) {
+                    pAdvance();
+                    while (pCurrentType() != TOK_GT) {
+                        pAdvance();
+                        if (pCurrentType() == TOK_COMMA) { pAdvance(); }
+                    }
+                    pExpect(TOK_GT);
+                }
+            }
+        }
+    }
+    pExpect(TOK_RPAREN);
+    pExpect(TOK_LBRACE);
+    
+    let fn_body = [];
+    while (pCurrentType() != TOK_RBRACE) {
+        fn_body = push(fn_body, parseStatement());
+    }
+    pExpect(TOK_RBRACE);
+    
+    // If this is a generic function, store it for later instantiation
+    if (len(fn_type_params) > 0) {
+        let gen_entry = [];
+        gen_entry = push(gen_entry, fn_name);
+        gen_entry = push(gen_entry, fn_type_params);
+        gen_entry = push(gen_entry, fn_params);
+        gen_entry = push(gen_entry, makeBlock(fn_body));
+        generic_funcs = push(generic_funcs, gen_entry);
+        // Return a placeholder - generic functions are not emitted directly
+        return [130, fn_name, fn_type_params]; // AST_GENERIC_FUNC = 130
+    }
+    
+    return makeFunc(fn_name, fn_params, makeBlock(fn_body));
+}
+
+fn parseStructDef() {
+    pAdvance(); // skip 'struct'
+    let struct_name = pCurrentVal();
+    pAdvance(); // skip name
+    
+    // START GENERIC PARAMS
+    if (pCurrentType() == TOK_LT) {
+        pAdvance(); // skip <
+        while (pCurrentType() != TOK_GT) {
+            pAdvance(); // skip T
+            if (pCurrentType() == TOK_COMMA) {
+                pAdvance();
+            }
+        }
+        pExpect(TOK_GT); // skip >
+    }
+    // END GENERIC PARAMS
+
+    pExpect(TOK_LBRACE);
+    
+    let struct_fields = [];
+    while (pCurrentType() != TOK_RBRACE) {
+        let field_name = pCurrentVal();
+        pAdvance(); // field name
+        pExpect(TOK_COLON);
+        let field_type = pCurrentVal();
+        pAdvance(); // type
+        
+        // START GENERIC TYPE ARGS
+        if (pCurrentType() == TOK_LT) {
+            pAdvance(); // skip <
+            while (pCurrentType() != TOK_GT) {
+                pAdvance(); // skip type
+                if (pCurrentType() == TOK_COMMA) {
+                    pAdvance();
+                }
+            }
+            pExpect(TOK_GT); // skip >
+        }
+        // END GENERIC TYPE ARGS
+        
+        let field_def = [];
+        field_def = push(field_def, field_name);
+        field_def = push(field_def, field_type);
+        struct_fields = push(struct_fields, field_def);
+        
+        if (pCurrentType() == TOK_COMMA) {
+            pAdvance();
+        }
+    }
+    pExpect(TOK_RBRACE);
+    
+    return [100, struct_name, struct_fields]; // AST_STRUCT_DEF = 100
+}
+
+fn parseEnumDef() {
+    pAdvance(); // skip 'enum'
+    let enum_name = pCurrentVal();
+    pAdvance(); // name
+    pExpect(TOK_LBRACE);
+    
+    let enum_variants = [];
+    while (pCurrentType() != TOK_RBRACE) {
+        let variant_name = pCurrentVal();
+        pAdvance(); // variant name
+        
+        // Optional params (just check syntax for now)
+        let variant_has_data = 0;
+        if (pCurrentType() == TOK_LPAREN) {
+            pAdvance();
+            // We only support single data field for now: Variant(Type)
+            // or maybe just skip parsing types
+            if (pCurrentType() != TOK_RPAREN) {
+                 pAdvance(); // consume type/name
+            }
+            pExpect(TOK_RPAREN);
+            variant_has_data = 1;
+        }
+        
+        let variant_def = [];
+        variant_def = push(variant_def, variant_name);
+        variant_def = push(variant_def, variant_has_data);
+        enum_variants = push(enum_variants, variant_def);
+        
+        if (pCurrentType() == TOK_COMMA) {
+            pAdvance();
+        }
+    }
+    pExpect(TOK_RBRACE);
+    
+    return [110, enum_name, enum_variants]; // AST_ENUM_DEF = 110
+}
+
+fn parseProgram(tokens: any) {
+    p_tokens = tokens;
+    p_pos = 0;
+    
+    let xz_nodes = [];
+    while (pCurrentType() != TOK_EOF) {
+        let xz_cur_type = pCurrentType();
+        // DEBUG: print("Top token: " + pCurrentVal() + " (" + xz_cur_type + ")");
+        
+        if (xz_cur_type == 1) { // TOK_FN = 1
+            let xz_fn = parseFunction();
+            xz_nodes = push(xz_nodes, xz_fn);
+        } else if (xz_cur_type == TOK_ASYNC) { // async fn
+            let xz_async = parseAsyncFunction();
+            xz_nodes = push(xz_nodes, xz_async);
+        } else if (xz_cur_type == 56) { // TOK_STRUCT = 56
+            let xz_st = parseStructDef();
+            xz_nodes = push(xz_nodes, xz_st);
+        } else if (xz_cur_type == 58) { // TOK_ENUM = 58
+            let xz_en = parseEnumDef();
+            xz_nodes = push(xz_nodes, xz_en);
+        } else if (xz_cur_type == 62) { // TOK_IMPORT = 62
+            // Supports two syntaxes:
+            // 1. import "filename";           -> import all
+            // 2. import {a, b} from "file";   -> import selective
+            pAdvance(); // skip 'import'
+            
+            let import_names = []; // Empty = import all
+            let import_path = "";
+            
+            if (pCurrentType() == 32) { // TOK_LBRACE = 32
+                // Selective import: import {name1, name2} from "path";
+                pAdvance(); // skip '{'
+                while (pCurrentType() != 33) { // TOK_RBRACE = 33
+                    let imp_name = pCurrentVal();
+                    import_names = push(import_names, imp_name);
+                    pExpect(10); // TOK_ID
+                    if (pCurrentType() == 51) { // TOK_COMMA
+                        pAdvance();
+                    }
+                }
+                pExpect(33); // TOK_RBRACE
+                pExpect(63); // TOK_FROM
+                import_path = pCurrentVal();
+                pExpect(12); // TOK_STR
+            } else {
+                // Simple import: import "filename";
+                import_path = pCurrentVal();
+                pExpect(12); // TOK_STR = 12
+            }
+            
+            pExpect(50); // TOK_SEMI = 50
+            xz_nodes = push(xz_nodes, [120, import_path, import_names]); // AST_IMPORT = 120
+        } else {
+            // Assume it's a statement (let, etc)
+            let xz_stmt = parseStatement();
+            xz_nodes = push(xz_nodes, xz_stmt);
+        }
+        
+        // Prevent infinite loop if parser gets stuck
+        if (p_pos > len(tokens) + 10) {
+            print("Parse Error: Infinite loop detected at pos " + p_pos);
+            return xz_nodes;
+        }
+    }
+    
+    return xz_nodes;
+}
+
+// =================== CODE GENERATOR (LLVM IR) ===================
+
+let cg_output = "";
+let cg_temp = 0;
+let cg_label = 0;
+let cg_vars = [];
+let cg_var_names = [];
+let cg_global_vars = []; // Track global variable names
+let cg_strings = []; // [ [id, content], ... ]
+let cg_str_id_counter = 0;
+let cg_loop_cond_label = ""; // For continue
+let cg_loop_end_label = "";  // For break
+let cg_structs = []; // Track struct definitions [[name, fields], ...]
+let cg_enums = [];   // Track enum definitions [[name, variants], ...]
+let cg_sinst_return = ""; // Workaround for struct instantiation return value
+let cg_last_expr = ""; // Store last expression result for AST_RETURN workaround
+
+fn cgFindFieldIndex(ffi_fname: string) {
+    let ffi_si = 0;
+    while (ffi_si < len(cg_structs)) {
+        let ffi_struct_def = cg_structs[ffi_si];
+        let ffi_fields = ffi_struct_def[1];
+        let ffi_fi = 0;
+        while (ffi_fi < len(ffi_fields)) {
+            let ffi_field_entry = ffi_fields[ffi_fi];
+            let ffi_fn = ffi_field_entry[0];
+            if (ffi_fn == ffi_fname) {
+                return ffi_fi;
+            }
+            ffi_fi = ffi_fi + 1;
+        }
+        ffi_si = ffi_si + 1;
+    }
+    return 0;
+}
+
+fn cgIsGlobal(name: string) {
+    let i = 0;
+    while (i < len(cg_global_vars)) {
+        if (cg_global_vars[i] == name) { return true; }
+        i = i + 1;
+    }
+    return false;
+}
+
+fn cgEmit(s: string) {
+    if (DEBUG_MODE == 1) {
+        cg_output = cg_output + "  " + s + ", !dbg !" + DBG_CURRENT_FUNC + "\n";
+    } else {
+        cg_output = cg_output + "  " + s + "\n";
+    }
+}
+
+fn cgEmitRaw(s: string) {
+    cg_output = cg_output + s + "\n";
+}
+
+fn cgNextTemp() {
+    let temp_result = "%t" + cg_temp;
+    cg_temp = cg_temp + 1;
+    return temp_result;
+}
+
+fn cgNextLabel() {
+    let label_result = "L" + cg_label;
+    cg_label = cg_label + 1;
+    return label_result;
+}
+
+fn cgFindVar(name: string) {
+    // Search backwards to support variable shadowing
+    // (find most recently declared variable with this name)
+    let i = len(cg_var_names) - 1;
+    while (i >= 0) {
+        if (cg_var_names[i] == name) {
+            return cg_vars[i];
+        }
+        i = i - 1;
+    }
+    return null;
+}
+
+fn cgAddVar(name: string, ptr: string) {
+    cg_var_names = push(cg_var_names, name);
+    cg_vars = push(cg_vars, ptr);
+}
+
+fn cgGetStrConst(content: string) {
+    // Check if exists
+    let i = 0;
+    while (i < len(cg_strings)) {
+        let cached_entry = cg_strings[i];
+        let cached_content = cached_entry[1];
+        if (cached_content == content) {
+            let cached_id = cached_entry[0];
+            return "@.str." + cached_id;
+        }
+        i = i + 1;
+    }
+    // Add new
+    let new_id = cg_str_id_counter;
+    cg_str_id_counter = cg_str_id_counter + 1;
+    let new_entry = [new_id, content];
+    cg_strings = push(cg_strings, new_entry);
+    return "@.str." + new_id;
+}
+
+fn cgGenExpr(cge_input: any) {
+    let node_type = cge_input[0];
+    // DEBUG
+    
+    // Number literal - Tagged Integer format (n*2+1)
+    // In Stage 0, parseInt returns raw value, so we tag it.
+    // In Stage 1, parseInt returns already-tagged value, so we use it as-is.
+    if (node_type == AST_NUM) {
+        let n = cge_input[1];  // Could be raw or tagged depending on stage
+        if (IS_STAGE1 == 1) {
+            // n is already tagged from parseInt
+            return "" + n;
+        } else {
+            // n is raw, need to tag it
+            return "" + ((n * 2) + 1);
+        }
+    }
+    
+    // String Literal
+    if (node_type == 30) { // AST_STR
+        let str_val = cge_input[1];
+        let str_ptr = cgGetStrConst(str_val);
+        let t1 = cgNextTemp();
+        let str_len = len(str_val);
+        let array_len = str_len + 1;
+        let cast = "getelementptr inbounds ([" + array_len + " x i8], [" + array_len + " x i8]* " + str_ptr + ", i64 0, i64 0)";
+        // Fix: Call cryo_str_new to create a valid Object from the raw C-string
+        cgEmit(t1 + " = call i64 @cryoStrNew(i8* " + cast + ")");
+        return t1;
+    }
+    
+
+    
+    // Variable
+    if (node_type == AST_VAR) {
+        let var_name = cge_input[1];
+        
+        if (cgIsGlobal(var_name)) {
+             let var_temp = cgNextTemp();
+             cgEmit(var_temp + " = load i64, i64* @" + var_name);
+             return var_temp;
+        }
+        
+        let var_ptr = cgFindVar(var_name);
+        if (var_ptr != null) {
+            let var_temp2 = cgNextTemp();
+            cgEmit(var_temp2 + " = load i64, i64* " + var_ptr);
+            return var_temp2;
+        }
+        return "0";
+    }
+    
+    // NOT operator: !expr
+    // In tagged format: true = 3, false = 1
+    // NOT flips: 3 -> 1, 1 -> 3
+    if (node_type == 71) { // AST_NOT = 71
+        let not_input = cge_input[1];
+        let not_val = cgGenExpr(not_input);
+        let not_res = cgNextTemp();
+        // XOR with 2 flips the second bit: 1 (01) -> 3 (11), 3 (11) -> 1 (01)
+        cgEmit(not_res + " = xor i64 " + not_val + ", 2");
+        return not_res;
+    }
+    
+    // AWAIT expression: await expr
+    // For now, just evaluate the expression (simple thread-join semantics)
+    if (node_type == AST_AWAIT) {
+        let await_expr = cge_input[1];
+        // Simply evaluate the expression - the async function returns when done
+        let await_val = cgGenExpr(await_expr);
+        return await_val;
+    }
+    
+    // Binary operation
+    if (node_type == AST_BINOP) {
+        let binop_op = cge_input[1];
+        let binop_left = cge_input[2];
+        let binop_right = cge_input[3];
+        
+        let binop_l = cgGenExpr(binop_left);
+        let binop_r = cgGenExpr(binop_right);
+        let binop_res = cgNextTemp();
+        
+        // OPTIMIZATION: Fast Path for Integers
+        // Operations: +, -, <, >, ==
+        let can_opt = false;
+        if (binop_op == "+") { can_opt = true; }
+        else if (binop_op == "-") { can_opt = true; }
+        else if (binop_op == "<") { can_opt = true; }
+        else if (binop_op == ">") { can_opt = true; }
+        else if (binop_op == "==") { can_opt = true; }
+        
+        if (can_opt) {
+             let label_fast = cgNextLabel();
+             let label_slow = cgNextLabel();
+             let label_done = cgNextLabel();
+             
+             // Check if both are integers: (left & right & 1) == 1
+             let binop_t1 = cgNextTemp();
+             let binop_t2 = cgNextTemp();
+             let binop_t3 = cgNextTemp();
+             cgEmit(binop_t1 + " = and i64 " + binop_l + ", " + binop_r);
+             cgEmit(binop_t2 + " = and i64 " + binop_t1 + ", 1");
+             
+             if (OPT_UNSAFE == 1) {
+                 cgEmit("br label %" + label_fast);
+             } else {
+                 cgEmit(binop_t3 + " = icmp eq i64 " + binop_t2 + ", 1");
+                 let binop_t3_ex = cgNextTemp();
+                 cgEmit(binop_t3_ex + " = call i1 @llvm.expect.i1(i1 " + binop_t3 + ", i1 1)");
+                 cgEmit("br i1 " + binop_t3_ex + ", label %" + label_fast + ", label %" + label_slow);
+             }
+             
+             // --- FAST PATH (Native Instructions) ---
+             cgEmitRaw("\n" + label_fast + ":");
+             let res_fast = cgNextTemp();
+             
+             if (binop_op == "+") {
+                 // (2n+1) + (2m+1) - 1 = 2(n+m) + 1
+                 let t_add = cgNextTemp();
+                 cgEmit(t_add + " = add i64 " + binop_l + ", " + binop_r);
+                 cgEmit(res_fast + " = sub i64 " + t_add + ", 1");
+             }
+             else if (binop_op == "-") {
+                 // (2n+1) - (2m+1) + 1 = 2(n-m) + 1
+                 let t_sub = cgNextTemp();
+                 cgEmit(t_sub + " = sub i64 " + binop_l + ", " + binop_r);
+                 cgEmit(res_fast + " = add i64 " + t_sub + ", 1");
+             }
+             else if (binop_op == "==") {
+                  let t_cmp = cgNextTemp();
+                  cgEmit(t_cmp + " = icmp eq i64 " + binop_l + ", " + binop_r);
+                  cgEmit(res_fast + " = select i1 " + t_cmp + ", i64 3, i64 1");
+             }
+             else if (binop_op == "<") {
+                  let t_cmp = cgNextTemp();
+                  cgEmit(t_cmp + " = icmp slt i64 " + binop_l + ", " + binop_r);
+                  cgEmit(res_fast + " = select i1 " + t_cmp + ", i64 3, i64 1");
+             }
+             else if (binop_op == ">") {
+                  let t_cmp = cgNextTemp();
+                  cgEmit(t_cmp + " = icmp sgt i64 " + binop_l + ", " + binop_r);
+                  cgEmit(res_fast + " = select i1 " + t_cmp + ", i64 3, i64 1");
+             }
+             cgEmit("br label %" + label_done);
+             
+             // --- SLOW PATH (Function Call) ---
+             cgEmitRaw("\n" + label_slow + ":");
+             let target = "";
+             if (binop_op == "+") { target = "cryo_add"; }
+             else if (binop_op == "-") { target = "cryo_sub"; }
+             else if (binop_op == "<") { target = "cryo_lt"; }
+             else if (binop_op == ">") { target = "cryo_gt"; }
+             else if (binop_op == "==") { target = "cryo_eq"; }
+             
+             let res_slow = cgNextTemp();
+             cgEmit(res_slow + " = call i64 @" + target + "(i64 " + binop_l + ", i64 " + binop_r + ")");
+             cgEmit("br label %" + label_done);
+             
+             // --- MERGE ---
+             cgEmitRaw("\n" + label_done + ":");
+             let final_res = cgNextTemp();
+             cgEmit(final_res + " = phi i64 [ " + res_fast + ", %" + label_fast + " ], [ " + res_slow + ", %" + label_slow + " ]");
+             return final_res;
+        }
+
+        let target = "";
+        if (binop_op == "*") { target = "cryo_mul"; }
+        else if (binop_op == "/") { target = "cryo_div"; }
+        
+        if (target != "") {
+             cgEmit(binop_res + " = call i64 @" + target + "(i64 " + binop_l + ", i64 " + binop_r + ")");
+             return binop_res;
+        }
+        
+        if (binop_op == "!=") {
+             let eq_res = cgNextTemp();
+             cgEmit(eq_res + " = call i64 @cryoEq(i64 " + binop_l + ", i64 " + binop_r + ")");
+             cgEmit(binop_res + " = xor i64 " + eq_res + ", 2");
+             return binop_res;
+        }
+        
+        if (binop_op == "<=") {
+             let lt_res = cgNextTemp();
+             let eq_res = cgNextTemp();
+             cgEmit(lt_res + " = call i64 @cryoLt(i64 " + binop_l + ", i64 " + binop_r + ")");
+             cgEmit(eq_res + " = call i64 @cryoEq(i64 " + binop_l + ", i64 " + binop_r + ")");
+             cgEmit(binop_res + " = or i64 " + lt_res + ", " + eq_res);
+             return binop_res;
+        }
+        
+        if (binop_op == ">=") {
+             let gt_res = cgNextTemp();
+             let eq_res = cgNextTemp();
+             cgEmit(gt_res + " = call i64 @cryoGt(i64 " + binop_l + ", i64 " + binop_r + ")");
+             cgEmit(eq_res + " = call i64 @cryoEq(i64 " + binop_l + ", i64 " + binop_r + ")");
+             cgEmit(binop_res + " = or i64 " + gt_res + ", " + eq_res);
+             return binop_res;
+        }
+        
+        return "0";
+    }
+    
+    // Function call
+    if (node_type == AST_CALL) {
+        let call_name = cge_input[1];
+        let call_args = cge_input[2];
+        let call_res = cgNextTemp();
+        
+        // Map intrinsics (Restored for compat)
+        let call_target = call_name;
+        if (call_name == "len") { call_target = "cryo_len"; }
+        else if (call_name == "push") { call_target = "cryo_push"; }
+        // CamelCase (Legacy/JS)
+        else if (call_name == "charCodeAt") { call_target = "cryo_char_code_at"; }
+        else if (call_name == "parseInt") { call_target = "cryo_parse_int"; }
+        else if (call_name == "readFile") { call_target = "cryo_read_file"; }
+        else if (call_name == "system") { call_target = "cryo_system"; }
+        else if (call_name == "exit") { call_target = "cryo_exit"; }
+        else if (call_name == "getEnv") { call_target = "cryo_get_env"; }
+        else if (call_name == "input") { call_target = "cryo_stdin_read"; }
+        else if (call_name == "writeFile") { call_target = "cryo_write_file"; }
+        else if (call_name == "fileExists") { call_target = "cryo_file_exists"; }
+        else if (call_name == "getArgs") { call_target = "cryo_get_args"; }
+        // snakeCase(Consistent)
+        else if (call_name == "char_code_at") { call_target = "cryo_char_code_at"; }
+        else if (call_name == "parse_int") { call_target = "cryo_parse_int"; }
+        else if (call_name == "read_file") { call_target = "cryo_read_file"; }
+        else if (call_name == "write_file") { call_target = "cryo_write_file"; }
+        else if (call_name == "file_exists") { call_target = "cryo_file_exists"; }
+        else if (call_name == "get_args") { call_target = "cryo_get_args"; }
+        else if (call_name == "char_from_code") { call_target = "cryo_char_from_code"; }
+        else if (call_name == "exit") { call_target = "cryo_exit"; }
+        else if (call_name == "get_env") { call_target = "cryo_get_env"; }
+        
+        // Check if call_name is an Enum Variant Constructor
+        // We iterate all collected enums to find matching variant
+        // Since we don't have scope (Enum::Variant), variant names must be unique or we check all.
+        let enum_cons_variant_idx = 0-1;
+        let enum_cons_has_data = 0;
+        
+        let eci = 0;
+        while (eci < len(cg_enums)) {
+             let ec_def = cg_enums[eci];
+             let ec_variants = ec_def[1];
+             let evi = 0;
+             while (evi < len(ec_variants)) {
+                 let ev_def = ec_variants[evi]; // [name, has_data]
+                 if (ev_def[0] == call_name) {
+                     enum_cons_variant_idx = evi;
+                     enum_cons_has_data = ev_def[1];
+                     // Found match
+                     evi = len(ec_variants);
+                     eci = len(cg_enums);
+                 } else {
+                     evi = evi + 1;
+                 }
+             }
+             if (eci < len(cg_enums)) { eci = eci + 1; } // Check continue condition
+        }
+        
+        // If it IS an enum constructor
+        if (enum_cons_variant_idx != (0-1)) {
+             // Create Array [discriminator, data...]
+             let enum_obj = cgNextTemp();
+             cgEmit(enum_obj + " = call i64 @cryoArrNew()");
+             
+             // Push discriminator
+             let disc_tag = (enum_cons_variant_idx * 2) + 1;
+             let dumb1 = cgNextTemp();
+             cgEmit(dumb1 + " = call i64 @cryoPush(i64 " + enum_obj + ", i64 " + disc_tag + ")");
+             
+             // Push data args
+             // Note: Enum variant assumes 0 or 1 args for now based on 'has_data'
+             // But user might pass args. Flatten match args?
+             // Just push all provided args.
+             let ec_arg_i = 0;
+             while (ec_arg_i < len(call_args)) {
+                 let ec_arg_val = cgGenExpr(call_args[ec_arg_i]);
+                 let dumb2 = cgNextTemp();
+                 cgEmit(dumb2 + " = call i64 @cryoPush(i64 " + enum_obj + ", i64 " + ec_arg_val + ")");
+                 ec_arg_i = ec_arg_i + 1;
+             }
+             
+             return enum_obj;
+        }
+
+        let call_arg_str = "";
+        let ci = 0;
+        while (ci < len(call_args)) {
+             if (ci > 0) { call_arg_str = call_arg_str + ", "; }
+             let call_arg_val = cgGenExpr(call_args[ci]);
+             call_arg_str = call_arg_str + "i64 " + call_arg_val;
+             ci = ci + 1;
+        }
+        
+        cgEmit(call_res + " = call i64 @" + call_target + "(" + call_arg_str + ")");
+        return call_res;
+    }
+    
+    // Array literal
+    if (node_type == 31) { // AST_ARRAY
+        let items = cge_input[1];
+        let arr = cgNextTemp();
+        cgEmit(arr + " = call i64 @cryoArrNew()");
+        
+        let i = 0;
+        while (i < len(items)) {
+            let item = items[i];
+            let val = cgGenExpr(item);
+            let dummy = cgNextTemp();
+            cgEmit(dummy + " = call i64 @cryoPush(i64 " + arr + ", i64 " + val + ")");
+            i = i + 1;
+        }
+        return arr;
+    }
+    
+    // Struct instantiation: create array with field values
+    if (node_type == 101) { // AST_STRUCT_INST = 101
+        let sinst_field_inits = cge_input[2]; // [[fname, fval], ...]
+        
+        // Get temp for struct array - save to GLOBAL before any recursive calls
+        // This works around potential return value corruption in Stage 1
+        let sinst_my_arr = cgNextTemp();
+        cg_sinst_return = sinst_my_arr; // Save to global immediately
+        cgEmit(sinst_my_arr + " = call i64 @cryoArrNew()");
+        
+        // Collect all field values FIRST (without using local)
+        let sinst_vals = [];
+        let sinst_i = 0;
+        while (sinst_i < len(sinst_field_inits)) {
+            let sinst_field = sinst_field_inits[sinst_i];
+            let sinst_expr = sinst_field[1];
+            let sinst_val = cgGenExpr(sinst_expr);
+            sinst_vals = push(sinst_vals, sinst_val);
+            sinst_i = sinst_i + 1;
+        }
+        
+        
+        // Now emit push calls using collected values AND global saved temp
+        let sinst_j = 0;
+        while (sinst_j < len(sinst_vals)) {
+            let sinst_v = sinst_vals[sinst_j];
+            let sinst_dummy = cgNextTemp();
+            cgEmit(sinst_dummy + " = call i64 @cryoPush(i64 " + cg_sinst_return + ", i64 " + sinst_v + ")");
+            sinst_j = sinst_j + 1;
+        }
+        
+        
+        // Return the global saved value, not the local
+        let sinst_result = cg_sinst_return;
+        return sinst_result;
+    }
+    
+    // Field access: get field by index
+    if (node_type == 102) { // AST_FIELD_ACCESS = 102
+        let access_base = cge_input[1];
+        let access_fname = cge_input[2];
+        
+        let access_base_val = cgGenExpr(access_base);
+        let access_idx = cgFindFieldIndex(access_fname);
+        
+        // For LLVM IR, we need tagged format: idx*2+1
+        // access_idx is 0, 1, 2, etc (raw value)
+        // Tagged values: 0->1, 1->3, 2->5, etc
+        let access_idx_val = "1"; // default for index 0
+        if (access_idx == 1) { access_idx_val = "3"; }
+        if (access_idx == 2) { access_idx_val = "5"; }
+        if (access_idx == 3) { access_idx_val = "7"; }
+        if (access_idx == 4) { access_idx_val = "9"; }
+        
+        
+        let access_result = cgNextTemp();
+        cgEmit(access_result + " = call i64 @cryoGet(i64 " + access_base_val + ", i64 " + access_idx_val + ")");
+        return access_result;
+    }
+    
+    // Method call: [103, base_obj, method_name, args]
+    // Transform to function call: StructType_method(base_obj, args...)
+    if (node_type == 103) { // AST_METHOD_CALL
+        let mcall_base = cge_input[1];  // The object (unused directly, it's in args)
+        let mcall_method = cge_input[2]; // Method name
+        let mcall_args = cge_input[3];   // Args array (first is self)
+        
+        // For now, we need to figure out the struct type
+        // We'll try each struct and see if it has a matching method
+        // Generate call to each possible mangled name
+        // For simplicity: iterate through structs and try to find method
+        
+        // Build the mangled function name by trying each struct
+        // In practice, we'd need type inference. For now, try all structs.
+        let mcall_func_name = "";
+        let msi = 0;
+        while (msi < len(cg_structs)) {
+            let mstruct = cg_structs[msi];
+            let msname = mstruct[0];
+            // Try this struct's method name
+            mcall_func_name = msname + "_" + mcall_method;
+            msi = msi + 1;
+            // Just use the first one for now - TODO: proper type resolution
+            if (msi == 1) {
+                // Use first struct that could match
+            }
+        }
+        
+        // If no structs found, just use the method name directly
+        if (mcall_func_name == "") {
+            mcall_func_name = mcall_method;
+        }
+        
+        // Generate argument values
+        let mcall_arg_str = "";
+        let mai = 0;
+        while (mai < len(mcall_args)) {
+            if (mai > 0) { mcall_arg_str = mcall_arg_str + ", "; }
+            let ma_temp_start = cg_temp;
+            cgGenExpr(mcall_args[mai]);
+            let ma_result = "%t" + ma_temp_start;
+            mcall_arg_str = mcall_arg_str + "i64 " + ma_result;
+            mai = mai + 1;
+        }
+        
+        let mcall_result = cgNextTemp();
+        cgEmit(mcall_result + " = call i64 @" + mcall_func_name + "(" + mcall_arg_str + ")");
+        return mcall_result;
+    }
+    
+    // Match Expression
+    if (node_type == 111) { // AST_MATCH
+        let match_target = cge_input[1];
+        let match_cases = cge_input[2]; // [[pat, bind, body], ...]
+        
+        let target_val = cgGenExpr(match_target);
+        let match_end_label = cgNextLabel();
+        
+        // Get discriminator from target_val[0]
+        // TODO: Handle simple integer enums if we decide to optimize later.
+        // For now, assume enum is always array [disc, data...]
+        let disc_val = cgNextTemp();
+        cgEmit(disc_val + " = call i64 @cryoGet(i64 " + target_val + ", i64 1)"); // Index 0 (tagged 1)
+        
+        // Loop through cases and generate checks
+        let mi = 0;
+        while (mi < len(match_cases)) {
+            let mcase = match_cases[mi];
+            let pat_name = mcase[0]; // Variant Name
+            let pat_bind = mcase[1]; // Binding Var Name
+            let case_body = mcase[2];
+            
+            let next_case_label = cgNextLabel();
+            let case_body_label = cgNextLabel();
+            
+            // Check discriminator
+            // We need to resolve patName(Variant) to its index
+            let variant_idx = 0-1;
+            
+            // Search all enums for this variant
+            let found_enum = 0;
+            let ei = 0;
+            while (ei < len(cg_enums)) {
+                let edef = cg_enums[ei];
+                let evariants = edef[1];
+                let vi = 0;
+                while (vi < len(evariants)) {
+                    let vdef = evariants[vi];
+                    if (vdef[0] == pat_name) {
+                        variant_idx = vi;
+                        found_enum = 1;
+                        // Break out of inner loop
+                        vi = len(evariants); 
+                    } else {
+                        vi = vi + 1;
+                    }
+                }
+                if (found_enum == 1) {
+                    ei = len(cg_enums);
+                } else {
+                    ei = ei + 1;
+                }
+            }
+            
+            if (variant_idx != (0-1)) {
+                let vidx_tagged = (variant_idx * 2) + 1;
+                if (IS_STAGE1 == 1) { vidx_tagged = variant_idx; } // Wait, constant folding vs runtime
+                // variant_idx is constant int.
+                let cmp_res = cgNextTemp();
+                
+                // If STAGE1, numbers are already tagged in the compiler's memory? 
+                // No, 'variant_idx' is a pure int here.
+                // But the runtime 'disc_val' is a tagged int.
+                // So we should compare against tagged variant_idx.
+                // Tag it here:
+                vidx_tagged = (variant_idx * 2) + 1;
+                
+                cgEmit(cmp_res + " = icmp eq i64 " + disc_val + ", " + vidx_tagged);
+                cgEmit("br i1 " + cmp_res + ", label %" + case_body_label + ", label %" + next_case_label);
+                
+                cgEmitRaw("\n" + case_body_label + ":");
+                
+                // Binding: if pat_bind is set, extract data
+                if (pat_bind != "") {
+                    // Extract payload: target_val[1]
+                    let bind_val = cgNextTemp();
+                    cgEmit(bind_val + " = call i64 @cryoGet(i64 " + target_val + ", i64 3)"); // Index 1 (tagged 3)
+                    
+                    // Alloc stack for binding
+                    let bind_ptr = "%" + pat_bind + ".ptr." + cg_temp;
+                    cg_temp = cg_temp + 1;
+                    cgEmit(bind_ptr + " = alloca i64");
+                    cgEmit("store i64 " + bind_val + ", i64* " + bind_ptr);
+                    cgAddVar(pat_bind, bind_ptr); // Scoping? 
+                    // Note: cg_add_var pushes to global list, usually cleaned up by function reset?
+                    // Actually 'cg_vars' is reset per function.
+                    // But inside a block, we might shadow?
+                    // For now, assume unique names or shadowing works by list order (last added found first).
+                    // Yes, cg_find_var searches backwards? 
+                    // Let's check cg_find_var implementation.
+                    // It searches forward 0..len. `push` adds to end.
+                    // We need find to search from end to support shadowing properly.
+                    // Current cg_find_var searches 0 to len. So it finds FIRST (oldest).
+                    // Shadowing requires finding LAST (newest).
+                    // TODO: Fix shadowing in cg_find_var if needed.
+                    // For now, it works if variable names are unique.
+                }
+                
+                // Generate Body
+                // Match returns a value? 
+                // We need to support 'expr' behavior (phi node?).
+                // AST_MATCH is currently expected to return value?
+                // For simplicity, let's assume it returns 0 for now or handled via side-effects (print).
+                // Or implementing PHI is hard here without knowing type/result of block.
+                // Let's make it an expression that evaluates the block.
+                // Block usually returns result of last stmt? 
+                // AST_BLOCK handling? `cg_gen_stmt` handles block, but doesn't return value.
+                // If body is a block, we iterate stmts.
+                // If body is expression?
+                
+                // Assuming stmt context for now.
+                // If we need expression result, we need 'cg_last_expr_val' or similar.
+                
+                let bstmts = case_body[1];
+                let bi = 0;
+                while (bi < len(bstmts)) {
+                    cgGenStmt(bstmts[bi]);
+                    bi = bi + 1;
+                }
+                
+                cgEmit("br label %" + match_end_label);
+                
+                cgEmitRaw("\n" + next_case_label + ":");
+                
+            } else {
+                // Unknown variant or default?
+                // Just emit branch to next
+                cgEmit("br label %" + next_case_label);
+                cgEmitRaw("\n" + next_case_label + ":");
+            }
+            
+            mi = mi + 1;
+        }
+        
+        cgEmit("br label %" + match_end_label);
+        cgEmitRaw("\n" + match_end_label + ":");
+        return "0"; // Result of match expression (void/0 for now)
+    }
+
+    return "0";
+}
+
+fn cgGenStmt(stmt: any) {
+    let node_type = stmt[0];
+    
+    // Let statement
+    if (node_type == AST_LET) {
+        let let_name = stmt[1];
+        let let_init = stmt[2];
+        let let_val = cgGenExpr(let_init);
+        
+        // This is local let, alloc stack
+        let let_ptr = "%" + let_name + ".ptr." + cg_temp;
+        cg_temp = cg_temp + 1;
+        
+        cgEmit(let_ptr + " = alloca i64");
+        cgEmit("store i64 " + let_val + ", i64* " + let_ptr);
+        
+        cgAddVar(let_name, let_ptr);
+        return;
+    }
+    
+    // Assignment
+    if (node_type == AST_ASSIGN) {
+        let assign_name = stmt[1];
+        let assign_expr = stmt[2];
+        let assign_val = cgGenExpr(assign_expr);
+        
+        if (cgIsGlobal(assign_name)) {
+            cgEmit("store i64 " + assign_val + ", i64* @" + assign_name);
+        } else {
+            let assign_ptr = cgFindVar(assign_name);
+            if (assign_ptr != null) {
+                cgEmit("store i64 " + assign_val + ", i64* " + assign_ptr);
+            }
+        }
+        return;
+    }
+    
+    // Print statement
+    if (node_type == AST_PRINT) {
+        let print_expr = stmt[1];
+        let print_val = cgGenExpr(print_expr);
+        
+        // Use cryo_print which handles all Cryo value types
+        cgEmit("call void @cryoPrint(i64 " + print_val + ")");
+        return;
+    }
+    
+    // Return statement
+    if (node_type == AST_RETURN) {
+        let expr = stmt[1];
+        
+        // TAIL CALL OPTIMIZATION - still use direct approach for simple calls
+        if (expr[0] == AST_CALL) {
+             let name = expr[1];
+             let args = expr[2];
+             
+             // Map intrinsics (same as in cg_gen_expr)
+             let call_target = name;
+             if (name == "len") { call_target = "cryo_len"; }
+             else if (name == "push") { call_target = "cryo_push"; }
+             else if (name == "charCodeAt") { call_target = "cryo_char_code_at"; }
+             else if (name == "parseInt") { call_target = "cryo_parse_int"; }
+             else if (name == "readFile") { call_target = "cryo_read_file"; }
+             else if (name == "writeFile") { call_target = "cryo_write_file"; }
+             else if (name == "fileExists") { call_target = "cryo_file_exists"; }
+             else if (name == "getArgs") { call_target = "cryo_get_args"; }
+             else if (name == "char_code_at") { call_target = "cryo_char_code_at"; }
+             else if (name == "parse_int") { call_target = "cryo_parse_int"; }
+             else if (name == "read_file") { call_target = "cryo_read_file"; }
+             else if (name == "write_file") { call_target = "cryo_write_file"; }
+             else if (name == "file_exists") { call_target = "cryo_file_exists"; }
+             else if (name == "get_args") { call_target = "cryo_get_args"; }
+             else if (name == "char_from_code") { call_target = "cryo_char_from_code"; }
+             else if (name == "exit") { call_target = "cryo_exit"; }
+             else if (name == "get_env") { call_target = "cryo_get_env"; }
+             
+             let arg_str = "";
+             let i = 0;
+             while (i < len(args)) {
+                  if (i > 0) { arg_str = arg_str + ", "; }
+                  // Get actual result from cgGenExpr(could be temp or literal)
+                  let arg_result = cgGenExpr(args[i]);
+                  arg_str = arg_str + "i64 " + arg_result;
+                  i = i + 1;
+             }
+             
+             let res = cgNextTemp();
+             cgEmit(res + " = tail call i64 @" + call_target + "(" + arg_str + ")");
+             cgEmit("ret i64 " + res);
+             return;
+        }
+        
+        // For all other expressions: use the actual result from cg_gen_expr
+        // CRITICAL FIX: Don't assume last temp is the result - use the actual return value
+        let ret_result = cgGenExpr(expr);
+        cgEmit("ret i64 " + ret_result);
+        return;
+    }
+    
+    // While statement
+    if (node_type == AST_WHILE) {
+        let cond = stmt[1];
+        let body = stmt[2];
+        
+        let cond_label = cgNextLabel();
+        let body_label = cgNextLabel();
+        let end_label = cgNextLabel();
+        
+        // Save current loop labels for nested loops
+        let saved_cond = cg_loop_cond_label;
+        let saved_end = cg_loop_end_label;
+        cg_loop_cond_label = cond_label;
+        cg_loop_end_label = end_label;
+        
+        cgEmit("br label %" + cond_label);
+        cgEmitRaw("\n" + cond_label + ":");
+        
+        // OPTIMIZATION: Condition Flow for specific comparisons
+        let opt_while = false;
+        if (cond[0] == 3) { // AST_BINOP
+            let op = cond[1];
+            if (op == "<") { opt_while = true; }
+            else if (op == ">") { opt_while = true; }
+            else if (op == "==") { opt_while = true; }
+        }
+        
+        if (opt_while) {
+            let op = cond[1];
+            let left = cond[2];
+            let right = cond[3];
+            let l = cgGenExpr(left);
+            let r = cgGenExpr(right);
+            
+            let label_fast = cgNextLabel();
+            let label_slow = cgNextLabel();
+            
+            // Check types (both int?)
+            let t1 = cgNextTemp();
+            let t2 = cgNextTemp();
+            let t3 = cgNextTemp();
+            cgEmit(t1 + " = and i64 " + l + ", " + r);
+            cgEmit(t2 + " = and i64 " + t1 + ", 1");
+            
+            if (OPT_UNSAFE == 1) {
+                cgEmit("br label %" + label_fast);
+            } else {
+                cgEmit(t3 + " = icmp eq i64 " + t2 + ", 1");
+                let t3_ex = cgNextTemp();
+                cgEmit(t3_ex + " = call i1 @llvm.expect.i1(i1 " + t3 + ", i1 1)");
+                cgEmit("br i1 " + t3_ex + ", label %" + label_fast + ", label %" + label_slow);
+            }
+            
+            // FAST PATH: Direct Branching
+            cgEmitRaw("\n" + label_fast + ":");
+            let t_cmp = cgNextTemp();
+            let cmp_instr = "icmp eq";
+            if (op == "<") { cmp_instr = "icmp slt"; }
+            if (op == ">") { cmp_instr = "icmp sgt"; }
+            
+            cgEmit(t_cmp + " = " + cmp_instr + " i64 " + l + ", " + r);
+            cgEmit("br i1 " + t_cmp + ", label %" + body_label + ", label %" + end_label);
+            
+            // SLOW PATH: Fallback to runtime
+            cgEmitRaw("\n" + label_slow + ":");
+            let target = "cryo_eq";
+            if (op == "<") { target = "cryo_lt"; }
+            if (op == ">") { target = "cryo_gt"; }
+            
+            let res_slow = cgNextTemp();
+            cgEmit(res_slow + " = call i64 @" + target + "(i64 " + l + ", i64 " + r + ")");
+            let slow_bool = cgNextTemp();
+            cgEmit(slow_bool + " = icmp ne i64 " + res_slow + ", 1");
+            cgEmit("br i1 " + slow_bool + ", label %" + body_label + ", label %" + end_label);
+        
+        } else {
+            // Normal unoptimized condition
+            let cond_val = cgGenExpr(cond);
+            let cond_bool = cgNextTemp();
+            cgEmit(cond_bool + " = icmp ne i64 " + cond_val + ", 1");
+            cgEmit("br i1 " + cond_bool + ", label %" + body_label + ", label %" + end_label);
+        }
+        
+        cgEmitRaw("\n" + body_label + ":");
+        let body_stmts = body[1];
+        let i = 0;
+        while (i < len(body_stmts)) {
+            cgGenStmt(body_stmts[i]);
+            i = i + 1;
+        }
+        cgEmit("br label %" + cond_label);
+        
+        cgEmitRaw("\n" + end_label + ":");
+        
+        // Restore saved loop labels
+        cg_loop_cond_label = saved_cond;
+        cg_loop_end_label = saved_end;
+        return;
+    }
+    
+    // Break statement
+    if (node_type == AST_BREAK) {
+        cgEmit("br label %" + cg_loop_end_label);
+        // Need a new label for any code after break (unreachable)
+        let after_break = cgNextLabel();
+        cgEmitRaw("\n" + after_break + ":");
+        return;
+    }
+    
+    // Continue statement
+    if (node_type == AST_CONTINUE) {
+        cgEmit("br label %" + cg_loop_cond_label);
+        // Need a new label for any code after continue (unreachable)
+        let after_continue = cgNextLabel();
+        cgEmitRaw("\n" + after_continue + ":");
+        return;
+    }
+    
+    // Expression statement (function call as statement)
+    if (node_type == AST_CALL) {
+        // Just evaluate the expression for its side effects
+        cgGenExpr(stmt);
+        return;
+    }
+    
+    // Match statement (delegate to cg_gen_expr which handles AST_MATCH)
+    if (node_type == 111) { // AST_MATCH
+        cgGenExpr(stmt);
+        return;
+    }
+    
+    // If statement
+    if (node_type == AST_IF) {
+        let cond = stmt[1];
+        let then_block = stmt[2];
+        let else_block = stmt[3];
+        
+        let then_label = cgNextLabel();
+        let else_label = cgNextLabel();
+        let end_label = cgNextLabel();
+        
+        let cond_val = cgGenExpr(cond);
+        let cond_bool = cgNextTemp();
+        cgEmit(cond_bool + " = icmp ne i64 " + cond_val + ", 1");
+        cgEmit("br i1 " + cond_bool + ", label %" + then_label + ", label %" + else_label);
+        
+        cgEmitRaw("\n" + then_label + ":");
+        let then_stmts = then_block[1];
+        let ti = 0;
+        while (ti < len(then_stmts)) {
+            cgGenStmt(then_stmts[ti]);
+            ti = ti + 1;
+        }
+        cgEmit("br label %" + end_label);
+        
+        cgEmitRaw("\n" + else_label + ":");
+        let else_stmts = else_block[1];
+        let ei = 0;
+        while (ei < len(else_stmts)) {
+            cgGenStmt(else_stmts[ei]);
+            ei = ei + 1;
+        }
+        cgEmit("br label %" + end_label);
+        
+        cgEmitRaw("\n" + end_label + ":");
+        return;
+    }
+}
+
+fn cgGenParamStr(params: any) {
+    let res = "";
+    let i = 0;
+    while (i < len(params)) {
+        if (i > 0) { res = res + ", "; }
+        res = res + "i64 %arg" + i;
+        i = i + 1;
+    }
+    return res;
+}
+
+fn escapeLlvm(s: string) {
+    let res = "";
+    let i = 0;
+    while (i < len(s)) {
+        let c = s[i];
+        if (c == "\n") { res = res + "\\0A"; }
+        else if (c == "\t") { res = res + "\\09"; }
+        else if (c == "\r") { res = res + "\\0D"; }
+        else if (isQuote(c)) { res = res + "\\22"; }
+        else if (isBackslash(c)) { res = res + "\\5C"; }
+        else { 
+            res = res + c;
+        }
+        i = i + 1;
+    }
+    return res;
+}
+
+// =================== MONOMORPHIZATION ===================
+// Generate specialized versions of generic functions
+// For each instantiation request (e.g., identity<int>),
+// find the generic template and create a concrete version
+// with mangled name (e.g., identity_int)
+
+fn generateSpecializedFuncs() {
+    let result = [];
+    
+    // Iterate through all instantiation requests
+    let i = 0;
+    while (i < len(instantiations)) {
+        let inst = instantiations[i];
+        let generic_name = inst[0];    // e.g., "identity"
+        let type_args = inst[1];        // e.g., ["int"]
+        let mangled_name = inst[2];     // e.g., "identity_int"
+        
+        // Check if already generated
+        let already_done = false;
+        let j = 0;
+        while (j < len(generated_specs)) {
+            if (generated_specs[j] == mangled_name) {
+                already_done = true;
+                j = len(generated_specs); // break
+            }
+            j = j + 1;
+        }
+        
+        if (already_done == false) {
+            // Find the generic function template
+            let k = 0;
+            while (k < len(generic_funcs)) {
+                let gen_func = generic_funcs[k];
+                let gen_name = gen_func[0];
+                
+                if (gen_name == generic_name) {
+                    // Found the template!
+                    // gen_func = [name, type_params, params, body]
+                    let gen_type_params = gen_func[1]; // ["T"]
+                    let gen_params = gen_func[2];      // ["x"]
+                    let gen_body = gen_func[3];        // AST_BLOCK
+                    
+                    // Create specialized function with mangled name
+                    // AST_FUNC = [20, name, params, body]
+                    let spec_func = [];
+                    spec_func = push(spec_func, 20);           // AST_FUNC
+                    spec_func = push(spec_func, mangled_name); // Mangled name
+                    spec_func = push(spec_func, gen_params);   // Same params
+                    spec_func = push(spec_func, gen_body);     // Same body
+                    
+                    result = push(result, spec_func);
+                    generated_specs = push(generated_specs, mangled_name);
+                    
+                    k = len(generic_funcs); // break
+                }
+                k = k + 1;
+            }
+        }
+        
+        i = i + 1;
+    }
+    
+    return result;
+}
+
+fn cgGenerate(cg_input_nodes: any) {
+    // GENERICS: Generate specialized functions
+    let spec_funcs = generateSpecializedFuncs();
+    let si = 0;
+    while (si < len(spec_funcs)) {
+        cg_input_nodes = push(cg_input_nodes, spec_funcs[si]);
+        si = si + 1;
+    }
+
+    cg_output = "";
+    cg_strings = [];
+    cg_str_id_counter = 0;
+    
+    // 1. Collect Globals, Structs, Enums and Generate Declarations
+    cg_global_vars = [];
+    cg_structs = [];
+    cg_enums = [];
+    let globals_decl = "";
+    
+    let i = 0;
+    while (i < len(cg_input_nodes)) {
+        let glob_node = cg_input_nodes[i];
+        
+        // Skip Generic Templates
+        if (glob_node[0] == 130) { // AST_GENERIC_FUNC
+            i = i + 1;
+            continue;
+        }
+        
+        if (glob_node[0] == 10) { // AST_LET
+            let glob_name = glob_node[1];
+            cg_global_vars = push(cg_global_vars, glob_name);
+            globals_decl = globals_decl + "@" + glob_name + " = global i64 0\n";
+        }
+        if (glob_node[0] == 100) { // AST_STRUCT_DEF = 100
+            let glob_sname = glob_node[1];
+            let glob_sfields = glob_node[2];
+            let glob_sdef = [];
+            glob_sdef = push(glob_sdef, glob_sname);
+            glob_sdef = push(glob_sdef, glob_sfields);
+            cg_structs = push(cg_structs, glob_sdef);
+        }
+        if (glob_node[0] == 110) { // AST_ENUM_DEF = 110
+            let glob_ename = glob_node[1];
+            let glob_evariants = glob_node[2]; // [[name, has_data], ...]
+            let glob_edef = [];
+            glob_edef = push(glob_edef, glob_ename);
+            glob_edef = push(glob_edef, glob_evariants);
+            cg_enums = push(cg_enums, glob_edef);
+        }
+        i = i + 1;
+    }
+    
+    // DEBUG
+    
+    // 2. Generate __init_globals
+    // Reset temp counters
+    cg_temp = 0;
+    cg_label = 0;
+    cg_vars = [];
+    cg_var_names = [];
+    
+    if (len(cg_global_vars) > 0) {
+        cgEmitRaw("define void @__init_globals() {");
+        cgEmitRaw("entry:");
+        
+        i = 0;
+        while (i < len(cg_input_nodes)) {
+            let init_node = cg_input_nodes[i];
+            if (init_node[0] == 10) { // AST_LET
+                 let init_name = init_node[1];
+                 let init_expr = init_node[2];
+                 // Generate init value
+                 let init_val = cgGenExpr(init_expr);
+                 cgEmit("store i64 " + init_val + ", i64* @" + init_name);
+            }
+            i = i + 1;
+        }
+        
+        cgEmit("ret void");
+        cgEmitRaw("}");
+        cgEmitRaw("");
+    }
+    
+    // 3. Generate Functions
+    // DEBUG
+    
+    let fn_i = 0;
+    while (fn_i < len(cg_input_nodes)) {
+        let fn_node = cg_input_nodes[fn_i];
+        // DEBUG
+        let fn_elem1 = fn_node[1];
+        
+        if (fn_node[0] == 20) { // AST_FUNC
+            // DEBUG
+            
+            let fn_name = fn_node[1];
+            // DEBUG
+            
+            let fn_params = fn_node[2];
+            let fn_body = fn_node[3];
+            
+            // DEBUG
+            
+            // Inline function generation logic to access params correctly
+            // Reset local state for function
+            cg_temp = 0;
+            cg_label = 0;
+            cg_vars = [];
+            cg_var_names = [];
+            
+            // DEBUG
+            if (DEBUG_MODE == 1) {
+                // Register function in debug info
+                DBG_CURRENT_FUNC = DBG_META_ID;
+                let dbg_entry = [];
+                dbg_entry = push(dbg_entry, fn_name);
+                dbg_entry = push(dbg_entry, DBG_META_ID);
+                dbg_entry = push(dbg_entry, 1); // Line number (TODO: get from AST)
+                DBG_FUNCS = push(DBG_FUNCS, dbg_entry);
+                DBG_META_ID = DBG_META_ID + 1;
+            }
+            
+            if (fn_name == "main") {
+                if (DEBUG_MODE == 1) {
+                    cgEmitRaw("define i64 @main(i32 %argc, i8** %argv) !dbg !" + DBG_CURRENT_FUNC + " {");
+                } else {
+                    cgEmitRaw("define i64 @main(i32 %argc, i8** %argv) {");
+                }
+                cgEmitRaw("entry:");
+                
+                // Call globals init
+                if (len(cg_global_vars) > 0) {
+                    cgEmit("call void @__init_globals()");
+                }
+                
+                let main_stmts = fn_body[1];
+                let mj = 0;
+                while (mj < len(main_stmts)) {
+                    cgGenStmt(main_stmts[mj]);
+                    mj = mj + 1;
+                }
+                cgEmit("ret i64 0");
+                cgEmitRaw("}");
+            } else {
+                let fn_param_str = cgGenParamStr(fn_params);
+                if (DEBUG_MODE == 1) {
+                    cgEmitRaw("define i64 @" + fn_name + "(" + fn_param_str + ") !dbg !" + DBG_CURRENT_FUNC + " {");
+                } else {
+                    cgEmitRaw("define i64 @" + fn_name + "(" + fn_param_str + ") {");
+                }
+                cgEmitRaw("entry:");
+                
+                // Allow stack allocation for params
+                let pk = 0;
+                while (pk < len(fn_params)) {
+                    let fn_pname = fn_params[pk];
+                    let fn_ptr = "%" + fn_pname + ".ptr";
+                    cgEmit(fn_ptr + " = alloca i64");
+                    cgEmit("store i64 %arg" + pk + ", i64* " + fn_ptr);
+                    cgAddVar(fn_pname, fn_ptr);
+                    pk = pk + 1;
+                }
+                
+                let other_stmts = fn_body[1];
+                let oj = 0;
+                while (oj < len(other_stmts)) {
+                    cgGenStmt(other_stmts[oj]);
+                    oj = oj + 1;
+                }
+                // Implicit return 0
+                cgEmit("ret i64 0");
+                cgEmitRaw("}");
+            }
+            cgEmitRaw("");
+        }
+        
+        // Async function (thread-based implementation)
+        if (fn_node[0] == AST_ASYNC_FUNC) {
+            let fn_name = fn_node[1];
+            let fn_params = fn_node[2];
+            let fn_body = fn_node[3];
+            
+            cg_temp = 0;
+            cg_label = 0;
+            cg_vars = [];
+            cg_var_names = [];
+            
+            // Generate async function (same as regular for now, runtime handles async)
+            let fn_param_str = cgGenParamStr(fn_params);
+            cgEmitRaw("; Async function");
+            if (DEBUG_MODE == 1) {
+                cgEmitRaw("define i64 @" + fn_name + "(" + fn_param_str + ") !dbg !" + DBG_CURRENT_FUNC + " {");
+            } else {
+                cgEmitRaw("define i64 @" + fn_name + "(" + fn_param_str + ") {");
+            }
+            cgEmitRaw("entry:");
+            
+            let pk = 0;
+            while (pk < len(fn_params)) {
+                let fn_pname = fn_params[pk];
+                let fn_ptr = "%" + fn_pname + ".ptr";
+                cgEmit(fn_ptr + " = alloca i64");
+                cgEmit("store i64 %arg" + pk + ", i64* " + fn_ptr);
+                cgAddVar(fn_pname, fn_ptr);
+                pk = pk + 1;
+            }
+            
+            let stmts = fn_body[1];
+            let si = 0;
+            while (si < len(stmts)) {
+                cgGenStmt(stmts[si]);
+                si = si + 1;
+            }
+            cgEmit("ret i64 0");
+            cgEmitRaw("}");
+            cgEmitRaw("");
+        }
+        fn_i = fn_i + 1;
+    }
+    
+    let body_code = cg_output;
+    cg_output = ""; // Reset for header
+    
+    // 4. Generate Header
+    cgEmitRaw("; Cryo Self-Hosted Compiler Output");
+    cgEmitRaw("; Generated by compiler.cryo");
+    cgEmitRaw("");
+    cgEmitRaw("declare i32 @printf(i8*, ...)");
+    cgEmitRaw("declare i64 @cryoGet(i64, i64)");
+    cgEmitRaw("declare i64 @cryoSet(i64, i64, i64)");
+    cgEmitRaw("declare i64 @cryoArrNew()");
+    cgEmitRaw("declare i64 @cryoPush(i64, i64)");
+    cgEmitRaw("declare i64 @cryoStrNew(i8*)");
+    cgEmitRaw("declare i64 @cryoAdd(i64, i64)");
+    cgEmitRaw("declare i64 @cryoSub(i64, i64)");
+    cgEmitRaw("declare i64 @cryoMul(i64, i64)");
+    cgEmitRaw("declare i64 @cryoDiv(i64, i64)");
+    cgEmitRaw("declare i64 @cryoLt(i64, i64)");
+    cgEmitRaw("declare i64 @cryoGt(i64, i64)");
+    cgEmitRaw("declare i64 @cryoEq(i64, i64)");
+    cgEmitRaw("declare i1 @llvm.expect.i1(i1, i1)");
+    cgEmitRaw("declare i64 @cryoLen(i64)");
+    cgEmitRaw("declare void @cryoPrint(i64)");
+    cgEmitRaw("declare i64 @cryoGetArgs()");
+    cgEmitRaw("declare i64 @cryoReadFile(i64)");
+    cgEmitRaw("declare i64 @cryoWriteFile(i64, i64)");
+    cgEmitRaw("declare i64 @cryoListen(i64)");
+    cgEmitRaw("declare i64 @cryoAccept(i64)");
+    cgEmitRaw("declare i64 @cryoSocketRead(i64)");
+    cgEmitRaw("declare i64 @cryoSocketWrite(i64, i64)");
+    cgEmitRaw("declare i64 @cryoSocketClose(i64)");
+    cgEmitRaw("declare i64 @cryoFileExists(i64)");
+    cgEmitRaw("declare i64 @cryoCharCodeAt(i64, i64)");
+    cgEmitRaw("declare i64 @cryoParseInt(i64)");
+    // Multi-threading (v2.3)
+    cgEmitRaw("declare i64 @cryoThreadSpawn(i64)");
+    cgEmitRaw("declare i64 @cryoThreadJoin(i64)");
+    cgEmitRaw("declare i64 @cryoMutexNew()");
+    cgEmitRaw("declare i64 @cryoMutexLock(i64)");
+    cgEmitRaw("declare i64 @cryoMutexUnlock(i64)");
+    cgEmitRaw("declare i64 @cryoAtomicNew(i64)");
+    cgEmitRaw("declare i64 @cryoAtomicLoad(i64)");
+    cgEmitRaw("declare i64 @cryoAtomicStore(i64, i64)");
+    cgEmitRaw("declare i64 @cryoAtomicAdd(i64, i64)");
+    cgEmitRaw("declare i64 @cryoAtomicCas(i64, i64, i64)");
+    cgEmitRaw("declare i64 @cryoSleep(i64)");
+    cgEmitRaw("declare i64 @cryoCharFromCode(i64)");
+    cgEmitRaw("declare i64 @cryoExit(i64)");
+    cgEmitRaw("declare i64 @cryoGetEnv(i64)");
+    cgEmitRaw("declare i64 @cryoSystem(i64)");
+    cgEmitRaw("declare i64 @cryoStdinRead()");
+    cgEmitRaw("@.str.int = private constant [5 x i8] c\"%ld\\0A\\00\"");
+    cgEmitRaw("@.str.str = private constant [4 x i8] c\"%s\\0A\\00\"");
+    
+    cgEmitRaw(globals_decl);
+    
+    // 4b. Debug Metadata (if -g flag)
+    if (DEBUG_MODE == 1) {
+        cgEmitRaw("");
+        cgEmitRaw("; Debug Metadata");
+        cgEmitRaw("!llvm.dbg.cu = !{!0}");
+        cgEmitRaw("!llvm.module.flags = !{!1, !2}");
+        cgEmitRaw("!0 = distinct !DICompileUnit(language: DW_LANG_C99, file: !3, producer: \"cryoc v2.24.0\", isOptimized: false, emissionKind: FullDebug)");
+        cgEmitRaw("!1 = !{i32 2, !\"Dwarf Version\", i32 4}");
+        cgEmitRaw("!2 = !{i32 2, !\"Debug Info Version\", i32 3}");
+        cgEmitRaw("!3 = !DIFile(filename: \"" + DBG_FILENAME + "\", directory: \".\")");
+        cgEmitRaw("!4 = !DIBasicType(name: \"int\", size: 64, encoding: DW_ATE_signed)");
+        cgEmitRaw("!5 = !DISubroutineType(types: !6)");
+        cgEmitRaw("!6 = !{!4}");
+        
+        // Generate DISubprogram for each function
+        let fi = 0;
+        while (fi < len(DBG_FUNCS)) {
+            let fentry = DBG_FUNCS[fi];
+            let fname = fentry[0];
+            let fdbg_id = fentry[1];
+            let fline = fentry[2];
+            cgEmitRaw("!" + fdbg_id + " = distinct !DISubprogram(name: \"" + fname + "\", scope: !3, file: !3, line: " + fline + ", type: !5, isLocal: false, isDefinition: true, scopeLine: " + fline + ", unit: !0)");
+            fi = fi + 1;
+        }
+        cgEmitRaw("");
+    }
+    
+    // 5. String Constants
+    i = 0;
+    while (i < len(cg_strings)) {
+        let str_entry = cg_strings[i];
+        let str_id = str_entry[0];
+        let str_content = str_entry[1];
+        let str_esc = escapeLlvm(str_content);
+        let str_len = len(str_content) + 1;
+        cgEmitRaw("@.str." + str_id + " = private constant [" + str_len + " x i8] c\"" + str_esc + "\\00\"");
+        i = i + 1;
+    }
+    
+    cgEmitRaw("");
+    cg_output = cg_output + body_code;
+    return cg_output;
+}
+
+// =================== WASM CODE GENERATOR ===================
+
+// WASM Sections
+let wasm_imports = [];    // [(module, name, signature)]
+let wasm_exports = [];    // [(name, internal_name)]
+let wasm_globals = [];    // [(name, type, init)]
+let wasm_memory_size = 1; // Pages (64KB each)
+
+// String table for data section
+let wasm_string_table = [];
+let wasm_string_offset = 1024;  // Start strings at offset 1024
+
+// Local variable tracking
+let wasm_locals = [];
+let wasm_local_count = 0;
+
+// Label counter for blocks/loops
+let wasm_label_count = 0;
+
+fn wasmFreshLabel() {
+    let label = "$L" + wasm_label_count;
+    wasm_label_count = wasm_label_count + 1;
+    return label;
+}
+
+fn wasmAddLocal(name: string, typ: string) {
+    let entry = [name, typ, wasm_local_count];
+    wasm_locals = push(wasm_locals, entry);
+    wasm_local_count = wasm_local_count + 1;
+    return wasm_local_count - 1;
+}
+
+fn wasmFindLocal(name: string) {
+    let i = 0;
+    let neg_one = 0;
+    neg_one = neg_one - 1;
+    while (i < len(wasm_locals)) {
+        let entry = wasm_locals[i];
+        if (entry[0] == name) {
+            return entry[2];
+        }
+        i = i + 1;
+    }
+    return neg_one;
+}
+
+fn wasmAddString(s: string) {
+    let offset = wasm_string_offset;
+    let entry = [offset, s];
+    wasm_string_table = push(wasm_string_table, entry);
+    wasm_string_offset = wasm_string_offset + len(s) + 1;
+    return offset;
+}
+
+fn emitWatHeader() {
+    let code = "(module\n";
+    code = code + "  ;; Cryo WASM Module - Generated by Cryo Compiler v2.24.0\n\n";
+    return code;
+}
+
+fn emitWatMemory() {
+    let code = "  ;; Memory (1 page = 64KB)\n";
+    code = code + "  (memory (export \"memory\") " + wasm_memory_size + ")\n\n";
+    return code;
+}
+
+fn emitWatImports() {
+    let code = "  ;; Imports\n";
+    code = code + "  (import \"wasi_snapshot_preview1\" \"fd_write\"\n";
+    code = code + "    (func $fdWrite(param i32 i32 i32 i32) (result i32)))\n\n";
+    return code;
+}
+
+fn emitWatGlobals() {
+    let code = "  ;; Globals\n";
+    code = code + "  (global $heapPtr(mut i32) (i32.const 4096))\n\n";
+    return code;
+}
+
+fn emitWatRuntime() {
+    let code = "  ;; Cryo Runtime Functions\n\n";
+    code = code + "  (func $cryoAlloc(param $size i32) (result i32)\n";
+    code = code + "    (local $ptr i32)\n";
+    code = code + "    global.get $heap_ptr\n";
+    code = code + "    local.set $ptr\n";
+    code = code + "    global.get $heap_ptr\n";
+    code = code + "    local.get $size\n";
+    code = code + "    i32.add\n";
+    code = code + "    global.set $heap_ptr\n";
+    code = code + "    local.get $ptr\n";
+    code = code + "  )\n\n";
+    code = code + "  (func $print (param $ptr i32) (param $len i32)\n";
+    code = code + "    (i32.store (i32.const 0) (local.get $ptr))\n";
+    code = code + "    (i32.store (i32.const 4) (local.get $len))\n";
+    code = code + "    (drop (call $fdWrite(i32.const 1) (i32.const 0) (i32.const 1) (i32.const 8)))\n";
+    code = code + "  )\n\n";
+    code = code + "  (func $println (param $ptr i32) (param $len i32)\n";
+    code = code + "    (call $print (local.get $ptr) (local.get $len))\n";
+    code = code + "    (i32.store8 (i32.const 100) (i32.const 10))\n";
+    code = code + "    (call $print (i32.const 100) (i32.const 1))\n";
+    code = code + "  )\n\n";
+    return code;
+}
+
+fn genWasmExpr(node: any) {
+    let node_type = node[0];
+    
+    if (node_type == 1) {
+        let val = node[1];
+        return "i64.const " + val + "\n";
+    }
+    
+    if (node_type == 2) {
+        let name = node[1];
+        let idx = wasmFindLocal(name);
+        if (idx >= 0) {
+            return "local.get $" + name + "\n";
+        }
+        return "global.get $" + name + "\n";
+    }
+    
+    if (node_type == 3) {
+        let op = node[1];
+        let left = node[2];
+        let right = node[3];
+        let code = genWasmExpr(left);
+        code = code + genWasmExpr(right);
+        if (op == "+") { code = code + "i64.add\n"; }
+        else if (op == "-") { code = code + "i64.sub\n"; }
+        else if (op == "*") { code = code + "i64.mul\n"; }
+        else if (op == "/") { code = code + "i64.div_s\n"; }
+        else if (op == "%") { code = code + "i64.rem_s\n"; }
+        else if (op == "==") { code = code + "i64.eq\n"; }
+        else if (op == "!=") { code = code + "i64.ne\n"; }
+        else if (op == "<") { code = code + "i64.lt_s\n"; }
+        else if (op == "<=") { code = code + "i64.le_s\n"; }
+        else if (op == ">") { code = code + "i64.gt_s\n"; }
+        else if (op == ">=") { code = code + "i64.ge_s\n"; }
+        return code;
+    }
+    
+    if (node_type == 4) {
+        let fn_name = node[1];
+        let args = node[2];
+        let code = "";
+        let i = 0;
+        while (i < len(args)) {
+            code = code + genWasmExpr(args[i]);
+            i = i + 1;
+        }
+        code = code + "call $" + fn_name + "\n";
+        return code;
+    }
+    
+    if (node_type == 30) {
+        let str_val = node[1];
+        let offset = wasmAddString(str_val);
+        let str_len = len(str_val);
+        return "i32.const " + offset + "\ni32.const " + str_len + "\n";
+    }
+    
+    return ";; Unknown expr type: " + node_type + "\n";
+}
+
+fn genWasmStmt(node: any, indent: string) {
+    let node_type = node[0];
+    
+    if (node_type == 10) {
+        let name = node[1];
+        let init = node[2];
+        wasmAddLocal(name, "i64");
+        let code = indent + ";; let " + name + "\n";
+        code = code + indent + genWasmExpr(init);
+        code = code + indent + "local.set $" + name + "\n";
+        return code;
+    }
+    
+    if (node_type == 11) {
+        let name = node[1];
+        let val = node[2];
+        let code = indent + genWasmExpr(val);
+        code = code + indent + "local.set $" + name + "\n";
+        return code;
+    }
+    
+    if (node_type == 12) {
+        let expr = node[1];
+        let code = "";
+        if (expr != 0) {
+            code = code + indent + genWasmExpr(expr);
+        }
+        code = code + indent + "return\n";
+        return code;
+    }
+    
+    if (node_type == 13) {
+        let expr = node[1];
+        let code = indent + genWasmExpr(expr);
+        code = code + indent + "call $println\n";
+        return code;
+    }
+    
+    if (node_type == 14) {
+        let cond = node[1];
+        let then_block = node[2];
+        let else_block = node[3];
+        let code = indent + genWasmExpr(cond);
+        code = code + indent + "if\n";
+        let then_stmts = then_block[1];
+        let i = 0;
+        while (i < len(then_stmts)) {
+            code = code + genWasmStmt(then_stmts[i], indent + "  ");
+            i = i + 1;
+        }
+        if (else_block != 0) {
+            code = code + indent + "else\n";
+            let else_stmts = else_block[1];
+            let j = 0;
+            while (j < len(else_stmts)) {
+                code = code + genWasmStmt(else_stmts[j], indent + "  ");
+                j = j + 1;
+            }
+        }
+        code = code + indent + "end\n";
+        return code;
+    }
+    
+    if (node_type == 15) {
+        let cond = node[1];
+        let body = node[2];
+        let break_label = wasmFreshLabel();
+        let cont_label = wasmFreshLabel();
+        let code = indent + "block " + break_label + "\n";
+        code = code + indent + "  loop " + cont_label + "\n";
+        code = code + indent + "    " + genWasmExpr(cond);
+        code = code + indent + "    i64.eqz\n";
+        code = code + indent + "    br_if " + break_label + "\n";
+        let body_stmts = body[1];
+        let i = 0;
+        while (i < len(body_stmts)) {
+            code = code + genWasmStmt(body_stmts[i], indent + "    ");
+            i = i + 1;
+        }
+        code = code + indent + "    br " + cont_label + "\n";
+        code = code + indent + "  end\n";
+        code = code + indent + "end\n";
+        return code;
+    }
+    
+    if (node_type == 21) {
+        let stmts = node[1];
+        let code = "";
+        let i = 0;
+        while (i < len(stmts)) {
+            code = code + genWasmStmt(stmts[i], indent);
+            i = i + 1;
+        }
+        return code;
+    }
+    
+    if (node_type == 4) {
+        return indent + genWasmExpr(node) + "drop\n";
+    }
+    
+    return indent + ";; Unknown stmt type: " + node_type + "\n";
+}
+
+fn genWasmFunction(node: any) {
+    let node_type = node[0];
+    
+    if (node_type == 20 || node_type == 140) {
+        let fn_name = node[1];
+        let params = node[2];
+        let body = node[3];
+        
+        wasm_locals = [];
+        wasm_local_count = 0;
+        
+        let i = 0;
+        while (i < len(params)) {
+            let param = params[i];
+            let param_name = param[0];
+            wasmAddLocal(param_name, "i64");
+            i = i + 1;
+        }
+        
+        let code = "  (func $" + fn_name;
+        if (fn_name == "main") {
+            code = code + " (export \"_start\")";
+        }
+        
+        i = 0;
+        while (i < len(params)) {
+            let param = params[i];
+            code = code + " (param $" + param[0] + " i64)";
+            i = i + 1;
+        }
+        code = code + "\n";
+        
+        let body_stmts = body[1];
+        i = 0;
+        while (i < len(body_stmts)) {
+            code = code + genWasmStmt(body_stmts[i], "    ");
+            i = i + 1;
+        }
+        
+        code = code + "  )\n\n";
+        
+        let export_entry = [fn_name, fn_name];
+        wasm_exports = push(wasm_exports, export_entry);
+        
+        return code;
+    }
+    
+    return "";
+}
+
+fn emitWatData() {
+    let code = "  ;; Data Section (strings)\n";
+    let i = 0;
+    while (i < len(wasm_string_table)) {
+        let entry = wasm_string_table[i];
+        let offset = entry[0];
+        let str_val = entry[1];
+        code = code + "  (data (i32.const " + offset + ") \"" + str_val + "\\00\")\n";
+        i = i + 1;
+    }
+    code = code + "\n";
+    return code;
+}
+
+fn emitWatFnExports() {
+    let code = "  ;; Exports\n";
+    let i = 0;
+    while (i < len(wasm_exports)) {
+        let exp = wasm_exports[i];
+        if (exp[0] != "main") {
+            code = code + "  (export \"" + exp[0] + "\" (func $" + exp[1] + "))\n";
+        }
+        i = i + 1;
+    }
+    code = code + "\n";
+    return code;
+}
+
+fn generateWasm(ast: any) {
+    // Reset state
+    wasm_exports = [];
+    wasm_string_table = [];
+    wasm_string_offset = 1024;
+    wasm_label_count = 0;
+    
+    let code = emitWatHeader();
+    code = code + emitWatMemory();
+    code = code + emitWatImports();
+    code = code + emitWatGlobals();
+    code = code + emitWatRuntime();
+    
+    let i = 0;
+    while (i < len(ast)) {
+        let node = ast[i];
+        let node_type = node[0];
+        if (node_type == 20 || node_type == 140) {
+            code = code + genWasmFunction(node);
+        }
+        i = i + 1;
+    }
+    
+    code = code + emitWatData();
+    code = code + ")\n";
+    
+    return code;
+}
+
+// =================== MAIN COMPILER ===================
+
+fn compileFile(filename: string) {
+    print("========================================");
+    print("  CRYO SELF-HOSTING COMPILER v2.24.0");
+    print("  Written 100% in Cryo Language");
+    print("  With WebAssembly, Async/Await, Generics");
+    print("========================================");
+    print("");
+    
+    // Show target
+    if (COMPILE_TARGET == TARGET_WASM32) {
+        print("Target: WebAssembly (wasm32)");
+    } else if (COMPILE_TARGET == TARGET_WASM32_WASI) {
+        print("Target: WebAssembly WASI (wasm32-wasi)");
+    } else {
+        print("Target: Native (LLVM IR)");
+    }
+    print("Compiling: " + filename);
+    
+    if (fileExists(filename) == false) {
+        print("Error: File not found");
+        return;
+    }
+    
+    let source = readFile(filename);
+    print("Source size: " + len(source) + " bytes");
+    print("");
+    
+    // Phase 1: Lexical Analysis
+    print("[1/3] Lexical Analysis...");
+    let tokens = tokenize(source);
+    print("      Generated " + len(tokens) + " tokens");
+    
+    // Phase 2: Parsing
+    print("[2/3] Parsing...");
+    let ast = parseProgram(tokens);
+    print("      Parsed " + len(ast) + " top-level items");
+    
+    // Phase 2.5: Module Resolution (process imports)
+    let imported_files = [];
+    let final_ast = [];
+    let ast_i = 0;
+    while (ast_i < len(ast)) {
+        let node = ast[ast_i];
+        if (node[0] == 120) { // AST_IMPORT
+            let import_path = node[1];
+            
+            // Check if already imported (avoid circular imports)
+            let already_imported = false;
+            let imp_j = 0;
+            while (imp_j < len(imported_files)) {
+                if (imported_files[imp_j] == import_path) {
+                    already_imported = true;
+                    imp_j = len(imported_files);
+                }
+                imp_j = imp_j + 1;
+            }
+            
+            if (already_imported == false) {
+                imported_files = push(imported_files, import_path);
+                
+                // Read and parse imported file
+                if (fileExists(import_path)) {
+                    let import_names = node[2]; // Selective names (empty = all)
+                    let selective = len(import_names) > 0;
+                    
+                    if (selective) {
+                        print("      Importing: {" + len(import_names) + " items} from " + import_path);
+                    } else {
+                        print("      Importing: " + import_path);
+                    }
+                    
+                    let imp_source = readFile(import_path);
+                    let imp_tokens = tokenize(imp_source);
+                    let imp_ast = parseProgram(imp_tokens);
+                    
+                    // Merge imported AST nodes (excluding imports)
+                    let imp_k = 0;
+                    while (imp_k < len(imp_ast)) {
+                        let imp_node = imp_ast[imp_k];
+                        if (imp_node[0] != 120) { // Don't re-add imports
+                            let should_include = true;
+                            
+                            // If selective import, check if this node's name is in the list
+                            if (selective) {
+                                should_include = false;
+                                let node_name = "";
+                                
+                                // Get node name based on type
+                                if (imp_node[0] == 20) { // AST_FUNC
+                                    node_name = imp_node[1];
+                                } else if (imp_node[0] == 100) { // AST_STRUCT_DEF
+                                    node_name = imp_node[1];
+                                } else if (imp_node[0] == 110) { // AST_ENUM_DEF
+                                    node_name = imp_node[1];
+                                } else if (imp_node[0] == 10) { // AST_LET (global)
+                                    node_name = imp_node[1];
+                                }
+                                
+                                // Check if in import list
+                                let name_i = 0;
+                                while (name_i < len(import_names)) {
+                                    if (import_names[name_i] == node_name) {
+                                        should_include = true;
+                                        name_i = len(import_names);
+                                    }
+                                    name_i = name_i + 1;
+                                }
+                            }
+                            
+                            if (should_include) {
+                                final_ast = push(final_ast, imp_node);
+                            }
+                        }
+                        imp_k = imp_k + 1;
+                    }
+                } else {
+                    print("      Warning: Import not found: " + import_path);
+                }
+            }
+        } else {
+            // Regular node, keep it
+            final_ast = push(final_ast, node);
+        }
+        ast_i = ast_i + 1;
+    }
+    
+    if (len(imported_files) > 0) {
+        print("      Imported " + len(imported_files) + " modules");
+    }
+
+    // Phase 3: Code Generation
+    if (COMPILE_TARGET == TARGET_NATIVE) {
+        // Native LLVM IR backend
+        print("[3/3] Code Generation (LLVM IR)...");
+        let llvm_ir = cgGenerate(final_ast);
+        print("      Generated " + len(llvm_ir) + " bytes of LLVM IR");
+        print("");
+        
+        // Write output
+        let output_file = filename + ".ll";
+        if (OUTPUT_FILE != "") {
+            output_file = OUTPUT_FILE;
+        }
+        writeFile(output_file, llvm_ir);
+        print("Output written to: " + output_file);
+    } else if (COMPILE_TARGET == TARGET_WASM32 || COMPILE_TARGET == TARGET_WASM32_WASI) {
+        // WebAssembly backend
+        print("[3/3] Code Generation (WebAssembly)...");
+        let wat_code = generateWasm(final_ast);
+        print("      Generated " + len(wat_code) + " bytes of WAT");
+        print("");
+        
+        // Write output
+        let output_file = filename + ".wat";
+        if (OUTPUT_FILE != "") {
+            output_file = OUTPUT_FILE;
+        }
+        writeFile(output_file, wat_code);
+        print("Output written to: " + output_file);
+        print("");
+        print("To convert to WASM binary:");
+        print("  wat2wasm " + output_file + " -o " + filename + ".wasm");
+    }
+    
+    print("");
+    print("========================================");
+    print("  COMPILATION COMPLETE!");
+    print("========================================");
+}
+
+// =================== ENTRY POINT ===================
+
+fn main() {
+    detectStage(); // Detect if running in Stage 0 or Stage 1
+    let args = getArgs();
+    let num_args = len(args);
+    let target_file = "self-host/test_input.cryo";
+    let i = 1; // skip 0 (program name)
+    
+    while (i < num_args) {
+        let arg = args[i];
+        if (arg == "--unsafe-math") {
+            OPT_UNSAFE = 1;
+        } else if (arg == "-g") {
+            DEBUG_MODE = 1;
+        } else if (arg == "--debug") {
+            DEBUG_MODE = 1;
+        } else if (arg == "--target") {
+            // Next arg is target name
+            i = i + 1;
+            if (i < num_args) {
+                let target_name = args[i];
+                if (target_name == "wasm32") {
+                    COMPILE_TARGET = TARGET_WASM32;
+                } else if (target_name == "wasm32-wasi") {
+                    COMPILE_TARGET = TARGET_WASM32_WASI;
+                } else if (target_name == "native") {
+                    COMPILE_TARGET = TARGET_NATIVE;
+                } else {
+                    print("Unknown target: " + target_name);
+                    print("Valid targets: native, wasm32, wasm32-wasi");
+                }
+            }
+        } else if (arg == "--emit") {
+            // Next arg is emit format
+            i = i + 1;
+            if (i < num_args) {
+                let emit_fmt = args[i];
+                if (emit_fmt == "wat") {
+                    EMIT_WAT = 1;
+                }
+            }
+        } else if (arg == "-o") {
+            // Next arg is output file
+            i = i + 1;
+            if (i < num_args) {
+                OUTPUT_FILE = args[i];
+            }
+        } else if (arg == "--version") {
+            print("Cryo Compiler v2.24.0");
+            print("Targets: native, wasm32, wasm32-wasi");
+            return;
+        } else if (arg == "--help") {
+            print("Cryo Compiler v2.24.0");
+            print("");
+            print("Usage: cryoc [OPTIONS] <file.ar>");
+            print("");
+            print("Options:");
+            print("  --target <target>   Compilation target (native, wasm32, wasm32-wasi)");
+            print("  --emit <format>     Output format (llvm, wat)");
+            print("  -o <file>           Output file name");
+            print("  -g, --debug         Enable debug info");
+            print("  --unsafe-math       Enable unsafe math optimizations");
+            print("  --version           Show version");
+            print("  --help              Show this help");
+            return;
+        } else {
+            target_file = arg;
+            DBG_FILENAME = arg;  // Store for debug metadata
+        }
+        i = i + 1;
+    }
+    
+    compileFile(target_file);
+}

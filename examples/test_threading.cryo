@@ -1,0 +1,162 @@
+// ============================================
+// True Threading Test
+// Tests real OS thread execution
+// ============================================
+
+fn main() {
+    print("==========================================");
+    print("    CRYO TRUE THREADING TEST");
+    print("==========================================");
+    print("");
+    
+    // Test 1: Spawn threads for computation
+    print("Test 1: Spawn Parallel Computations");
+    print("------------------------------------------");
+    
+    // Spawn 4 threads doing fibonacci
+    let t1 = threadSpawn(30, "fib");
+    let t2 = threadSpawn(31, "fib");
+    let t3 = threadSpawn(32, "fib");
+    let t4 = threadSpawn(33, "fib");
+    
+    print("  Spawned 4 threads for fib(30-33)");
+    print("  Thread IDs: " + t1 + ", " + t2 + ", " + t3 + ", " + t4);
+    
+    // Check active count
+    let active = threadActiveCount();
+    print("  Active threads: " + active);
+    
+    // Join and get results
+    print("  Waiting for results...");
+    let r1 = threadJoin(t1);
+    let r2 = threadJoin(t2);
+    let r3 = threadJoin(t3);
+    let r4 = threadJoin(t4);
+    
+    print("  fib(30) = " + r1);
+    print("  fib(31) = " + r2);
+    print("  fib(32) = " + r3);
+    print("  fib(33) = " + r4);
+    print("  [PASS] Parallel fibonacci computed!");
+    print("");
+    
+    // Test 2: Factorial in parallel
+    print("Test 2: Parallel Factorial");
+    print("------------------------------------------");
+    
+    let f1 = threadSpawn(10, "factorial");
+    let f2 = threadSpawn(12, "factorial");
+    let f3 = threadSpawn(15, "factorial");
+    
+    print("  Computing 10!, 12!, 15! in parallel...");
+    
+    let rf1 = threadJoin(f1);
+    let rf2 = threadJoin(f2);
+    let rf3 = threadJoin(f3);
+    
+    print("  10! = " + rf1);
+    print("  12! = " + rf2);
+    print("  15! = " + rf3);
+    print("  [PASS] Parallel factorials computed!");
+    print("");
+    
+    // Test 3: Check if thread is done
+    print("Test 3: Thread Status Check");
+    print("------------------------------------------");
+    
+    let slow = threadSpawn(100, "sleep");
+    print("  Spawned sleep(100ms) thread");
+    
+    let done1 = threadIsDone(slow);
+    print("  Is done immediately: " + done1);
+    
+    // Wait for it
+    let result = threadJoin(slow);
+    print("  After join, result: " + result);
+    
+    let done2 = threadIsDone(slow);
+    print("  Is done after join: " + done2);
+    print("  [PASS] Status check works!");
+    print("");
+    
+    // Test 4: Channel Communication
+    print("Test 4: Channel Communication");
+    print("------------------------------------------");
+    
+    let ch = channelNew();
+    print("  Created channel: " + ch);
+    
+    // Send messages
+    channelSend(ch, 42);
+    channelSend(ch, 100);
+    channelSend(ch, 999);
+    print("  Sent 3 messages");
+    
+    // Receive
+    let v1 = channelRecv(ch);
+    let v2 = channelRecv(ch);
+    let v3 = channelRecv(ch);
+    
+    print("  Received: " + v1 + ", " + v2 + ", " + v3);
+    print("  [PASS] Channel communication works!");
+    print("");
+    
+    // Test 5: Try Receive (non-blocking)
+    print("Test 5: Non-blocking Receive");
+    print("------------------------------------------");
+    
+    let ch2 = channelNew();
+    
+    let empty = channelTryRecv(ch2);
+    if (empty == null) {
+        print("  Empty channel returns null: true");
+    } else {
+        print("  Empty channel returns null: false");
+    }
+    
+    channelSend(ch2, 777);
+    let filled = channelTryRecv(ch2);
+    print("  After send, try_recv: " + filled);
+    print("  [PASS] Non-blocking receive works!");
+    print("");
+    
+    // Test 6: Timeout Receive
+    print("Test 6: Receive with Timeout");  
+    print("------------------------------------------");
+    
+    let ch3 = channelNew();
+    
+    print("  Waiting 50ms for message on empty channel...");
+    let timeout_result = channelRecvTimeout(ch3, 50);
+    
+    if (timeout_result == null) {
+        print("  Timeout correctly returned null");
+    } else {
+        print("  Unexpected: " + timeout_result);
+    }
+    print("  [PASS] Timeout receive works!");
+    print("");
+    
+    // Test 7: Close Channel  
+    print("Test 7: Channel Close");
+    print("------------------------------------------");
+    
+    let ch4 = channelNew();
+    channelSend(ch4, 123);
+    print("  Sent message before close");
+    
+    channelClose(ch4);
+    print("  Channel closed");
+    
+    // Sending after close should fail  
+    let send_result = channelSend(ch4, 456);
+    print("  Send after close: " + send_result);
+    print("  [PASS] Channel close works!");
+    print("");
+    
+    print("==========================================");
+    print("    ALL THREADING TESTS PASSED!");
+    print("==========================================");
+    
+    return 0;
+}

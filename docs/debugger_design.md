@@ -1,8 +1,8 @@
-# Argon Debugger Support Design (v2.17.0)
+# Cryo Debugger Support Design (v2.17.0)
 
 ## Overview
 
-Add full debugging support to Argon, enabling developers to:
+Add full debugging support to Cryo, enabling developers to:
 - Set breakpoints in source code
 - Step through execution (step over, step into, step out)
 - Inspect variables at runtime
@@ -23,18 +23,18 @@ Add full debugging support to Argon, enabling developers to:
 | Function !dbg reference | ✅ Implemented |
 | Instruction !dbg location | ✅ Implemented |
 | GDB in Docker | ✅ Implemented |
-| `argon debug` command | ✅ Implemented |
+| `cryo debug` command | ✅ Implemented |
 
 ## Architecture
 
 ### Phase 1: DWARF Debug Info in LLVM IR
 
-Generate LLVM debug metadata that maps to Argon source:
+Generate LLVM debug metadata that maps to Cryo source:
 
 ```llvm
 !llvm.dbg.cu = !{!0}
-!0 = distinct !DICompileUnit(language: DW_LANG_C, file: !1, producer: "argonc v2.17.0")
-!1 = !DIFile(filename: "example.ar", directory: "/app")
+!0 = distinct !DICompileUnit(language: DW_LANG_C, file: !1, producer: "cryoc v2.17.0")
+!1 = !DIFile(filename: "example.cryo", directory: "/app")
 
 define i64 @myFunction() !dbg !2 {
   ; ...
@@ -57,7 +57,7 @@ define i64 @myFunction() !dbg !2 {
 ### Phase 3: Debug Commands
 
 Add runtime debugging support:
-- `argon debug <file>` - Start debugging session
+- `cryo debug <file>` - Start debugging session
 - Integration with GDB/LLDB
 
 ## Implementation Plan
@@ -77,11 +77,11 @@ Add runtime debugging support:
 - Add llvm.dbg.value calls for variable tracking
 
 ### Step 4: Compiler Flag
-- Add `-g` or `--debug` flag to argonc
+- Add `-g` or `--debug` flag to cryoc
 - Only emit debug info when flag is present
 
 ### Step 5: Debug Script
-- Create `argon.sh debug` command
+- Create `cryo.sh debug` command
 - Invoke GDB/LLDB with proper settings
 
 ## Debug Metadata Format
@@ -91,7 +91,7 @@ Add runtime debugging support:
 !DICompileUnit(
   language: DW_LANG_C,
   file: !<file>,
-  producer: "argonc v2.17.0",
+  producer: "cryoc v2.17.0",
   isOptimized: false,
   emissionKind: FullDebug
 )
@@ -137,7 +137,7 @@ Add runtime debugging support:
 
 ```bash
 # Compile with debug info
-argon compile -g myprogram.ar
+cryo compile -g myprogram.ar
 
 # Debug with GDB
 gdb ./myprogram.ar.out
@@ -153,7 +153,7 @@ gdb ./myprogram.ar.out
 ## Files to Modify
 
 1. `self-host/compiler.ar` - Add debug metadata emission
-2. `argon.sh` - Add `debug` command
+2. `cryo.sh` - Add `debug` command
 3. `Dockerfile` - Include GDB
 
 ## Testing
