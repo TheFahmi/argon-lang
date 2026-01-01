@@ -61,6 +61,8 @@ Argon is a self-hosted, high-performance systems programming language designed f
 - **Package Manager**: APM for dependency management
 - **CLI Tools**: Project scaffolding and build tools
 - **Macros**: Hygienic macro system for metaprogramming
+- **Swagger/OpenAPI**: Built-in API documentation generator
+- **Object Literals**: JavaScript-style `{ key: value }` syntax
 
 ---
 
@@ -486,6 +488,48 @@ impl UsersController {
 | `jwt_verify(token, secret)` | Verify JWT |
 | `json_parse(string)` | Parse JSON |
 | `json_stringify(value)` | Serialize to JSON |
+
+### Swagger / OpenAPI Documentation
+
+Generate interactive API documentation with built-in Swagger UI.
+
+```javascript
+import "swagger"
+
+// Create API spec
+let api = swagger_new("My API", "1.0.0");
+swagger_set_description(api, "REST API documentation");
+swagger_add_server(api, "http://localhost:8080", "Dev server");
+
+// Define endpoint
+let ep = endpoint_new("GET", "/api/users/{id}", "Get user");
+endpoint_param_path(ep, "id", "User ID", "integer");
+endpoint_response(ep, 200, "User found", "application/json");
+endpoint_response(ep, 404, "Not found", "application/json");
+swagger_add_endpoint(api, ep);
+
+// Generate OpenAPI JSON
+let json = swagger_to_json(api);
+```
+
+**Run Swagger UI Server:**
+
+```bash
+./target/release/argon.exe examples/swagger_server.ar
+# Open: http://localhost:8888/docs
+```
+
+| Function | Description |
+|----------|-------------|
+| `swagger_new(title, version)` | Create API specification |
+| `swagger_add_server(api, url, desc)` | Add server |
+| `swagger_add_tag(api, name, desc)` | Add tag |
+| `endpoint_new(method, path, summary)` | Create endpoint |
+| `endpoint_param_path(ep, name, desc, type)` | Add path parameter |
+| `endpoint_param_query(ep, name, desc, type, required)` | Add query parameter |
+| `endpoint_response(ep, code, desc, content_type)` | Add response |
+| `swagger_to_json(api)` | Generate OpenAPI 3.0 JSON |
+| `swagger_ui_html(json, title)` | Generate Swagger UI HTML |
 
 ---
 
