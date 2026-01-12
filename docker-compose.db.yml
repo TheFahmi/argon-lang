@@ -3,30 +3,30 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: argon-postgres
+    container_name: cryo-postgres
     environment:
-      POSTGRES_USER: argon
-      POSTGRES_PASSWORD: argon123
-      POSTGRES_DB: argondb
+      POSTGRES_USER: cryo
+      POSTGRES_PASSWORD: cryo123
+      POSTGRES_DB: cryodb
       POSTGRES_HOST_AUTH_METHOD: trust
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U argon -d argondb"]
+      test: ["CMD-SHELL", "pg_isready -U cryo -d cryodb"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   mysql:
     image: mariadb:10.11
-    container_name: argon-mysql
+    container_name: cryo-mysql
     environment:
       MYSQL_ROOT_PASSWORD: root123
-      MYSQL_DATABASE: argondb
-      MYSQL_USER: argon
-      MYSQL_PASSWORD: argon123
+      MYSQL_DATABASE: cryodb
+      MYSQL_USER: cryo
+      MYSQL_PASSWORD: cryo123
     ports:
       - "3307:3306"
     volumes:
@@ -39,7 +39,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: argon-redis
+    container_name: cryo-redis
     ports:
       - "6379:6379"
     volumes:
@@ -50,7 +50,21 @@ services:
       timeout: 5s
       retries: 5
 
+  mongodb:
+    image: mongo:7
+    container_name: cryo-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres_data:
   mysql_data:
   redis_data:
+  mongo_data:

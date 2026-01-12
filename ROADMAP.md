@@ -1,6 +1,6 @@
 # Cryo Roadmap
 
-**Current Version: v3.2.1** (2026-01-01)
+**Current Version: v3.3.0** (2026-01-12)
 
 Cryo is evolving rapidly. This document outlines the current state and future milestones for the language.
 
@@ -175,20 +175,41 @@ All database clients are implemented **100% in native Cryo** without external li
 
 ---
 
-## � Phase 6: Package Ecosystem (v3.3) [IN PROGRESS]
+## 🚧 Phase 6: Package Ecosystem (v3.3) [IN PROGRESS]
 Building the package ecosystem.
 
 ### Package Registry (`apm.cryo.dev`)
-- [ ] Web portal for package discovery
+- [x] Web portal for package discovery (`tools/registry-server.cryo`)
+- [x] Package listing & search UI
+- [x] Package detail pages
+- [x] API endpoints (`/api/packages`, `/api/search`, `/api/index.json`)
 - [ ] Package publishing workflow (`apm publish`)
 - [ ] Version management & semver
 - [ ] Dependency resolution algorithm
 - [ ] Private package support
-- [ ] Package statistics & downloads
+- [ ] Package statistics & downloads tracking
+
+### SQLite Native Driver (`stdlib/sqlite.cryo`) ✅ [TESTED: 17/17 PASS]
+- [x] In-memory SQL database
+- [x] CREATE TABLE / DROP TABLE (with IF EXISTS/IF NOT EXISTS)
+- [x] INSERT with column mapping and auto-increment ID
+- [x] SELECT with WHERE clause and LIMIT
+- [x] UPDATE and DELETE operations
+- [x] Utility functions (sqliteGetTables, sqliteGetColumns, sqliteTableExists)
+- [x] Full test suite passing
+
+### MongoDB Native Client (`stdlib/mongodb.cryo`) ✅
+- [x] MongoDB Wire Protocol (OP_MSG)
+- [x] BSON encoding/decoding
+- [x] Connection management
+- [x] CRUD operations (insert, find, update, delete)
+- [x] Aggregation pipeline
+- [x] Collection management
+- [x] Index operations
 
 ### Package Format
-- [ ] `cryo.toml` manifest file
-- [ ] Lock file (`cryo.lock`)
+- [x] `cryo.toml` manifest file
+- [x] Lock file (`cryo.lock`)
 - [ ] Workspace support (monorepo)
 - [ ] Build scripts
 
@@ -228,9 +249,9 @@ Enterprise-grade security features.
 
 ### Authentication
 - [ ] bcrypt password hashing
-- [ ] Cryo2 password hashing
-- [ ] JWT token creation/validation
-- [ ] OAuth2 client
+- [ ] Argon2 password hashing
+- [x] JWT token creation/validation (`stdlib/jwt.cryo`) ✅ [TESTED: 6/6 PASS]
+- [x] OAuth2 client (`stdlib/oauth2.cryo`) ✅ [TESTED: 6/6 PASS]
 
 ### Security Utilities
 - [ ] Constant-time comparison
@@ -441,15 +462,15 @@ The next major version with breaking changes.
 
 ### Q1 2026 (January - March)
 - [x] v3.2.1: Native Database Connectors ✅
-- [ ] v3.3.0: Package Registry (apm.cryo.dev)
-- [ ] v3.3.1: SQLite Native Driver
-- [ ] v3.3.2: MongoDB Client
+- [x] v3.3.0: Package Registry Web Portal ✅ (tools/registry-server.cryo)
+- [x] v3.3.1: SQLite Native Driver ✅ (stdlib/sqlite.cryo)
+- [x] v3.3.2: MongoDB Client ✅ (stdlib/mongodb.cryo)
 
 ### Q2 2026 (April - June)
 - [ ] v3.4.0: Async I/O & Event Loop
 - [ ] v3.4.1: TLS 1.3 Support
 - [ ] v3.4.2: HTTPS Server
-- [ ] v3.4.3: JWT & OAuth2
+- [x] v3.4.3: JWT & OAuth2 ✅ (stdlib/jwt.cryo, stdlib/oauth2.cryo)
 
 ### Q3 2026 (July - September)
 - [ ] v3.5.0: JIT Compilation (hot paths)
@@ -505,9 +526,9 @@ docker-compose -f docker-compose.db.yml down
 | v3.1.0 | 2025-12 | True OS Threading | ✅ |
 | v3.1.1 | 2025-12 | CryoWeb Framework | ✅ |
 | v3.2.0 | 2025-12 | Native Database Connectors | ✅ |
-| v3.2.1 | 2026-01 | SHA1 Auth & Binary Protocols | ✅ Current |
-| v3.3.0 | 2026-Q1 | Package Registry | 🚀 In Progress |
-| v3.4.0 | 2026-Q2 | Async I/O & TLS | 🔮 Planned |
+| v3.2.1 | 2026-01 | SHA1 Auth & Binary Protocols | ✅ |
+| v3.3.0 | 2026-01-12 | Package Registry & SQLite | ✅ Current |
+| v3.4.0 | 2026-Q2 | Async I/O & TLS | 🚀 In Progress |
 | v3.5.0 | 2026-Q3 | JIT Compilation | 🔮 Planned |
 | v3.6.0 | 2026-Q4 | Static Types Preview | 🔮 Planned |
 | v4.0.0 | 2027-Q1 | Generics & Type System | 🔮 Planned |
@@ -537,5 +558,5 @@ Cryo is open source under the MIT License. See [LICENSE](LICENSE).
 
 ---
 
-*Last updated: 2026-01-01*
+*Last updated: 2026-01-12*
 

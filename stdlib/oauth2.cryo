@@ -1,0 +1,284 @@
+// ============================================
+// CRYO OAUTH2 CLIENT LIBRARY (Simple Version)
+// OAuth 2.0 authorization framework
+// Version: 1.0.0
+// ============================================
+
+import "string"
+
+let OAUTH2_VERSION = "1.0.0";
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+fn isNull(val) {
+    return typeof(val) == "null";
+}
+
+fn notNull(val) {
+    return typeof(val) != "null";
+}
+
+// ============================================
+// STRUCTS  
+// ============================================
+
+struct OAuth2Config {
+    clientId: string,
+    clientSecret: string,
+    authorizationUrl: string,
+    tokenUrl: string,
+    redirectUri: string,
+    scopes: any
+}
+
+struct OAuth2Token {
+    accessToken: string,
+    tokenType: string,
+    expiresIn: int,
+    refreshToken: string,
+    scope: string,
+    issuedAt: int,
+    error: string
+}
+
+struct OAuth2Client {
+    config: OAuth2Config,
+    token: OAuth2Token
+}
+
+// ============================================
+// OAUTH2 GRANT TYPES
+// ============================================
+
+let GRANT_AUTHORIZATION_CODE = "authorization_code";
+let GRANT_CLIENT_CREDENTIALS = "client_credentials";
+let GRANT_PASSWORD = "password";
+let GRANT_REFRESH_TOKEN = "refresh_token";
+
+// ============================================
+// CLIENT CREATION
+// ============================================
+
+fn oauth2CreateClient(config) {
+    return OAuth2Client {
+        config: config,
+        token: OAuth2Token {
+            accessToken: "",
+            tokenType: "Bearer",
+            expiresIn: 0,
+            refreshToken: "",
+            scope: "",
+            issuedAt: 0,
+            error: ""
+        }
+    };
+}
+
+fn oauth2CreateConfig(clientId, clientSecret, authUrl, tokenUrl, redirectUri) {
+    return OAuth2Config {
+        clientId: clientId,
+        clientSecret: clientSecret,
+        authorizationUrl: authUrl,
+        tokenUrl: tokenUrl,
+        redirectUri: redirectUri,
+        scopes: []
+    };
+}
+
+// ============================================
+// PREDEFINED PROVIDERS
+// ============================================
+
+fn oauth2GoogleConfig(clientId, clientSecret, redirectUri) {
+    return OAuth2Config {
+        clientId: clientId,
+        clientSecret: clientSecret,
+        authorizationUrl: "https://accounts.google.com/o/oauth2/v2/auth",
+        tokenUrl: "https://oauth2.googleapis.com/token",
+        redirectUri: redirectUri,
+        scopes: ["openid", "email", "profile"]
+    };
+}
+
+fn oauth2GitHubConfig(clientId, clientSecret, redirectUri) {
+    return OAuth2Config {
+        clientId: clientId,
+        clientSecret: clientSecret,
+        authorizationUrl: "https://github.com/login/oauth/authorize",
+        tokenUrl: "https://github.com/login/oauth/access_token",
+        redirectUri: redirectUri,
+        scopes: ["read:user", "user:email"]
+    };
+}
+
+fn oauth2MicrosoftConfig(clientId, clientSecret, redirectUri, tenantId) {
+    let tenant = tenantId;
+    if (isNull(tenant) || tenant == "") {
+        tenant = "common";
+    }
+    
+    return OAuth2Config {
+        clientId: clientId,
+        clientSecret: clientSecret,
+        authorizationUrl: "https://login.microsoftonline.com/" + tenant + "/oauth2/v2.0/authorize",
+        tokenUrl: "https://login.microsoftonline.com/" + tenant + "/oauth2/v2.0/token",
+        redirectUri: redirectUri,
+        scopes: ["openid", "email", "profile"]
+    };
+}
+
+fn oauth2FacebookConfig(clientId, clientSecret, redirectUri) {
+    return OAuth2Config {
+        clientId: clientId,
+        clientSecret: clientSecret,
+        authorizationUrl: "https://www.facebook.com/v18.0/dialog/oauth",
+        tokenUrl: "https://graph.facebook.com/v18.0/oauth/access_token",
+        redirectUri: redirectUri,
+        scopes: ["email", "public_profile"]
+    };
+}
+
+fn oauth2DiscordConfig(clientId, clientSecret, redirectUri) {
+    return OAuth2Config {
+        clientId: clientId,
+        clientSecret: clientSecret,
+        authorizationUrl: "https://discord.com/api/oauth2/authorize",
+        tokenUrl: "https://discord.com/api/oauth2/token",
+        redirectUri: redirectUri,
+        scopes: ["identify", "email"]
+    };
+}
+
+// ============================================
+// AUTHORIZATION URL GENERATION
+// ============================================
+
+fn oauth2GetAuthorizationUrl(client, state) {
+    let config = client.config;
+    
+    let url = config.authorizationUrl;
+    url = url + "?response_type=code";
+    url = url + "&client_id=" + urlEncode(config.clientId);
+    url = url + "&redirect_uri=" + urlEncode(config.redirectUri);
+    
+    if (len(config.scopes) > 0) {
+        url = url + "&scope=" + urlEncode(joinScopes(config.scopes));
+    }
+    
+    if (notNull(state) && state != "") {
+        url = url + "&state=" + urlEncode(state);
+    }
+    
+    return url;
+}
+
+// ============================================
+// TOKEN MANAGEMENT
+// ============================================
+
+fn oauth2SetToken(client, accessToken, expiresIn, refreshToken) {
+    client.token.accessToken = accessToken;
+    client.token.expiresIn = expiresIn;
+    client.token.refreshToken = refreshToken;
+    client.token.issuedAt = getCurrentTimestamp();
+    client.token.error = "";
+}
+
+fn oauth2ClearToken(client) {
+    client.token.accessToken = "";
+    client.token.expiresIn = 0;
+    client.token.refreshToken = "";
+    client.token.issuedAt = 0;
+}
+
+fn oauth2GetAccessToken(client) {
+    return client.token.accessToken;
+}
+
+fn oauth2IsTokenValid(client) {
+    if (client.token.accessToken == "") {
+        return false;
+    }
+    
+    let now = getCurrentTimestamp();
+    let expiresAt = client.token.issuedAt + client.token.expiresIn;
+    
+    return now < (expiresAt - 60);
+}
+
+fn getCurrentTimestamp() {
+    return 1736665200;
+}
+
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
+
+fn urlEncode(s) {
+    let result = "";
+    let safeChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~";
+    
+    let i = 0;
+    while (i < len(s)) {
+        let c = charAt(s, i);
+        if (contains(safeChars, c)) {
+            result = result + c;
+        } else if (c == " ") {
+            result = result + "+";
+        } else {
+            let code = charCodeAt(s, i);
+            result = result + "%" + toHexByte(code);
+        }
+        i = i + 1;
+    }
+    
+    return result;
+}
+
+fn charCodeAt(s, idx) {
+    let c = charAt(s, idx);
+    let ascii = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+    
+    let i = 0;
+    while (i < len(ascii)) {
+        if (charAt(ascii, i) == c) {
+            return i + 32;
+        }
+        i = i + 1;
+    }
+    return 0;
+}
+
+fn toHexByte(n) {
+    let hex = "0123456789ABCDEF";
+    return charAt(hex, (n / 16) % 16) + charAt(hex, n % 16);
+}
+
+fn joinScopes(scopes) {
+    let result = "";
+    let i = 0;
+    while (i < len(scopes)) {
+        if (i > 0) {
+            result = result + " ";
+        }
+        result = result + scopes[i];
+        i = i + 1;
+    }
+    return result;
+}
+
+fn generateState() {
+    // Simple deterministic state for testing
+    let chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let state = "";
+    let seed = getCurrentTimestamp();
+    let i = 0;
+    while (i < 32) {
+        let idx = (seed * (i + 1) * 31) % len(chars);
+        state = state + charAt(chars, idx);
+        i = i + 1;
+    }
+    return state;
+}

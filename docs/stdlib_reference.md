@@ -122,6 +122,107 @@
 
 ---
 
+## Database Functions (sqlite module)
+
+The SQLite-compatible in-memory database driver provides SQL operations.
+
+```cryo
+import "sqlite"
+
+let db = sqliteOpenMemory();
+sqliteExec(db, "CREATE TABLE users (id INTEGER, name TEXT)");
+sqliteExec(db, "INSERT INTO users (name) VALUES ('Alice')");
+let result = sqliteQuery(db, "SELECT * FROM users");
+```
+
+| Function | Description |
+|----------|-------------|
+| `sqliteOpenMemory()` | Open in-memory database |
+| `sqliteExec(conn, sql)` | Execute SQL (CREATE, INSERT, UPDATE, DELETE) |
+| `sqliteQuery(conn, sql)` | Execute SELECT query |
+| `sqliteClose(conn)` | Close database connection |
+| `sqliteGetTables(conn)` | Get list of table names |
+| `sqliteGetColumns(conn, table)` | Get columns for a table |
+| `sqliteTableExists(conn, table)` | Check if table exists |
+
+---
+
+## JWT Functions (jwt module)
+
+JSON Web Token creation and verification.
+
+```cryo
+import "jwt"
+
+// Create token
+let payload = { sub: "user123", name: "Alice" };
+payload["iat"] = getCurrentTimestamp();
+payload["exp"] = getCurrentTimestamp() + 3600;
+
+let headerB64 = base64UrlEncode(jsonStringify({ alg: "HS256", typ: "JWT" }));
+let payloadB64 = base64UrlEncode(jsonStringify(payload));
+let signature = hmacSha256("secret", headerB64 + "." + payloadB64);
+let token = headerB64 + "." + payloadB64 + "." + base64UrlEncode(signature);
+
+// Verify token
+let result = verifyJwt(token, "secret");
+if (result.valid) {
+    print("User: " + result.payload["sub"]);
+}
+```
+
+| Function | Description |
+|----------|-------------|
+| `verifyJwt(token, secret)` | Verify JWT and return JwtToken struct |
+| `jwtDecode(token)` | Decode JWT payload without verification |
+| `jwtIsExpired(token)` | Check if token is expired |
+| `jwtGetSubject(token)` | Get subject claim from token |
+| `jwtGetClaim(token, name)` | Get specific claim from token |
+| `base64UrlEncode(data)` | Encode data to base64url |
+| `base64UrlDecode(data)` | Decode base64url data |
+| `hmacSha256(key, message)` | Generate HMAC signature |
+| `jsonStringify(obj)` | Convert object to JSON string |
+| `jsonParse(json)` | Parse JSON string to object |
+
+---
+
+## OAuth2 Functions (oauth2 module)
+
+OAuth2 client configuration and authorization flow helpers.
+
+```cryo
+import "oauth2"
+
+// Create provider config
+let config = oauth2GitHubConfig("client-id", "client-secret", "http://localhost/callback");
+let client = oauth2CreateClient(config);
+
+// Get authorization URL
+let authUrl = oauth2GetAuthorizationUrl(client, "random-state");
+print("Redirect to: " + authUrl);
+
+// After callback, set token manually
+oauth2SetToken(client, "access-token", 3600, "refresh-token");
+```
+
+| Function | Description |
+|----------|-------------|
+| `oauth2CreateClient(config)` | Create OAuth2 client |
+| `oauth2CreateConfig(...)` | Create custom OAuth2 config |
+| `oauth2GoogleConfig(id, secret, redirect)` | Pre-configured Google OAuth2 |
+| `oauth2GitHubConfig(id, secret, redirect)` | Pre-configured GitHub OAuth2 |
+| `oauth2MicrosoftConfig(id, secret, redirect, tenant)` | Pre-configured Microsoft OAuth2 |
+| `oauth2FacebookConfig(id, secret, redirect)` | Pre-configured Facebook OAuth2 |
+| `oauth2DiscordConfig(id, secret, redirect)` | Pre-configured Discord OAuth2 |
+| `oauth2GetAuthorizationUrl(client, state)` | Generate authorization URL |
+| `oauth2SetToken(client, access, expires, refresh)` | Set tokens manually |
+| `oauth2ClearToken(client)` | Clear stored tokens |
+| `oauth2IsTokenValid(client)` | Check if token is still valid |
+| `urlEncode(s)` | URL-encode a string |
+| `joinScopes(scopes)` | Join scope array to string |
+
+---
+
 ## Type Reference
 
 Cryo supports the following types:
@@ -133,3 +234,4 @@ Cryo supports the following types:
 - `array` - Dynamic array of any values
 - `struct` - Named struct with fields
 - `function` - Function reference
+

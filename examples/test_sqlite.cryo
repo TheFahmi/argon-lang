@@ -1,0 +1,236 @@
+// ============================================
+// CRYO SQLITE TEST
+// Test the native SQLite-compatible driver
+// ============================================
+
+import "sqlite"
+
+fn main() {
+    print("========================================");
+    print("   CRYO SQLITE DRIVER TEST");
+    print("   Version: " + SQLITE_VERSION);
+    print("========================================");
+    print("");
+    
+    let passed = 0;
+    let failed = 0;
+    
+    // Test 1: In-memory database
+    print("[TEST 1] Open in-memory database");
+    let db = sqliteOpenMemory();
+    if (db != null && db.connected) {
+        print("  ✓ PASS: Database opened");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Could not open database");
+        failed = failed + 1;
+        return 1;
+    }
+    
+    // Test 2: CREATE TABLE
+    print("");
+    print("[TEST 2] CREATE TABLE");
+    let result = sqliteExec(db, "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, email TEXT, age INTEGER)");
+    if (result.success) {
+        print("  ✓ PASS: Table created");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: " + result.error);
+        failed = failed + 1;
+    }
+    
+    // Test 3: INSERT
+    print("");
+    print("[TEST 3] INSERT INTO");
+    result = sqliteExec(db, "INSERT INTO users (name, email, age) VALUES ('Alice', 'alice@example.com', 25)");
+    if (result.success && result.affected == 1) {
+        print("  ✓ PASS: Row 1 inserted");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: " + result.error);
+        failed = failed + 1;
+    }
+    
+    result = sqliteExec(db, "INSERT INTO users (name, email, age) VALUES ('Bob', 'bob@example.com', 30)");
+    if (result.success) {
+        print("  ✓ PASS: Row 2 inserted");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: " + result.error);
+        failed = failed + 1;
+    }
+    
+    result = sqliteExec(db, "INSERT INTO users (name, email, age) VALUES ('Charlie', 'charlie@example.com', 35)");
+    if (result.success) {
+        print("  ✓ PASS: Row 3 inserted");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: " + result.error);
+        failed = failed + 1;
+    }
+    
+    // Test 4: SELECT *
+    print("");
+    print("[TEST 4] SELECT * FROM users");
+    result = sqliteQuery(db, "SELECT * FROM users");
+    if (result.success && len(result.rows) == 3) {
+        print("  ✓ PASS: Retrieved " + len(result.rows) + " rows");
+        print("  Columns: " + toString(result.columns));
+        let i = 0;
+        while (i < len(result.rows)) {
+            print("  Row " + i + ": " + toString(result.rows[i]));
+            i = i + 1;
+        }
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Expected 3 rows, got " + len(result.rows));
+        failed = failed + 1;
+    }
+    
+    // Test 5: SELECT with WHERE
+    print("");
+    print("[TEST 5] SELECT with WHERE clause");
+    result = sqliteQuery(db, "SELECT name, email FROM users WHERE age = 30");
+    if (result.success && len(result.rows) == 1) {
+        print("  ✓ PASS: Found user with age 30");
+        print("  Result: " + toString(result.rows[0]));
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: " + result.error);
+        failed = failed + 1;
+    }
+    
+    // Test 6: UPDATE
+    print("");
+    print("[TEST 6] UPDATE");
+    result = sqliteExec(db, "UPDATE users SET age = 26 WHERE name = 'Alice'");
+    if (result.success && result.affected == 1) {
+        print("  ✓ PASS: Updated 1 row");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: " + result.error);
+        failed = failed + 1;
+    }
+    
+    // Verify update
+    result = sqliteQuery(db, "SELECT age FROM users WHERE name = 'Alice'");
+    if (result.success && len(result.rows) == 1 && result.rows[0][0] == 26) {
+        print("  ✓ PASS: Verified update (age = 26)");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Update verification failed");
+        failed = failed + 1;
+    }
+    
+    // Test 7: DELETE
+    print("");
+    print("[TEST 7] DELETE");
+    result = sqliteExec(db, "DELETE FROM users WHERE name = 'Charlie'");
+    if (result.success && result.affected == 1) {
+        print("  ✓ PASS: Deleted 1 row");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: " + result.error);
+        failed = failed + 1;
+    }
+    
+    // Verify delete
+    result = sqliteQuery(db, "SELECT * FROM users");
+    if (result.success && len(result.rows) == 2) {
+        print("  ✓ PASS: Now have 2 rows");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Expected 2 rows");
+        failed = failed + 1;
+    }
+    
+    // Test 8: SELECT with LIMIT
+    print("");
+    print("[TEST 8] SELECT with LIMIT");
+    result = sqliteQuery(db, "SELECT * FROM users LIMIT 1");
+    if (result.success && len(result.rows) == 1) {
+        print("  ✓ PASS: Limited to 1 row");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: LIMIT not working");
+        failed = failed + 1;
+    }
+    
+    // Test 9: CREATE TABLE IF NOT EXISTS
+    print("");
+    print("[TEST 9] CREATE TABLE IF NOT EXISTS");
+    result = sqliteExec(db, "CREATE TABLE IF NOT EXISTS users (id INTEGER)");
+    if (result.success) {
+        print("  ✓ PASS: IF NOT EXISTS works");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: " + result.error);
+        failed = failed + 1;
+    }
+    
+    // Test 10: DROP TABLE
+    print("");
+    print("[TEST 10] DROP TABLE");
+    result = sqliteExec(db, "CREATE TABLE temp_table (id INTEGER)");
+    result = sqliteExec(db, "DROP TABLE temp_table");
+    if (result.success) {
+        print("  ✓ PASS: Table dropped");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: " + result.error);
+        failed = failed + 1;
+    }
+    
+    // Test 11: Utility functions
+    print("");
+    print("[TEST 11] Utility functions");
+    let tables = sqliteGetTables(db);
+    print("  Tables: " + toString(tables));
+    if (len(tables) > 0) {
+        print("  ✓ PASS: sqliteGetTables() works");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: No tables found");
+        failed = failed + 1;
+    }
+    
+    let cols = sqliteGetColumns(db, "users");
+    print("  Columns in 'users': " + toString(cols));
+    if (len(cols) == 4) {
+        print("  ✓ PASS: sqliteGetColumns() works");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Column count mismatch");
+        failed = failed + 1;
+    }
+    
+    // Close database
+    print("");
+    print("[TEST 12] Close database");
+    sqliteClose(db);
+    if (!db.connected) {
+        print("  ✓ PASS: Database closed");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Database still connected");
+        failed = failed + 1;
+    }
+    
+    // Summary
+    print("");
+    print("========================================");
+    print("   TEST SUMMARY");
+    print("========================================");
+    print("  Passed: " + passed);
+    print("  Failed: " + failed);
+    print("  Total:  " + (passed + failed));
+    print("");
+    
+    if (failed == 0) {
+        print("  ✓ ALL TESTS PASSED!");
+        return 0;
+    } else {
+        print("  ✗ SOME TESTS FAILED");
+        return 1;
+    }
+}

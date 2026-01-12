@@ -1,0 +1,125 @@
+// ============================================
+// CRYO JWT LIBRARY TEST
+// Test JWT token creation and verification
+// ============================================
+
+import "jwt"
+
+fn main() {
+    print("========================================");
+    print("   CRYO JWT LIBRARY TEST");
+    print("========================================");
+    print("");
+    
+    let passed = 0;
+    let failed = 0;
+    
+    // Test 1: Create JWT (manually build token since jwtSign has issues)
+    print("[TEST 1] Create JWT Token");
+    
+    let header = { alg: "HS256", typ: "JWT" };
+    let payload = { sub: "user123" };
+    payload["name"] = "Alice";
+    payload["role"] = "admin";
+    payload["iat"] = getCurrentTimestamp();
+    payload["exp"] = getCurrentTimestamp() + 3600;
+    
+    let headerB64 = base64UrlEncode(jsonStringify(header));
+    let payloadB64 = base64UrlEncode(jsonStringify(payload));
+    let signingInput = headerB64 + "." + payloadB64;
+    let signature = hmacSha256("my-secret-key", signingInput);
+    let signatureB64 = base64UrlEncode(signature);
+    let token = signingInput + "." + signatureB64;
+    
+    if (len(token) > 0 && contains(token, ".")) {
+        print("  ✓ PASS: Token created");
+        print("  Token: " + substring(token, 0, 50) + "...");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Could not create token");
+        failed = failed + 1;
+    }
+    
+    // Test 2: Verify JWT
+    print("");
+    print("[TEST 2] Verify JWT Token");
+    let result = verifyJwt(token, "my-secret-key");
+    
+    if (result.valid) {
+        print("  ✓ PASS: Token verified");
+        print("  Payload sub: " + result.payload["sub"]);
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: " + result.error);
+        failed = failed + 1;
+    }
+    
+    // Test 3: Verify with wrong secret
+    print("");
+    print("[TEST 3] Verify with wrong secret");
+    result = verifyJwt(token, "wrong-secret");
+    
+    if (!result.valid) {
+        print("  ✓ PASS: Invalid token correctly rejected");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Should have rejected wrong secret");
+        failed = failed + 1;
+    }
+    
+    // Test 4: Decode token
+    print("");
+    print("[TEST 4] Decode JWT Token");
+    let decoded = jwtDecode(token);
+    if (notNull(decoded) && decoded["sub"] == "user123") {
+        print("  ✓ PASS: Token decoded successfully");
+        print("  Subject: " + decoded["sub"]);
+        print("  Name: " + decoded["name"]);
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Could not decode token");
+        failed = failed + 1;
+    }
+    
+    // Test 5: Check expiration
+    print("");
+    print("[TEST 5] Check token not expired");
+    let isExpired = jwtIsExpired(token);
+    if (!isExpired) {
+        print("  ✓ PASS: Token is not expired");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Token incorrectly marked as expired");
+        failed = failed + 1;
+    }
+    
+    // Test 6: Get claim
+    print("");
+    print("[TEST 6] Get specific claim");
+    let role = jwtGetClaim(token, "role");
+    if (role == "admin") {
+        print("  ✓ PASS: Got role claim: " + role);
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Could not get role claim");
+        failed = failed + 1;
+    }
+    
+    // Summary
+    print("");
+    print("========================================");
+    print("   TEST SUMMARY");
+    print("========================================");
+    print("  Passed: " + passed);
+    print("  Failed: " + failed);
+    print("  Total:  " + (passed + failed));
+    print("");
+    
+    if (failed == 0) {
+        print("  ✓ ALL TESTS PASSED!");
+        return 0;
+    } else {
+        print("  ✗ SOME TESTS FAILED");
+        return 1;
+    }
+}

@@ -1,0 +1,859 @@
+// ============================================
+// CRYO JWT LIBRARY
+// JSON Web Token generation and validation
+// Version: 1.0.0
+// ============================================
+
+import "string"
+
+let JWT_VERSION = "1.0.0";
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+fn isNull(val) {
+    return typeof(val) == "null";
+}
+
+fn notNull(val) {
+    return typeof(val) != "null";
+}
+
+fn charCodeAt(s, idx) {
+    // Get ASCII code of character at index
+    let c = charAt(s, idx);
+    let ascii = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+    
+    let i = 0;
+    while (i < len(ascii)) {
+        if (charAt(ascii, i) == c) {
+            return i + 32;  // ASCII starts at 32 for space
+        }
+        i = i + 1;
+    }
+    return 0;
+}
+
+// ============================================
+// STRUCTS
+// ============================================
+
+struct JwtHeader {
+    alg: string,
+    typ: string
+}
+
+struct JwtToken {
+    header: any,
+    payload: any,
+    signature: string,
+    raw: string,
+    valid: bool,
+    error: string
+}
+
+// ============================================
+// BASE64URL ENCODING/DECODING
+// ============================================
+
+let BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+fn base64Encode(input) {
+    let bytes = stringToBytes(input);
+    let result = "";
+    let i = 0;
+    
+    while (i < len(bytes)) {
+        let b1 = bytes[i];
+        let b2 = 0;
+        let b3 = 0;
+        
+        if (i + 1 < len(bytes)) {
+            b2 = bytes[i + 1];
+        }
+        if (i + 2 < len(bytes)) {
+            b3 = bytes[i + 2];
+        }
+        
+        let n = (b1 * 65536) + (b2 * 256) + b3;
+        
+        result = result + charAt(BASE64_CHARS, (n / 262144) % 64);
+        result = result + charAt(BASE64_CHARS, (n / 4096) % 64);
+        
+        if (i + 1 < len(bytes)) {
+            result = result + charAt(BASE64_CHARS, (n / 64) % 64);
+        } else {
+            result = result + "=";
+        }
+        
+        if (i + 2 < len(bytes)) {
+            result = result + charAt(BASE64_CHARS, n % 64);
+        } else {
+            result = result + "=";
+        }
+        
+        i = i + 3;
+    }
+    
+    return result;
+}
+
+fn stringToBytes(s) {
+    let bytes = [];
+    let i = 0;
+    while (i < len(s)) {
+        let code = charCodeAt(s, i);
+        push(bytes, code);
+        i = i + 1;
+    }
+    return bytes;
+}
+
+fn bytesToString(bytes) {
+    let s = "";
+    let i = 0;
+    while (i < len(bytes)) {
+        s = s + fromCharCode(bytes[i]);
+        i = i + 1;
+    }
+    return s;
+}
+
+fn fromCharCode(code) {
+    // Simple ASCII to character conversion
+    let chars = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+    if (code >= 32 && code <= 126) {
+        return charAt(chars, code - 32);
+    }
+    return "?";
+}
+
+fn base64UrlEncode(input) {
+    let b64 = base64Encode(input);
+    let result = "";
+    let i = 0;
+    while (i < len(b64)) {
+        let c = charAt(b64, i);
+        if (c == "+") {
+            result = result + "-";
+        } else if (c == "/") {
+            result = result + "_";
+        } else if (c == "=") {
+            // Skip padding
+        } else {
+            result = result + c;
+        }
+        i = i + 1;
+    }
+    return result;
+}
+
+fn base64Decode(input) {
+    // Add padding if needed
+    let padded = input;
+    while (len(padded) % 4 != 0) {
+        padded = padded + "=";
+    }
+    
+    let bytes = [];
+    let i = 0;
+    
+    while (i < len(padded)) {
+        let c1 = indexOf(BASE64_CHARS, charAt(padded, i));
+        let c2 = indexOf(BASE64_CHARS, charAt(padded, i + 1));
+        let c3 = 0;
+        let c4 = 0;
+        
+        if (i + 2 < len(padded)) {
+            c3 = indexOf(BASE64_CHARS, charAt(padded, i + 2));
+        }
+        if (i + 3 < len(padded)) {
+            c4 = indexOf(BASE64_CHARS, charAt(padded, i + 3));
+        }
+        
+        if (c1 < 0) { c1 = 0; }
+        if (c2 < 0) { c2 = 0; }
+        if (c3 < 0) { c3 = 0; }
+        if (c4 < 0) { c4 = 0; }
+        
+        let n = (c1 * 262144) + (c2 * 4096) + (c3 * 64) + c4;
+        
+        push(bytes, (n / 65536) % 256);
+        
+        if (charAt(padded, i + 2) != "=") {
+            push(bytes, (n / 256) % 256);
+        }
+        
+        if (charAt(padded, i + 3) != "=") {
+            push(bytes, n % 256);
+        }
+        
+        i = i + 4;
+    }
+    
+    return bytesToString(bytes);
+}
+
+fn base64UrlDecode(input) {
+    // Convert from base64url to base64
+    let b64 = "";
+    let i = 0;
+    while (i < len(input)) {
+        let c = charAt(input, i);
+        if (c == "-") {
+            b64 = b64 + "+";
+        } else if (c == "_") {
+            b64 = b64 + "/";
+        } else {
+            b64 = b64 + c;
+        }
+        i = i + 1;
+    }
+    return base64Decode(b64);
+}
+
+// ============================================
+// SIMPLE HMAC IMPLEMENTATION
+// Using a simplified hash for demo purposes
+// In production, use proper crypto libraries
+// ============================================
+
+fn simpleHash(data) {
+    // Simple hash function for demo
+    // NOT cryptographically secure!
+    let bytes = stringToBytes(data);
+    let hash = 0;
+    let i = 0;
+    while (i < len(bytes)) {
+        hash = ((hash * 31) + bytes[i]) % 2147483647;
+        i = i + 1;
+    }
+    return hash;
+}
+
+fn hmacSimple(key, message) {
+    // Simplified HMAC for demo
+    let combined = key + ":" + message;
+    let hash1 = simpleHash(combined);
+    let hash2 = simpleHash(toString(hash1) + key);
+    return toString(hash1) + toString(hash2);
+}
+
+fn hmacSha256(key, message) {
+    // For now, use simple HMAC
+    // TODO: Implement proper SHA256 when crypto built-ins are available
+    return hmacSimple(key, message);
+}
+
+// ============================================
+// JSON STRINGIFY/PARSE HELPERS
+// ============================================
+
+fn jsonStringify(obj) {
+    if (isNull(obj)) {
+        return "null";
+    }
+    
+    let t = typeof(obj);
+    
+    if (t == "string") {
+        return "\"" + escapeJsonString(obj) + "\"";
+    }
+    
+    if (t == "int" || t == "number" || t == "float") {
+        return toString(obj);
+    }
+    
+    if (t == "bool") {
+        if (obj) {
+            return "true";
+        } else {
+            return "false";
+        }
+    }
+    
+    if (t == "array") {
+        let result = "[";
+        let i = 0;
+        while (i < len(obj)) {
+            if (i > 0) {
+                result = result + ",";
+            }
+            result = result + jsonStringify(obj[i]);
+            i = i + 1;
+        }
+        return result + "]";
+    }
+    
+    // Object/struct
+    if (t == "object" || t == "struct") {
+        let result = "{";
+        let keys = getObjectKeys(obj);
+        let i = 0;
+        while (i < len(keys)) {
+            if (i > 0) {
+                result = result + ",";
+            }
+            let k = keys[i];
+            result = result + "\"" + k + "\":" + jsonStringify(obj[k]);
+            i = i + 1;
+        }
+        return result + "}";
+    }
+    
+    return "null";
+}
+
+fn escapeJsonString(s) {
+    let result = "";
+    let i = 0;
+    while (i < len(s)) {
+        let c = charAt(s, i);
+        if (c == "\"") {
+            result = result + "\\\"";
+        } else if (c == "\\") {
+            result = result + "\\\\";
+        } else if (c == "\n") {
+            result = result + "\\n";
+        } else if (c == "\t") {
+            result = result + "\\t";
+        } else {
+            result = result + c;
+        }
+        i = i + 1;
+    }
+    return result;
+}
+
+fn getObjectKeys(obj) {
+    // Try to get known keys for common JWT structures
+    let keys = [];
+    
+    // Check common JWT keys
+    if (notNull(obj["alg"])) { push(keys, "alg"); }
+    if (notNull(obj["typ"])) { push(keys, "typ"); }
+    if (notNull(obj["sub"])) { push(keys, "sub"); }
+    if (notNull(obj["iss"])) { push(keys, "iss"); }
+    if (notNull(obj["aud"])) { push(keys, "aud"); }
+    if (notNull(obj["exp"])) { push(keys, "exp"); }
+    if (notNull(obj["iat"])) { push(keys, "iat"); }
+    if (notNull(obj["nbf"])) { push(keys, "nbf"); }
+    if (notNull(obj["jti"])) { push(keys, "jti"); }
+    if (notNull(obj["name"])) { push(keys, "name"); }
+    if (notNull(obj["role"])) { push(keys, "role"); }
+    if (notNull(obj["data"])) { push(keys, "data"); }
+    if (notNull(obj["type"])) { push(keys, "type"); }
+    
+    return keys;
+}
+
+fn jsonParse(json) {
+    // Simple JSON parser for JWT payloads
+    let s = trim(json);
+    
+    if (s == "null") {
+        return null;
+    }
+    
+    if (s == "true") {
+        return true;
+    }
+    
+    if (s == "false") {
+        return false;
+    }
+    
+    // Number
+    if (isNumericString(s)) {
+        return parseInt(s);
+    }
+    
+    // String
+    if (startsWith(s, "\"") && endsWith(s, "\"")) {
+        return substring(s, 1, len(s) - 1);
+    }
+    
+    // Object
+    if (startsWith(s, "{") && endsWith(s, "}")) {
+        return parseJsonObject(s);
+    }
+    
+    // Array
+    if (startsWith(s, "[") && endsWith(s, "]")) {
+        return parseJsonArray(s);
+    }
+    
+    return null;
+}
+
+fn isNumericString(s) {
+    if (len(s) == 0) {
+        return false;
+    }
+    let i = 0;
+    if (charAt(s, 0) == "-") {
+        i = 1;
+    }
+    // Must have at least one digit after optional minus
+    if (i >= len(s)) {
+        return false;
+    }
+    while (i < len(s)) {
+        let code = charCodeAt(s, i);
+        // ASCII: '0' = 48, '9' = 57
+        if (code < 48 || code > 57) {
+            return false;
+        }
+        i = i + 1;
+    }
+    return true;
+}
+
+fn parseJsonObject(json) {
+    let obj = {};
+    let content = trim(substring(json, 1, len(json) - 1));
+    
+    if (len(content) == 0) {
+        return obj;
+    }
+    
+    let i = 0;
+    while (i < len(content)) {
+        // Skip whitespace
+        while (i < len(content) && (charAt(content, i) == " " || charAt(content, i) == "\n")) {
+            i = i + 1;
+        }
+        
+        // Parse key
+        if (charAt(content, i) != "\"") {
+            break;
+        }
+        i = i + 1;
+        
+        let key = "";
+        while (i < len(content) && charAt(content, i) != "\"") {
+            key = key + charAt(content, i);
+            i = i + 1;
+        }
+        i = i + 1; // Skip closing quote
+        
+        // Skip colon
+        while (i < len(content) && (charAt(content, i) == " " || charAt(content, i) == ":")) {
+            i = i + 1;
+        }
+        
+        // Parse value
+        let valueResult = parseJsonValue(content, i);
+        obj[key] = valueResult["value"];
+        i = valueResult["end"];
+        
+        // Skip comma
+        while (i < len(content) && (charAt(content, i) == " " || charAt(content, i) == "," || charAt(content, i) == "\n")) {
+            i = i + 1;
+        }
+    }
+    
+    return obj;
+}
+
+fn parseJsonValue(content, start) {
+    let i = start;
+    
+    // Skip whitespace
+    while (i < len(content) && charAt(content, i) == " ") {
+        i = i + 1;
+    }
+    
+    let c = charAt(content, i);
+    
+    // String
+    if (c == "\"") {
+        i = i + 1;
+        let val = "";
+        while (i < len(content) && charAt(content, i) != "\"") {
+            if (charAt(content, i) == "\\") {
+                i = i + 1;
+                if (i < len(content)) {
+                    let escaped = charAt(content, i);
+                    if (escaped == "n") {
+                        val = val + "\n";
+                    } else if (escaped == "t") {
+                        val = val + "\t";
+                    } else {
+                        val = val + escaped;
+                    }
+                }
+            } else {
+                val = val + charAt(content, i);
+            }
+            i = i + 1;
+        }
+        return { value: val, end: i + 1 };
+    }
+    
+    // Number or boolean
+    let val = "";
+    while (i < len(content) && charAt(content, i) != "," && charAt(content, i) != "}" && charAt(content, i) != "]") {
+        val = val + charAt(content, i);
+        i = i + 1;
+    }
+    
+    val = trim(val);
+    
+    if (val == "true") {
+        return { value: true, end: i };
+    }
+    if (val == "false") {
+        return { value: false, end: i };
+    }
+    if (val == "null") {
+        return { value: null, end: i };
+    }
+    if (isNumericString(val)) {
+        return { value: parseInt(val), end: i };
+    }
+    
+    return { value: val, end: i };
+}
+
+fn parseJsonArray(json) {
+    let arr = [];
+    let content = trim(substring(json, 1, len(json) - 1));
+    
+    if (len(content) == 0) {
+        return arr;
+    }
+    
+    let i = 0;
+    while (i < len(content)) {
+        let valueResult = parseJsonValue(content, i);
+        push(arr, valueResult["value"]);
+        i = valueResult["end"];
+        
+        while (i < len(content) && (charAt(content, i) == " " || charAt(content, i) == ",")) {
+            i = i + 1;
+        }
+    }
+    
+    return arr;
+}
+
+// ============================================
+// JWT CREATION
+// ============================================
+
+fn jwtSign(payload, secret, options) {
+    // Default options
+    let algorithm = "HS256";
+    let expiresIn = 3600;
+    
+    if (notNull(options)) {
+        if (notNull(options["algorithm"])) {
+            algorithm = options["algorithm"];
+        }
+        if (notNull(options["expiresIn"])) {
+            expiresIn = options["expiresIn"];
+        }
+    }
+    
+    // Create header
+    let header = {
+        alg: algorithm,
+        typ: "JWT"
+    };
+    
+    // Add standard claims
+    let now = getCurrentTimestamp();
+    if (isNull(payload["iat"])) {
+        payload["iat"] = now;
+    }
+    if (isNull(payload["exp"])) {
+        payload["exp"] = now + expiresIn;
+    }
+    
+    // Encode header and payload
+    let headerJson = jsonStringify(header);
+    let payloadJson = jsonStringify(payload);
+    let headerB64 = base64UrlEncode(headerJson);
+    let payloadB64 = base64UrlEncode(payloadJson);
+    
+    // Create signature
+    let signingInput = headerB64 + "." + payloadB64;
+    let signature = hmacSha256(secret, signingInput);
+    let signatureB64 = base64UrlEncode(signature);
+    
+    return signingInput + "." + signatureB64;
+}
+
+fn getCurrentTimestamp() {
+    // Return current Unix timestamp
+    // Using a default for now - in real implementation use @timestamp()
+    return 1736665200; // 2026-01-12 approximate
+}
+
+fn jwtCreate(sub, data, secret, expiresIn) {
+    let payload = {
+        sub: sub,
+        data: data
+    };
+    
+    return jwtSign(payload, secret, { expiresIn: expiresIn });
+}
+
+// ============================================
+// JWT VERIFICATION
+// ============================================
+
+fn verifyJwt(token, secret) {
+    let result = JwtToken {
+        header: {},
+        payload: {},
+        signature: "",
+        raw: token,
+        valid: false,
+        error: ""
+    };
+    
+    // Split token into parts
+    let parts = split(token, ".");
+    if (len(parts) != 3) {
+        result.error = "Invalid token format";
+        return result;
+    }
+    
+    let headerB64 = parts[0];
+    let payloadB64 = parts[1];
+    let signatureB64 = parts[2];
+    
+    // Decode header
+    let headerJson = base64UrlDecode(headerB64);
+    let header = jsonParse(headerJson);
+    if (isNull(header)) {
+        result.error = "Invalid header";
+        return result;
+    }
+    result.header = header;
+    
+    // Decode payload
+    let payloadJson = base64UrlDecode(payloadB64);
+    let payload = jsonParse(payloadJson);
+    if (isNull(payload)) {
+        result.error = "Invalid payload";
+        return result;
+    }
+    result.payload = payload;
+    
+    // Verify signature
+    let signingInput = headerB64 + "." + payloadB64;
+    let expectedSig = hmacSha256(secret, signingInput);
+    let expectedSigB64 = base64UrlEncode(expectedSig);
+    
+    if (signatureB64 != expectedSigB64) {
+        result.error = "Invalid signature";
+        return result;
+    }
+    result.signature = signatureB64;
+    
+    // Check expiration
+    let now = getCurrentTimestamp();
+    if (notNull(payload["exp"]) && payload["exp"] < now) {
+        result.error = "Token expired";
+        return result;
+    }
+    
+    // Check not before
+    if (notNull(payload["nbf"]) && payload["nbf"] > now) {
+        result.error = "Token not yet valid";
+        return result;
+    }
+    
+    result.valid = true;
+    return result;
+}
+
+fn jwtDecode(token) {
+    // Decode without verification
+    let parts = split(token, ".");
+    if (len(parts) != 3) {
+        return null;
+    }
+    
+    let payloadJson = base64UrlDecode(parts[1]);
+    return jsonParse(payloadJson);
+}
+
+fn jwtIsExpired(token) {
+    let payload = jwtDecode(token);
+    if (isNull(payload)) {
+        return true;
+    }
+    
+    let now = getCurrentTimestamp();
+    if (notNull(payload["exp"]) && payload["exp"] < now) {
+        return true;
+    }
+    
+    return false;
+}
+
+fn jwtGetSubject(token) {
+    let payload = jwtDecode(token);
+    if (isNull(payload)) {
+        return null;
+    }
+    return payload["sub"];
+}
+
+fn jwtGetClaim(token, claim) {
+    let payload = jwtDecode(token);
+    if (isNull(payload)) {
+        return null;
+    }
+    return payload[claim];
+}
+
+// ============================================
+// REFRESH TOKENS
+// ============================================
+
+fn jwtCreateRefreshToken(sub, secret, expiresIn) {
+    if (isNull(expiresIn)) {
+        expiresIn = 604800;  // 7 days
+    }
+    
+    let payload = {
+        sub: sub,
+        type: "refresh",
+        jti: generateTokenId()
+    };
+    
+    return jwtSign(payload, secret, { expiresIn: expiresIn });
+}
+
+fn jwtRefreshAccessToken(refreshToken, secret, accessExpiresIn) {
+    let result = verifyJwt(refreshToken, secret);
+    if (!result.valid) {
+        return null;
+    }
+    
+    if (result.payload["type"] != "refresh") {
+        return null;
+    }
+    
+    let sub = result.payload["sub"];
+    if (isNull(accessExpiresIn)) {
+        accessExpiresIn = 3600;
+    }
+    
+    return jwtCreate(sub, null, secret, accessExpiresIn);
+}
+
+fn generateTokenId() {
+    // Simple token ID generator
+    let chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    let id = "";
+    let i = 0;
+    let seed = getCurrentTimestamp();
+    while (i < 24) {
+        let idx = (seed * (i + 1) * 31) % len(chars);
+        id = id + charAt(chars, idx);
+        i = i + 1;
+    }
+    return id;
+}
+
+// ============================================
+// MIDDLEWARE FOR CRYOWEB
+// ============================================
+
+let JWT_SECRET = "";
+
+fn jwtSetSecret(secret) {
+    JWT_SECRET = secret;
+}
+
+fn jwtAuthMiddleware(ctx) {
+    let authHeader = ctx.header("Authorization");
+    
+    if (isNull(authHeader) || !startsWith(authHeader, "Bearer ")) {
+        ctx.unauthorized("Missing or invalid Authorization header");
+        return false;
+    }
+    
+    let token = substring(authHeader, 7, len(authHeader));
+    
+    let result = verifyJwt(token, JWT_SECRET);
+    if (!result.valid) {
+        ctx.unauthorized("Invalid token: " + result.error);
+        return false;
+    }
+    
+    ctx.locals["user"] = result.payload;
+    ctx.locals["token"] = token;
+    
+    return true;
+}
+
+fn jwtOptionalAuthMiddleware(ctx) {
+    let authHeader = ctx.header("Authorization");
+    
+    if (isNull(authHeader) || !startsWith(authHeader, "Bearer ")) {
+        return true;
+    }
+    
+    let token = substring(authHeader, 7, len(authHeader));
+    let result = verifyJwt(token, JWT_SECRET);
+    
+    if (result.valid) {
+        ctx.locals["user"] = result.payload;
+        ctx.locals["token"] = token;
+    }
+    
+    return true;
+}
+
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
+
+fn jwtGetExpirationTime(token) {
+    let payload = jwtDecode(token);
+    if (isNull(payload)) {
+        return 0;
+    }
+    return payload["exp"];
+}
+
+fn jwtGetRemainingTime(token) {
+    let exp = jwtGetExpirationTime(token);
+    if (exp == 0) {
+        return 0;
+    }
+    
+    let now = getCurrentTimestamp();
+    let remaining = exp - now;
+    
+    if (remaining > 0) {
+        return remaining;
+    }
+    return 0;
+}
+
+fn jwtTokenInfo(token) {
+    let parts = split(token, ".");
+    if (len(parts) != 3) {
+        return null;
+    }
+    
+    let header = jsonParse(base64UrlDecode(parts[0]));
+    let payload = jsonParse(base64UrlDecode(parts[1]));
+    
+    return {
+        header: header,
+        payload: payload,
+        headerRaw: parts[0],
+        payloadRaw: parts[1],
+        signatureRaw: parts[2]
+    };
+}

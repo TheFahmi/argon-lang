@@ -1,0 +1,723 @@
+// ============================================
+// CRYO SQLITE-COMPATIBLE DATABASE (Simplified)
+// In-memory only version for testing
+// Version: 1.0.0
+// ============================================
+
+import "string"
+
+let SQLITE_VERSION = "1.0.0";
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+fn parseFloat(s) {
+    return parseInt(s);
+}
+
+fn isNull(val) {
+    return typeof(val) == "null";
+}
+
+fn notNull(val) {
+    return typeof(val) != "null";
+}
+
+// ============================================
+// STRUCTS
+// ============================================
+
+struct SqliteConnection {
+    filename: string,
+    tables: any,
+    table_names: any,
+    connected: bool,
+    readonly: bool
+}
+
+struct SqliteResult {
+    success: bool,
+    rows: any,
+    columns: any,
+    affected: int,
+    last_id: int,
+    error: string
+}
+
+struct SqliteTable {
+    name: string,
+    columns: any,
+    types: any,
+    rows: any,
+    auto_id: int
+}
+
+// ============================================
+// CONNECTION
+// ============================================
+
+fn sqliteOpenMemory() {
+    print("[SQLite] Opening in-memory database");
+    
+    let conn = SqliteConnection {
+        filename: ":memory:",
+        tables: {},
+        table_names: [],
+        connected: true,
+        readonly: false
+    };
+    
+    return conn;
+}
+
+fn sqliteClose(conn) {
+    if (conn.connected) {
+        conn.connected = false;
+        print("[SQLite] Connection closed");
+    }
+}
+
+// ============================================
+// SQL EXECUTION
+// ============================================
+
+fn sqliteExec(conn, sql) {
+    if (!conn.connected) {
+        return SqliteResult { 
+            success: false, rows: [], columns: [], affected: 0, last_id: 0, 
+            error: "Not connected" 
+        };
+    }
+    
+    sql = trim(sql);
+    let upper_sql = toUpper(sql);
+    
+    if (startsWith(upper_sql, "CREATE TABLE")) {
+        return executeCreateTable(conn, sql, upper_sql);
+    } else if (startsWith(upper_sql, "DROP TABLE")) {
+        return executeDropTable(conn, sql, upper_sql);
+    } else if (startsWith(upper_sql, "INSERT INTO")) {
+        return executeInsert(conn, sql, upper_sql);
+    } else if (startsWith(upper_sql, "SELECT")) {
+        return executeSelect(conn, sql, upper_sql);
+    } else if (startsWith(upper_sql, "UPDATE")) {
+        return executeUpdate(conn, sql, upper_sql);
+    } else if (startsWith(upper_sql, "DELETE FROM")) {
+        return executeDelete(conn, sql, upper_sql);
+    }
+    
+    return SqliteResult { 
+        success: false, rows: [], columns: [], affected: 0, last_id: 0, 
+        error: "Unsupported SQL" 
+    };
+}
+
+fn sqliteQuery(conn, sql) {
+    return sqliteExec(conn, sql);
+}
+
+// ============================================
+// CREATE TABLE
+// ============================================
+
+fn executeCreateTable(conn, sql, upper_sql) {
+    let if_not_exists = contains(upper_sql, "IF NOT EXISTS");
+    
+    // Find table name between CREATE TABLE and (
+    let start = indexOf(sql, "(");
+    if (start < 0) {
+        return SqliteResult { 
+            success: false, rows: [], columns: [], affected: 0, last_id: 0, 
+            error: "Invalid CREATE TABLE syntax" 
+        };
+    }
+    
+    let table_start = 13; // Length of "CREATE TABLE "
+    if (if_not_exists) {
+        table_start = indexOf(upper_sql, "IF NOT EXISTS") + 14;
+    }
+    let table_name = trim(substring(sql, table_start, start));
+    
+    // Check if table exists using table_names array
+    let i = 0;
+    while (i < len(conn.table_names)) {
+        if (conn.table_names[i] == table_name) {
+            if (if_not_exists) {
+                return SqliteResult { success: true, rows: [], columns: [], affected: 0, last_id: 0, error: "" };
+            }
+            return SqliteResult { 
+                success: false, rows: [], columns: [], affected: 0, last_id: 0, 
+                error: "Table already exists: " + table_name 
+            };
+        }
+        i = i + 1;
+    }
+    
+    // Extract columns
+    let end = lastIndexOf(sql, ")");
+    let cols_part = substring(sql, start + 1, end);
+    let col_defs = split(cols_part, ",");
+    
+    let columns = [];
+    let types = [];
+    
+    i = 0;
+    while (i < len(col_defs)) {
+        let def = trim(col_defs[i]);
+        let parts = split(def, " ");
+        if (len(parts) >= 1) {
+            push(columns, trim(parts[0]));
+            if (len(parts) >= 2) {
+                push(types, toUpper(trim(parts[1])));
+            } else {
+                push(types, "TEXT");
+            }
+        }
+        i = i + 1;
+    }
+    
+    let table = SqliteTable {
+        name: table_name,
+        columns: columns,
+        types: types,
+        rows: [],
+        auto_id: 0
+    };
+    
+    conn.tables[table_name] = table;
+    push(conn.table_names, table_name);
+    print("[SQLite] Created table: " + table_name);
+    
+    return SqliteResult { success: true, rows: [], columns: [], affected: 0, last_id: 0, error: "" };
+}
+
+// ============================================
+// DROP TABLE
+// ============================================
+
+fn executeDropTable(conn, sql, upper_sql) {
+    let if_exists = contains(upper_sql, "IF EXISTS");
+    
+    let table_name = "";
+    if (if_exists) {
+        table_name = trim(substring(sql, indexOf(upper_sql, "IF EXISTS") + 9, len(sql)));
+    } else {
+        table_name = trim(substring(sql, 11, len(sql)));
+    }
+    
+    if (endsWith(table_name, ";")) {
+        table_name = substring(table_name, 0, len(table_name) - 1);
+    }
+    
+    // Find table in table_names
+    let found = false;
+    let found_idx = -1;
+    let i = 0;
+    while (i < len(conn.table_names)) {
+        if (conn.table_names[i] == table_name) {
+            found = true;
+            found_idx = i;
+        }
+        i = i + 1;
+    }
+    
+    if (!found) {
+        if (if_exists) {
+            return SqliteResult { success: true, rows: [], columns: [], affected: 0, last_id: 0, error: "" };
+        }
+        return SqliteResult { 
+            success: false, rows: [], columns: [], affected: 0, last_id: 0, 
+            error: "Table not found: " + table_name 
+        };
+    }
+    
+    // Remove from table_names
+    let new_table_names = [];
+    i = 0;
+    while (i < len(conn.table_names)) {
+        if (conn.table_names[i] != table_name) {
+            push(new_table_names, conn.table_names[i]);
+        }
+        i = i + 1;
+    }
+    conn.table_names = new_table_names;
+    conn.tables[table_name] = null;
+    print("[SQLite] Dropped table: " + table_name);
+    
+    return SqliteResult { success: true, rows: [], columns: [], affected: 0, last_id: 0, error: "" };
+}
+
+// ============================================
+// INSERT
+// ============================================
+
+fn executeInsert(conn, sql, upper_sql) {
+    let into_pos = indexOf(upper_sql, "INTO");
+    let values_pos = indexOf(upper_sql, "VALUES");
+    
+    if (into_pos < 0 || values_pos < 0) {
+        return SqliteResult { 
+            success: false, rows: [], columns: [], affected: 0, last_id: 0, 
+            error: "Invalid INSERT syntax" 
+        };
+    }
+    
+    // Extract table name
+    let middle = trim(substring(sql, into_pos + 4, values_pos));
+    let paren_pos = indexOf(middle, "(");
+    
+    let table_name = "";
+    let insert_cols = [];
+    
+    if (paren_pos >= 0) {
+        table_name = trim(substring(middle, 0, paren_pos));
+        let cols_end = indexOf(middle, ")");
+        let cols_str = substring(middle, paren_pos + 1, cols_end);
+        insert_cols = splitAndTrim(cols_str, ",");
+    } else {
+        table_name = trim(middle);
+    }
+    
+    // Find table
+    let table = findTable(conn, table_name);
+    if (isNull(table)) {
+        return SqliteResult { 
+            success: false, rows: [], columns: [], affected: 0, last_id: 0, 
+            error: "Table not found: " + table_name 
+        };
+    }
+    
+    // Extract values - get string after VALUES keyword
+    let after_values = substring(sql, values_pos + 6, len(sql));
+    let values_paren_start = indexOf(after_values, "(");
+    let values_paren_end = lastIndexOf(after_values, ")");
+    let values_str = substring(after_values, values_paren_start + 1, values_paren_end);
+    let values = parseValueList(values_str);
+    
+    // Build row
+    let row = [];
+    let j = 0;
+    while (j < len(table.columns)) {
+        let col_name = table.columns[j];
+        let val = null;
+        
+        if (len(insert_cols) > 0) {
+            // Find value by column name
+            let k = 0;
+            while (k < len(insert_cols)) {
+                if (toLower(insert_cols[k]) == toLower(col_name)) {
+                    if (k < len(values)) {
+                        val = values[k];
+                    }
+                }
+                k = k + 1;
+            }
+        } else {
+            if (j < len(values)) {
+                val = values[j];
+            }
+        }
+        
+        // Handle auto-increment
+        if (toUpper(col_name) == "ID" && isNull(val)) {
+            table.auto_id = table.auto_id + 1;
+            val = table.auto_id;
+        }
+        
+        push(row, val);
+        j = j + 1;
+    }
+    
+    push(table.rows, row);
+    print("[SQLite] Inserted row into " + table_name);
+    
+    return SqliteResult { 
+        success: true, rows: [], columns: [], affected: 1, last_id: table.auto_id, error: "" 
+    };
+}
+
+// ============================================
+// SELECT
+// ============================================
+
+fn executeSelect(conn, sql, upper_sql) {
+    let from_pos = indexOf(upper_sql, "FROM");
+    
+    if (from_pos < 0) {
+        return SqliteResult { 
+            success: false, rows: [], columns: [], affected: 0, last_id: 0, 
+            error: "Invalid SELECT syntax" 
+        };
+    }
+    
+    // Parse select columns
+    let select_part = trim(substring(sql, 6, from_pos));
+    let select_cols = [];
+    
+    if (select_part == "*") {
+        select_cols = ["*"];
+    } else {
+        select_cols = splitAndTrim(select_part, ",");
+    }
+    
+    // Parse table name
+    let where_pos = indexOf(upper_sql, "WHERE");
+    let limit_pos = indexOf(upper_sql, "LIMIT");
+    
+    let table_end = len(sql);
+    if (where_pos > 0) { table_end = min(table_end, where_pos); }
+    if (limit_pos > 0) { table_end = min(table_end, limit_pos); }
+    
+    let table_name = trim(substring(sql, from_pos + 4, table_end));
+    if (endsWith(table_name, ";")) {
+        table_name = substring(table_name, 0, len(table_name) - 1);
+    }
+    
+    let table = findTable(conn, table_name);
+    if (isNull(table)) {
+        return SqliteResult { 
+            success: false, rows: [], columns: [], affected: 0, last_id: 0, 
+            error: "Table not found: " + table_name 
+        };
+    }
+    
+    // Parse WHERE clause
+    let where_clause = "";
+    if (where_pos > 0) {
+        let where_end = len(sql);
+        if (limit_pos > where_pos) { where_end = limit_pos; }
+        where_clause = trim(substring(sql, where_pos + 5, where_end));
+    }
+    
+    // Parse LIMIT
+    let limit_val = -1;
+    if (limit_pos > 0) {
+        let limit_str = trim(substring(sql, limit_pos + 5, len(sql)));
+        if (endsWith(limit_str, ";")) {
+            limit_str = substring(limit_str, 0, len(limit_str) - 1);
+        }
+        limit_val = parseInt(limit_str);
+    }
+    
+    // Determine output columns
+    let result_cols = [];
+    let col_indices = [];
+    
+    if (len(select_cols) == 1 && select_cols[0] == "*") {
+        result_cols = table.columns;
+        let k = 0;
+        while (k < len(table.columns)) {
+            push(col_indices, k);
+            k = k + 1;
+        }
+    } else {
+        let k = 0;
+        while (k < len(select_cols)) {
+            let col = select_cols[k];
+            push(result_cols, col);
+            push(col_indices, findColumnIndex(table, col));
+            k = k + 1;
+        }
+    }
+    
+    // Filter and collect rows
+    let result_rows = [];
+    let i = 0;
+    
+    while (i < len(table.rows)) {
+        let row = table.rows[i];
+        
+        // Apply WHERE filter
+        if (where_clause != "") {
+            if (!evaluateWhere(table, row, where_clause)) {
+                i = i + 1;
+                continue;
+            }
+        }
+        
+        // Build result row
+        let result_row = [];
+        let j = 0;
+        while (j < len(col_indices)) {
+            let idx = col_indices[j];
+            if (idx >= 0 && idx < len(row)) {
+                push(result_row, row[idx]);
+            } else {
+                push(result_row, null);
+            }
+            j = j + 1;
+        }
+        
+        push(result_rows, result_row);
+        
+        // Apply LIMIT
+        if (limit_val > 0 && len(result_rows) >= limit_val) {
+            i = len(table.rows); // break
+        }
+        
+        i = i + 1;
+    }
+    
+    return SqliteResult { 
+        success: true, rows: result_rows, columns: result_cols, 
+        affected: len(result_rows), last_id: 0, error: "" 
+    };
+}
+
+// ============================================
+// UPDATE
+// ============================================
+
+fn executeUpdate(conn, sql, upper_sql) {
+    let set_pos = indexOf(upper_sql, "SET");
+    let where_pos = indexOf(upper_sql, "WHERE");
+    
+    if (set_pos < 0) {
+        return SqliteResult { 
+            success: false, rows: [], columns: [], affected: 0, last_id: 0, 
+            error: "Invalid UPDATE syntax" 
+        };
+    }
+    
+    // Extract table name
+    let table_name = trim(substring(sql, 7, set_pos));
+    let table = findTable(conn, table_name);
+    if (isNull(table)) {
+        return SqliteResult { 
+            success: false, rows: [], columns: [], affected: 0, last_id: 0, 
+            error: "Table not found: " + table_name 
+        };
+    }
+    
+    // Extract SET clause
+    let set_end = len(sql);
+    if (where_pos > 0) { set_end = where_pos; }
+    let set_clause = trim(substring(sql, set_pos + 3, set_end));
+    
+    // Parse SET: col = val
+    let eq_pos = indexOf(set_clause, "=");
+    let set_col = trim(substring(set_clause, 0, eq_pos));
+    let set_val = parseValue(trim(substring(set_clause, eq_pos + 1, len(set_clause))));
+    let set_idx = findColumnIndex(table, set_col);
+    
+    // Parse WHERE
+    let where_clause = "";
+    if (where_pos > 0) {
+        where_clause = trim(substring(sql, where_pos + 5, len(sql)));
+    }
+    
+    // Update rows
+    let updated = 0;
+    let i = 0;
+    while (i < len(table.rows)) {
+        let row = table.rows[i];
+        
+        if (where_clause == "" || evaluateWhere(table, row, where_clause)) {
+            if (set_idx >= 0 && set_idx < len(row)) {
+                row[set_idx] = set_val;
+                updated = updated + 1;
+            }
+        }
+        i = i + 1;
+    }
+    
+    print("[SQLite] Updated " + updated + " rows");
+    return SqliteResult { success: true, rows: [], columns: [], affected: updated, last_id: 0, error: "" };
+}
+
+// ============================================
+// DELETE
+// ============================================
+
+fn executeDelete(conn, sql, upper_sql) {
+    let from_pos = indexOf(upper_sql, "FROM");
+    let where_pos = indexOf(upper_sql, "WHERE");
+    
+    if (from_pos < 0) {
+        return SqliteResult { 
+            success: false, rows: [], columns: [], affected: 0, last_id: 0, 
+            error: "Invalid DELETE syntax" 
+        };
+    }
+    
+    // Extract table name
+    let table_end = len(sql);
+    if (where_pos > 0) { table_end = where_pos; }
+    let table_name = trim(substring(sql, from_pos + 4, table_end));
+    if (endsWith(table_name, ";")) {
+        table_name = substring(table_name, 0, len(table_name) - 1);
+    }
+    
+    let table = findTable(conn, table_name);
+    if (isNull(table)) {
+        return SqliteResult { 
+            success: false, rows: [], columns: [], affected: 0, last_id: 0, 
+            error: "Table not found: " + table_name 
+        };
+    }
+    
+    // Parse WHERE
+    let where_clause = "";
+    if (where_pos > 0) {
+        where_clause = trim(substring(sql, where_pos + 5, len(sql)));
+    }
+    
+    // Delete matching rows
+    let new_rows = [];
+    let deleted = 0;
+    let i = 0;
+    while (i < len(table.rows)) {
+        let row = table.rows[i];
+        
+        if (where_clause == "" || evaluateWhere(table, row, where_clause)) {
+            deleted = deleted + 1;
+        } else {
+            push(new_rows, row);
+        }
+        i = i + 1;
+    }
+    
+    table.rows = new_rows;
+    print("[SQLite] Deleted " + deleted + " rows");
+    
+    return SqliteResult { success: true, rows: [], columns: [], affected: deleted, last_id: 0, error: "" };
+}
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+fn findTable(conn, table_name) {
+    let i = 0;
+    while (i < len(conn.table_names)) {
+        if (conn.table_names[i] == table_name) {
+            return conn.tables[table_name];
+        }
+        i = i + 1;
+    }
+    return null;
+}
+
+fn findColumnIndex(table, col_name) {
+    let i = 0;
+    while (i < len(table.columns)) {
+        if (toLower(table.columns[i]) == toLower(col_name)) {
+            return i;
+        }
+        i = i + 1;
+    }
+    return -1;
+}
+
+fn splitAndTrim(s, delim) {
+    let parts = split(s, delim);
+    let result = [];
+    let i = 0;
+    while (i < len(parts)) {
+        push(result, trim(parts[i]));
+        i = i + 1;
+    }
+    return result;
+}
+
+fn parseValueList(s) {
+    let values = [];
+    let current = "";
+    let in_string = false;
+    let string_char = "'";
+    let i = 0;
+    
+    while (i < len(s)) {
+        let c = charAt(s, i);
+        
+        if (!in_string && (c == "'" || c == "\"")) {
+            in_string = true;
+            string_char = c;
+            current = current + c;  // Include the quote
+        } else if (in_string && c == string_char) {
+            in_string = false;
+            current = current + c;  // Include the closing quote
+        } else if (!in_string && c == ",") {
+            push(values, parseValue(trim(current)));
+            current = "";
+            i = i + 1;
+            continue;
+        } else {
+            current = current + c;
+        }
+        i = i + 1;
+    }
+    
+    if (trim(current) != "") {
+        push(values, parseValue(trim(current)));
+    }
+    
+    return values;
+}
+
+fn parseValue(s) {
+    if (s == "" || toUpper(s) == "NULL") {
+        return null;
+    }
+    
+    if ((startsWith(s, "'") && endsWith(s, "'")) || (startsWith(s, "\"") && endsWith(s, "\""))) {
+        return substring(s, 1, len(s) - 1);
+    }
+    
+    let num = parseInt(s);
+    if (notNull(num)) {
+        return num;
+    }
+    
+    return s;
+}
+
+fn evaluateWhere(table, row, where_clause) {
+    // Try = operator
+    if (contains(where_clause, "=")) {
+        let parts = split(where_clause, "=");
+        if (len(parts) == 2) {
+            let col = trim(parts[0]);
+            let val = parseValue(trim(parts[1]));
+            let idx = findColumnIndex(table, col);
+            if (idx >= 0 && idx < len(row)) {
+                return row[idx] == val;
+            }
+        }
+    }
+    
+    return true;
+}
+
+fn min(a, b) {
+    if (a < b) { return a; }
+    return b;
+}
+
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
+
+fn sqliteGetTables(conn) {
+    return conn.table_names;
+}
+
+fn sqliteGetColumns(conn, table_name) {
+    let table = findTable(conn, table_name);
+    if (isNull(table)) {
+        return [];
+    }
+    return table.columns;
+}
+
+fn sqliteTableExists(conn, table_name) {
+    let i = 0;
+    while (i < len(conn.table_names)) {
+        if (conn.table_names[i] == table_name) {
+            return true;
+        }
+        i = i + 1;
+    }
+    return false;
+}

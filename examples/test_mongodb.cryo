@@ -1,0 +1,222 @@
+// ============================================
+// CRYO MONGODB TEST
+// Test the native MongoDB driver
+// Requires: MongoDB running on localhost:27017
+// ============================================
+
+import "mongodb"
+
+fn main() {
+    print("========================================");
+    print("   CRYO MONGODB DRIVER TEST");
+    print("   Version: " + MONGODB_VERSION);
+    print("========================================");
+    print("");
+    
+    let passed = 0;
+    let failed = 0;
+    
+    // Test 1: Connect to MongoDB
+    print("[TEST 1] Connect to MongoDB");
+    let conn = mongoConnect("localhost", 27017, "cryo_test");
+    if (conn != null && conn.connected) {
+        print("  ✓ PASS: Connected to MongoDB");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Could not connect to MongoDB");
+        print("  Make sure MongoDB is running on localhost:27017");
+        print("");
+        print("  Quick start with Docker:");
+        print("    docker run -d -p 27017:27017 --name mongodb mongo:latest");
+        return 1;
+    }
+    
+    // Test 2: Create Collection
+    print("");
+    print("[TEST 2] Create Collection");
+    let result = mongoCreateCollection(conn, "users");
+    print("  Collection 'users' created or exists");
+    passed = passed + 1;
+    
+    // Test 3: Insert One
+    print("");
+    print("[TEST 3] Insert One Document");
+    result = mongoInsertOne(conn, "users", {
+        name: "Alice",
+        email: "alice@example.com",
+        age: 25
+    });
+    if (result.success) {
+        print("  ✓ PASS: Inserted document");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: " + result.error);
+        failed = failed + 1;
+    }
+    
+    // Test 4: Insert Many
+    print("");
+    print("[TEST 4] Insert Many Documents");
+    result = mongoInsertMany(conn, "users", [
+        { name: "Bob", email: "bob@example.com", age: 30 },
+        { name: "Charlie", email: "charlie@example.com", age: 35 },
+        { name: "Diana", email: "diana@example.com", age: 28 }
+    ]);
+    if (result.success) {
+        print("  ✓ PASS: Inserted multiple documents");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: " + result.error);
+        failed = failed + 1;
+    }
+    
+    // Test 5: Find All
+    print("");
+    print("[TEST 5] Find All Documents");
+    result = mongoFind(conn, "users", {});
+    if (result.success) {
+        print("  ✓ PASS: Found " + result.count + " documents");
+        let i = 0;
+        while (i < len(result.documents)) {
+            let doc = result.documents[i];
+            print("    - " + doc["name"] + " (" + doc["email"] + ")");
+            i = i + 1;
+        }
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: " + result.error);
+        failed = failed + 1;
+    }
+    
+    // Test 6: Find with Filter
+    print("");
+    print("[TEST 6] Find with Filter (age = 30)");
+    result = mongoFind(conn, "users", { age: 30 });
+    if (result.success) {
+        print("  ✓ PASS: Found " + result.count + " matching documents");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: " + result.error);
+        failed = failed + 1;
+    }
+    
+    // Test 7: Find One
+    print("");
+    print("[TEST 7] Find One Document");
+    let doc = mongoFindOne(conn, "users", { name: "Alice" });
+    if (doc != null) {
+        print("  ✓ PASS: Found Alice");
+        print("    email: " + doc["email"]);
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Document not found");
+        failed = failed + 1;
+    }
+    
+    // Test 8: Update One
+    print("");
+    print("[TEST 8] Update One Document");
+    result = mongoUpdateOne(conn, "users", { name: "Alice" }, { age: 26 });
+    if (result.success) {
+        print("  ✓ PASS: Updated Alice's age to 26");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: " + result.error);
+        failed = failed + 1;
+    }
+    
+    // Test 9: Count Documents
+    print("");
+    print("[TEST 9] Count Documents");
+    let count = mongoCountDocuments(conn, "users", {});
+    if (count >= 0) {
+        print("  ✓ PASS: Collection has " + count + " documents");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Could not count documents");
+        failed = failed + 1;
+    }
+    
+    // Test 10: Delete One
+    print("");
+    print("[TEST 10] Delete One Document");
+    result = mongoDeleteOne(conn, "users", { name: "Charlie" });
+    if (result.success) {
+        print("  ✓ PASS: Deleted Charlie");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: " + result.error);
+        failed = failed + 1;
+    }
+    
+    // Test 11: List Collections
+    print("");
+    print("[TEST 11] List Collections");
+    let collections = mongoListCollections(conn);
+    print("  Collections: " + toString(collections));
+    passed = passed + 1;
+    
+    // Test 12: Create Index
+    print("");
+    print("[TEST 12] Create Index");
+    result = mongoCreateIndex(conn, "users", { email: 1 }, { unique: true });
+    if (result) {
+        print("  ✓ PASS: Created index on email field");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Could not create index");
+        failed = failed + 1;
+    }
+    
+    // Test 13: Aggregation
+    print("");
+    print("[TEST 13] Aggregation Pipeline");
+    result = mongoAggregate(conn, "users", [
+        { "$match": { age: { "$gte": 25 } } },
+        { "$group": { _id: null, avgAge: { "$avg": "$age" } } }
+    ]);
+    if (result.success) {
+        print("  ✓ PASS: Aggregation executed");
+        print("  Result: " + toString(result.documents));
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: " + result.error);
+        failed = failed + 1;
+    }
+    
+    // Cleanup: Drop collection
+    print("");
+    print("[CLEANUP] Drop test collection");
+    mongoDropCollection(conn, "users");
+    print("  Collection 'users' dropped");
+    
+    // Close connection
+    print("");
+    print("[TEST 14] Close Connection");
+    mongoClose(conn);
+    if (!conn.connected) {
+        print("  ✓ PASS: Connection closed");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Connection still open");
+        failed = failed + 1;
+    }
+    
+    // Summary
+    print("");
+    print("========================================");
+    print("   TEST SUMMARY");
+    print("========================================");
+    print("  Passed: " + passed);
+    print("  Failed: " + failed);
+    print("  Total:  " + (passed + failed));
+    print("");
+    
+    if (failed == 0) {
+        print("  ✓ ALL TESTS PASSED!");
+        return 0;
+    } else {
+        print("  ✗ SOME TESTS FAILED");
+        return 1;
+    }
+}

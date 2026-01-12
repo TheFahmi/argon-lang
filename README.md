@@ -5,13 +5,13 @@
 </p>
 
 <p align="center">
-  <strong>Version 3.2.1</strong> | High-Performance Systems Programming Language
+  <strong>Version 3.3.0</strong> | High-Performance Systems Programming Language
 </p>
 
 <p align="center">
   <a href="http://makeapullrequest.com"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square" alt="PRs Welcome"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square" alt="License"></a>
-  <img src="https://img.shields.io/badge/Cryo-v3.2.1-crimson?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/Cryo-v3.3.0-crimson?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/build-passing-brightgreen?style=flat-square" alt="Build Status">
   <img src="https://img.shields.io/badge/platform-win%20%7C%20linux%20%7C%20macos-lightgrey?style=flat-square" alt="Platform">
 </p>
@@ -336,23 +336,36 @@ fn main() {
 
 ### Database (Native Implementations)
 
-| Module | Description |
-|--------|-------------|
-| `postgres_native` | PostgreSQL Wire Protocol v3.0 |
-| `mysql_native` | MySQL/MariaDB with SHA1 auth |
-| `redis` | Redis RESP protocol via TCP |
+| Module | Description | Test Status |
+|--------|-------------|-------------|
+| `sqlite` | In-memory SQL database | ✅ 17/17 tests |
+| `jwt` | JSON Web Token creation/verification | ✅ 6/6 tests |
+| `oauth2` | OAuth2 client configuration | ✅ 6/6 tests |
+| `postgres_native` | PostgreSQL Wire Protocol v3.0 | ✅ Stable |
+| `mysql_native` | MySQL/MariaDB with SHA1 auth | ✅ Stable |
+| `redis` | Redis RESP protocol via TCP | ✅ Stable |
 
 ```javascript
+// SQLite example
+import "sqlite"
+let db = sqliteOpenMemory();
+sqliteExec(db, "CREATE TABLE users (id INTEGER, name TEXT)");
+sqliteExec(db, "INSERT INTO users (name) VALUES ('Alice')");
+let result = sqliteQuery(db, "SELECT * FROM users");
+sqliteClose(db);
+
+// JWT example
+import "jwt"
+let result = verifyJwt(token, "my-secret");
+if (result.valid) {
+    print("User: " + result.payload["sub"]);
+}
+
 // PostgreSQL example
 import "postgres_native"
 let conn = pgConnect("localhost", 5432, "user", "mydb");
 pgQuery(conn, "SELECT * FROM users");
 pgClose(conn);
-
-// Redis example
-let redis = @tcpConnect("localhost", 6379);
-@tcpWrite(redis, "SET key value");
-@tcpReadLine(redis);  // +OK
 ```
 
 ### Built-in Functions
@@ -588,6 +601,7 @@ Install the Cryo extension from the `lsp/vscode-extension` directory.
 
 | Version | Release | Key Features |
 |---------|---------|--------------|
+| v3.3.0 | 2026-01 | SQLite driver (17 tests), JWT library (6 tests), OAuth2 library (6 tests) |
 | v3.2.1 | 2026-01 | Native mode default, Decorators support, AI agent documentation |
 | v3.0.0 | 2025-12 | LSP, Debugger, Bytecode VM, LLVM compilation |
 | v2.24.0 | 2025-11 | Macros, CryoWeb CLI, Crypto module |
@@ -609,6 +623,7 @@ Install the Cryo extension from the `lsp/vscode-extension` directory.
 |----------|-------------|
 | [AGENTS.md](./AGENTS.md) | Guide for AI coding assistants |
 | [ROADMAP.md](./ROADMAP.md) | Development roadmap |
+| [docs/database_drivers.md](./docs/database_drivers.md) | Database drivers & security libraries |
 | [docs/running_native.md](./docs/running_native.md) | Native compilation guide |
 | [docs/stdlib_reference.md](./docs/stdlib_reference.md) | Standard library reference |
 | [docs/traits_design.md](./docs/traits_design.md) | Traits system design |

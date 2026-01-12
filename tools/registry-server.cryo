@@ -1,0 +1,1043 @@
+// ============================================
+// CRYO PACKAGE REGISTRY SERVER
+// Web portal for package discovery & management
+// Version: 1.0.0
+// ============================================
+
+import "../stdlib/cryoweb.cryo";
+import "../stdlib/json.cryo";
+
+let REGISTRY_VERSION = "1.0.0";
+
+// ============================================
+// IN-MEMORY DATABASE (will be replaced with SQLite)
+// ============================================
+
+let packages = {};
+let downloads = {};
+let users = {};
+
+// Initialize with sample packages
+fn initSampleData() {
+    packages = {
+        "math-extra": {
+            name: "math-extra",
+            description: "Extended math functions for Cryo",
+            repository: "https://github.com/cryo-lang/pkg-math-extra",
+            author: "Cryo Team",
+            license: "MIT",
+            keywords: ["math", "utility", "numeric"],
+            latest: "1.1.0",
+            versions: {
+                "1.0.0": {
+                    version: "1.0.0",
+                    published: "2025-11-01",
+                    dependencies: {},
+                    downloads: 1250
+                },
+                "1.1.0": {
+                    version: "1.1.0",
+                    published: "2025-12-15",
+                    dependencies: {},
+                    downloads: 430
+                }
+            },
+            created: "2025-11-01",
+            updated: "2025-12-15",
+            downloads: 1680
+        },
+        "json-utils": {
+            name: "json-utils",
+            description: "JSON parsing and serialization utilities",
+            repository: "https://github.com/cryo-lang/pkg-json-utils",
+            author: "Cryo Team",
+            license: "MIT",
+            keywords: ["json", "parser", "serializer"],
+            latest: "1.0.0",
+            versions: {
+                "1.0.0": {
+                    version: "1.0.0",
+                    published: "2025-10-20",
+                    dependencies: {},
+                    downloads: 2100
+                }
+            },
+            created: "2025-10-20",
+            updated: "2025-10-20",
+            downloads: 2100
+        },
+        "http-client": {
+            name: "http-client",
+            description: "HTTP client library for making web requests",
+            repository: "https://github.com/cryo-lang/pkg-http-client",
+            author: "Cryo Team",
+            license: "Apache-2.0",
+            keywords: ["http", "client", "web", "request"],
+            latest: "0.1.0",
+            versions: {
+                "0.1.0": {
+                    version: "0.1.0",
+                    published: "2025-12-01",
+                    dependencies: {
+                        "json-utils": "1.0.0"
+                    },
+                    downloads: 580
+                }
+            },
+            created: "2025-12-01",
+            updated: "2025-12-01",
+            downloads: 580
+        },
+        "test-framework": {
+            name: "test-framework",
+            description: "Testing utilities and assertions for Cryo",
+            repository: "https://github.com/cryo-lang/pkg-test-framework",
+            author: "Cryo Team",
+            license: "MIT",
+            keywords: ["test", "testing", "assert", "framework"],
+            latest: "0.1.0",
+            versions: {
+                "0.1.0": {
+                    version: "0.1.0",
+                    published: "2025-11-15",
+                    dependencies: {},
+                    downloads: 920
+                }
+            },
+            created: "2025-11-15",
+            updated: "2025-11-15",
+            downloads: 920
+        },
+        "cli-colors": {
+            name: "cli-colors",
+            description: "Terminal colors and styling for CLI apps",
+            repository: "https://github.com/cryo-lang/pkg-cli-colors",
+            author: "Cryo Team",
+            license: "MIT",
+            keywords: ["cli", "terminal", "colors", "styling"],
+            latest: "1.0.0",
+            versions: {
+                "1.0.0": {
+                    version: "1.0.0",
+                    published: "2025-10-01",
+                    dependencies: {},
+                    downloads: 750
+                }
+            },
+            created: "2025-10-01",
+            updated: "2025-10-01",
+            downloads: 750
+        },
+        "web-router": {
+            name: "web-router",
+            description: "Express-style HTTP router for CryoWeb",
+            repository: "https://github.com/cryo-lang/pkg-web-router",
+            author: "Cryo Team",
+            license: "MIT",
+            keywords: ["web", "router", "http", "express"],
+            latest: "2.0.0",
+            versions: {
+                "1.0.0": {
+                    version: "1.0.0",
+                    published: "2025-09-01",
+                    dependencies: {},
+                    downloads: 1200
+                },
+                "2.0.0": {
+                    version: "2.0.0",
+                    published: "2025-12-20",
+                    dependencies: {},
+                    downloads: 890
+                }
+            },
+            created: "2025-09-01",
+            updated: "2025-12-20",
+            downloads: 2090
+        }
+    };
+}
+
+// ============================================
+// HTML TEMPLATES
+// ============================================
+
+fn htmlHeader(title) {
+    return "<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+    <meta charset=\"UTF-8\">
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+    <title>" + title + " - APM Registry</title>
+    <style>
+        :root {
+            --primary: #3B82F6;
+            --primary-dark: #2563EB;
+            --secondary: #10B981;
+            --bg: #0F172A;
+            --bg-card: #1E293B;
+            --bg-hover: #334155;
+            --text: #F8FAFC;
+            --text-muted: #94A3B8;
+            --border: #334155;
+            --gradient: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        
+        a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        
+        a:hover {
+            color: var(--secondary);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* Header */
+        header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        nav {
+            display: flex;
+            gap: 24px;
+        }
+        
+        nav a {
+            color: var(--text-muted);
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        nav a:hover {
+            color: var(--text);
+        }
+        
+        /* Hero */
+        .hero {
+            text-align: center;
+            padding: 80px 20px;
+            background: linear-gradient(180deg, var(--bg-card) 0%, var(--bg) 100%);
+        }
+        
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .hero p {
+            font-size: 20px;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto 32px;
+        }
+        
+        /* Search */
+        .search-box {
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 16px 24px;
+            font-size: 18px;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        .search-box input:focus {
+            border-color: var(--primary);
+        }
+        
+        .search-box input::placeholder {
+            color: var(--text-muted);
+        }
+        
+        /* Stats */
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 48px;
+            margin-top: 48px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        
+        /* Packages Grid */
+        .section {
+            padding: 48px 0;
+        }
+        
+        .section-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 24px;
+        }
+        
+        .packages-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        
+        /* Package Card */
+        .package-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.2s;
+        }
+        
+        .package-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.1);
+        }
+        
+        .package-name {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .package-description {
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .package-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        
+        .package-version {
+            color: var(--secondary);
+            font-weight: 500;
+        }
+        
+        .package-downloads {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .keywords {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+        
+        .keyword {
+            background: var(--bg);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        
+        /* Package Detail */
+        .package-detail {
+            padding: 48px 0;
+        }
+        
+        .package-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 32px;
+        }
+        
+        .package-title {
+            font-size: 36px;
+            font-weight: 800;
+        }
+        
+        .install-cmd {
+            background: var(--bg-card);
+            padding: 16px 24px;
+            border-radius: 8px;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            border: 1px solid var(--border);
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: var(--primary);
+            color: white;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn:hover {
+            background: var(--primary-dark);
+        }
+        
+        /* Footer */
+        footer {
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+            padding: 32px 0;
+            text-align: center;
+            color: var(--text-muted);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 32px;
+            }
+            
+            .stats {
+                flex-direction: column;
+                gap: 24px;
+            }
+            
+            .packages-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class=\"container header-content\">
+            <a href=\"/\" class=\"logo\">📦 apm.cryo.dev</a>
+            <nav>
+                <a href=\"/\">Home</a>
+                <a href=\"/packages\">Packages</a>
+                <a href=\"/docs\">Docs</a>
+                <a href=\"https://github.com/cryo-lang\">GitHub</a>
+            </nav>
+        </div>
+    </header>
+";
+}
+
+fn htmlFooter() {
+    return "
+    <footer>
+        <div class=\"container\">
+            <p>Cryo Package Registry v" + REGISTRY_VERSION + " • Built with CryoWeb</p>
+            <p style=\"margin-top: 8px;\">© 2026 Cryo Lang. MIT License.</p>
+        </div>
+    </footer>
+</body>
+</html>";
+}
+
+// ============================================
+// ROUTE HANDLERS
+// ============================================
+
+fn handleHome(ctx) {
+    // Calculate stats
+    let pkg_names = @objectKeys(packages);
+    let total_packages = len(pkg_names);
+    let total_downloads = 0;
+    
+    let i = 0;
+    while (i < len(pkg_names)) {
+        let pkg = packages[pkg_names[i]];
+        total_downloads = total_downloads + pkg.downloads;
+        i = i + 1;
+    }
+    
+    let html = htmlHeader("Home");
+    
+    // Hero section
+    html = html + "
+    <section class=\"hero\">
+        <div class=\"container\">
+            <h1>Cryo Package Registry</h1>
+            <p>Discover, install, and publish Cryo packages with ease. The official package registry for the Cryo programming language.</p>
+            
+            <div class=\"search-box\">
+                <form action=\"/search\" method=\"get\">
+                    <input type=\"text\" name=\"q\" placeholder=\"Search packages...\" autocomplete=\"off\">
+                </form>
+            </div>
+            
+            <div class=\"stats\">
+                <div class=\"stat\">
+                    <div class=\"stat-value\">" + total_packages + "</div>
+                    <div class=\"stat-label\">Packages</div>
+                </div>
+                <div class=\"stat\">
+                    <div class=\"stat-value\">" + formatNumber(total_downloads) + "</div>
+                    <div class=\"stat-label\">Downloads</div>
+                </div>
+                <div class=\"stat\">
+                    <div class=\"stat-value\">v" + REGISTRY_VERSION + "</div>
+                    <div class=\"stat-label\">Registry Version</div>
+                </div>
+            </div>
+        </div>
+    </section>
+    ";
+    
+    // Featured packages
+    html = html + "
+    <section class=\"section\">
+        <div class=\"container\">
+            <h2 class=\"section-title\">📦 Featured Packages</h2>
+            <div class=\"packages-grid\">
+    ";
+    
+    i = 0;
+    while (i < len(pkg_names) && i < 6) {
+        let pkg = packages[pkg_names[i]];
+        html = html + renderPackageCard(pkg);
+        i = i + 1;
+    }
+    
+    html = html + "
+            </div>
+            <div style=\"text-align: center; margin-top: 32px;\">
+                <a href=\"/packages\" class=\"btn\">View All Packages →</a>
+            </div>
+        </div>
+    </section>
+    ";
+    
+    // Quick start
+    html = html + "
+    <section class=\"section\" style=\"background: var(--bg-card);\">
+        <div class=\"container\">
+            <h2 class=\"section-title\">🚀 Quick Start</h2>
+            <div style=\"background: var(--bg); padding: 24px; border-radius: 12px; font-family: monospace; line-height: 2;\">
+                <div style=\"color: var(--text-muted);\"># Install a package</div>
+                <div style=\"color: var(--secondary);\">$ apm add json-utils</div>
+                <br>
+                <div style=\"color: var(--text-muted);\"># Search packages</div>
+                <div style=\"color: var(--secondary);\">$ apm search http</div>
+                <br>
+                <div style=\"color: var(--text-muted);\"># Initialize a new project</div>
+                <div style=\"color: var(--secondary);\">$ apm init my-project</div>
+            </div>
+        </div>
+    </section>
+    ";
+    
+    html = html + htmlFooter();
+    ctx.html(html);
+}
+
+fn handlePackages(ctx) {
+    let pkg_names = @objectKeys(packages);
+    
+    let html = htmlHeader("All Packages");
+    
+    html = html + "
+    <section class=\"section\">
+        <div class=\"container\">
+            <h2 class=\"section-title\">📦 All Packages (" + len(pkg_names) + ")</h2>
+            <div class=\"packages-grid\">
+    ";
+    
+    let i = 0;
+    while (i < len(pkg_names)) {
+        let pkg = packages[pkg_names[i]];
+        html = html + renderPackageCard(pkg);
+        i = i + 1;
+    }
+    
+    html = html + "
+            </div>
+        </div>
+    </section>
+    ";
+    
+    html = html + htmlFooter();
+    ctx.html(html);
+}
+
+fn handlePackageDetail(ctx) {
+    let name = ctx.param("name");
+    let pkg = packages[name];
+    
+    if (pkg == null) {
+        ctx.notFound("Package not found: " + name);
+        return;
+    }
+    
+    let html = htmlHeader(pkg.name);
+    
+    html = html + "
+    <section class=\"package-detail\">
+        <div class=\"container\">
+            <div class=\"package-header\">
+                <div>
+                    <h1 class=\"package-title\">" + pkg.name + "</h1>
+                    <p style=\"color: var(--text-muted); font-size: 18px; margin-top: 8px;\">" + pkg.description + "</p>
+                </div>
+                <div class=\"install-cmd\">
+                    apm add " + pkg.name + "
+                </div>
+            </div>
+            
+            <div style=\"display: grid; grid-template-columns: 2fr 1fr; gap: 32px;\">
+                <div>
+                    <h3 style=\"margin-bottom: 16px;\">📖 README</h3>
+                    <div class=\"package-card\" style=\"padding: 32px;\">
+                        <h2>" + pkg.name + "</h2>
+                        <p style=\"margin-top: 16px; color: var(--text-muted);\">" + pkg.description + "</p>
+                        
+                        <h3 style=\"margin-top: 24px;\">Installation</h3>
+                        <pre style=\"background: var(--bg); padding: 16px; border-radius: 8px; margin-top: 8px; overflow-x: auto;\"><code>apm add " + pkg.name + "</code></pre>
+                        
+                        <h3 style=\"margin-top: 24px;\">Usage</h3>
+                        <pre style=\"background: var(--bg); padding: 16px; border-radius: 8px; margin-top: 8px; overflow-x: auto;\"><code>import \"deps/" + pkg.name + "/lib/lib.cryo\";
+
+fn main() {
+    // Use the package
+    print(\"Hello from " + pkg.name + "!\");
+}</code></pre>
+                    </div>
+                    
+                    <h3 style=\"margin: 24px 0 16px;\">📊 Versions</h3>
+                    <div class=\"package-card\">
+    ";
+    
+    let ver_names = @objectKeys(pkg.versions);
+    let i = 0;
+    while (i < len(ver_names)) {
+        let ver = pkg.versions[ver_names[i]];
+        let is_latest = ver_names[i] == pkg.latest ? " (latest)" : "";
+        html = html + "
+                        <div style=\"display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border);\">
+                            <span class=\"package-version\">" + ver_names[i] + is_latest + "</span>
+                            <span style=\"color: var(--text-muted);\">" + ver.published + "</span>
+                        </div>
+        ";
+        i = i + 1;
+    }
+    
+    html = html + "
+                    </div>
+                </div>
+                
+                <div>
+                    <div class=\"package-card\">
+                        <h4 style=\"margin-bottom: 16px;\">📋 Package Info</h4>
+                        <div style=\"color: var(--text-muted);\">
+                            <p><strong>Version:</strong> " + pkg.latest + "</p>
+                            <p style=\"margin-top: 8px;\"><strong>License:</strong> " + pkg.license + "</p>
+                            <p style=\"margin-top: 8px;\"><strong>Author:</strong> " + pkg.author + "</p>
+                            <p style=\"margin-top: 8px;\"><strong>Downloads:</strong> " + formatNumber(pkg.downloads) + "</p>
+                            <p style=\"margin-top: 8px;\"><strong>Created:</strong> " + pkg.created + "</p>
+                            <p style=\"margin-top: 8px;\"><strong>Updated:</strong> " + pkg.updated + "</p>
+                        </div>
+                        
+                        <h4 style=\"margin: 24px 0 12px;\">🔗 Links</h4>
+                        <div>
+                            <a href=\"" + pkg.repository + "\" style=\"display: block; margin-bottom: 8px;\">📂 Repository</a>
+                            <a href=\"" + pkg.repository + "/issues\" style=\"display: block;\">🐛 Issues</a>
+                        </div>
+                        
+                        <h4 style=\"margin: 24px 0 12px;\">🏷️ Keywords</h4>
+                        <div class=\"keywords\">
+    ";
+    
+    i = 0;
+    while (i < len(pkg.keywords)) {
+        html = html + "<span class=\"keyword\">" + pkg.keywords[i] + "</span>";
+        i = i + 1;
+    }
+    
+    html = html + "
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    ";
+    
+    html = html + htmlFooter();
+    ctx.html(html);
+}
+
+fn handleSearch(ctx) {
+    let query = ctx.queryParam("q");
+    if (query == null) { query = ""; }
+    
+    let results = [];
+    let pkg_names = @objectKeys(packages);
+    let i = 0;
+    
+    while (i < len(pkg_names)) {
+        let pkg = packages[pkg_names[i]];
+        let match = false;
+        
+        // Search in name and description
+        if (contains(toLower(pkg.name), toLower(query))) {
+            match = true;
+        }
+        if (contains(toLower(pkg.description), toLower(query))) {
+            match = true;
+        }
+        
+        // Search in keywords
+        let j = 0;
+        while (j < len(pkg.keywords)) {
+            if (contains(toLower(pkg.keywords[j]), toLower(query))) {
+                match = true;
+            }
+            j = j + 1;
+        }
+        
+        if (match) {
+            push(results, pkg);
+        }
+        
+        i = i + 1;
+    }
+    
+    let html = htmlHeader("Search: " + query);
+    
+    html = html + "
+    <section class=\"section\">
+        <div class=\"container\">
+            <h2 class=\"section-title\">🔍 Search Results for \"" + query + "\" (" + len(results) + " found)</h2>
+            
+            <div class=\"search-box\" style=\"margin-bottom: 32px;\">
+                <form action=\"/search\" method=\"get\">
+                    <input type=\"text\" name=\"q\" value=\"" + query + "\" placeholder=\"Search packages...\">
+                </form>
+            </div>
+            
+            <div class=\"packages-grid\">
+    ";
+    
+    i = 0;
+    while (i < len(results)) {
+        html = html + renderPackageCard(results[i]);
+        i = i + 1;
+    }
+    
+    if (len(results) == 0) {
+        html = html + "
+            <div style=\"text-align: center; padding: 48px; color: var(--text-muted);\">
+                <p style=\"font-size: 48px; margin-bottom: 16px;\">🔍</p>
+                <p>No packages found matching \"" + query + "\"</p>
+                <p style=\"margin-top: 8px;\">Try a different search term</p>
+            </div>
+        ";
+    }
+    
+    html = html + "
+            </div>
+        </div>
+    </section>
+    ";
+    
+    html = html + htmlFooter();
+    ctx.html(html);
+}
+
+fn handleDocs(ctx) {
+    let html = htmlHeader("Documentation");
+    
+    html = html + "
+    <section class=\"section\">
+        <div class=\"container\">
+            <h1 class=\"section-title\">📚 Documentation</h1>
+            
+            <div class=\"package-card\" style=\"margin-bottom: 24px;\">
+                <h2>Getting Started</h2>
+                <p style=\"color: var(--text-muted); margin-top: 12px;\">
+                    APM (Argon Package Manager) is the official package manager for Cryo.
+                    It allows you to easily install, publish, and manage dependencies.
+                </p>
+                
+                <h3 style=\"margin-top: 24px;\">Installation</h3>
+                <p style=\"color: var(--text-muted); margin-top: 8px;\">
+                    APM comes bundled with Cryo. Just run:
+                </p>
+                <pre style=\"background: var(--bg); padding: 16px; border-radius: 8px; margin-top: 8px;\"><code>./cpm.sh --version</code></pre>
+            </div>
+            
+            <div class=\"package-card\" style=\"margin-bottom: 24px;\">
+                <h2>Commands</h2>
+                <table style=\"width: 100%; margin-top: 16px; border-collapse: collapse;\">
+                    <tr style=\"border-bottom: 1px solid var(--border);\">
+                        <td style=\"padding: 12px 0;\"><code>apm init [name]</code></td>
+                        <td style=\"color: var(--text-muted);\">Create a new project</td>
+                    </tr>
+                    <tr style=\"border-bottom: 1px solid var(--border);\">
+                        <td style=\"padding: 12px 0;\"><code>apm add &lt;package&gt;</code></td>
+                        <td style=\"color: var(--text-muted);\">Add a dependency</td>
+                    </tr>
+                    <tr style=\"border-bottom: 1px solid var(--border);\">
+                        <td style=\"padding: 12px 0;\"><code>apm install</code></td>
+                        <td style=\"color: var(--text-muted);\">Install all dependencies</td>
+                    </tr>
+                    <tr style=\"border-bottom: 1px solid var(--border);\">
+                        <td style=\"padding: 12px 0;\"><code>apm search &lt;query&gt;</code></td>
+                        <td style=\"color: var(--text-muted);\">Search for packages</td>
+                    </tr>
+                    <tr style=\"border-bottom: 1px solid var(--border);\">
+                        <td style=\"padding: 12px 0;\"><code>apm publish</code></td>
+                        <td style=\"color: var(--text-muted);\">Publish your package</td>
+                    </tr>
+                    <tr>
+                        <td style=\"padding: 12px 0;\"><code>apm run [file]</code></td>
+                        <td style=\"color: var(--text-muted);\">Build and run project</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div class=\"package-card\">
+                <h2>Publishing Packages</h2>
+                <p style=\"color: var(--text-muted); margin-top: 12px;\">
+                    To publish a package to the registry:
+                </p>
+                <ol style=\"color: var(--text-muted); margin-top: 16px; padding-left: 24px; line-height: 2;\">
+                    <li>Create a <code>cryo.toml</code> with package metadata</li>
+                    <li>Push your code to a GitHub repository</li>
+                    <li>Create a version tag (e.g., <code>v1.0.0</code>)</li>
+                    <li>Run <code>apm publish</code></li>
+                </ol>
+            </div>
+        </div>
+    </section>
+    ";
+    
+    html = html + htmlFooter();
+    ctx.html(html);
+}
+
+// ============================================
+// API ENDPOINTS
+// ============================================
+
+fn handleApiPackages(ctx) {
+    ctx.json({
+        success: true,
+        count: len(@objectKeys(packages)),
+        packages: packages
+    });
+}
+
+fn handleApiPackage(ctx) {
+    let name = ctx.param("name");
+    let pkg = packages[name];
+    
+    if (pkg == null) {
+        ctx.jsonStatus(404, {
+            success: false,
+            error: "Package not found: " + name
+        });
+        return;
+    }
+    
+    ctx.json({
+        success: true,
+        package: pkg
+    });
+}
+
+fn handleApiSearch(ctx) {
+    let query = ctx.queryParam("q");
+    if (query == null || query == "") {
+        ctx.json({
+            success: true,
+            results: packages
+        });
+        return;
+    }
+    
+    let results = {};
+    let pkg_names = @objectKeys(packages);
+    let i = 0;
+    
+    while (i < len(pkg_names)) {
+        let pkg = packages[pkg_names[i]];
+        if (contains(toLower(pkg.name), toLower(query)) || 
+            contains(toLower(pkg.description), toLower(query))) {
+            results[pkg.name] = pkg;
+        }
+        i = i + 1;
+    }
+    
+    ctx.json({
+        success: true,
+        query: query,
+        count: len(@objectKeys(results)),
+        results: results
+    });
+}
+
+fn handleApiIndex(ctx) {
+    // Return registry index.json format
+    let index = {
+        version: 1,
+        packages: {}
+    };
+    
+    let pkg_names = @objectKeys(packages);
+    let i = 0;
+    
+    while (i < len(pkg_names)) {
+        let pkg = packages[pkg_names[i]];
+        index.packages[pkg.name] = {
+            description: pkg.description,
+            repository: pkg.repository,
+            versions: pkg.versions,
+            latest: pkg.latest
+        };
+        i = i + 1;
+    }
+    
+    ctx.json(index);
+}
+
+// ============================================
+// HELPERS
+// ============================================
+
+fn renderPackageCard(pkg) {
+    let keywords_html = "";
+    let i = 0;
+    while (i < len(pkg.keywords) && i < 3) {
+        keywords_html = keywords_html + "<span class=\"keyword\">" + pkg.keywords[i] + "</span>";
+        i = i + 1;
+    }
+    
+    return "
+                <a href=\"/package/" + pkg.name + "\" class=\"package-card\">
+                    <div class=\"package-name\">" + pkg.name + "</div>
+                    <div class=\"package-description\">" + pkg.description + "</div>
+                    <div class=\"package-meta\">
+                        <span class=\"package-version\">v" + pkg.latest + "</span>
+                        <span class=\"package-downloads\">⬇ " + formatNumber(pkg.downloads) + "</span>
+                        <span>" + pkg.license + "</span>
+                    </div>
+                    <div class=\"keywords\">" + keywords_html + "</div>
+                </a>
+    ";
+}
+
+fn formatNumber(n) {
+    if (n >= 1000000) {
+        return toString(n / 1000000) + "M";
+    }
+    if (n >= 1000) {
+        return toString(n / 1000) + "K";
+    }
+    return toString(n);
+}
+
+// ============================================
+// MAIN
+// ============================================
+
+fn main() {
+    print("========================================");
+    print("   CRYO PACKAGE REGISTRY");
+    print("   Version: " + REGISTRY_VERSION);
+    print("========================================");
+    
+    // Initialize data
+    initSampleData();
+    print("[Registry] Loaded " + len(@objectKeys(packages)) + " packages");
+    
+    // Create server
+    let app = Server::new(3000);
+    
+    // Add middleware
+    app.use(loggerMiddleware);
+    app.use(corsMiddleware);
+    
+    // Web routes
+    app.get("/", handleHome);
+    app.get("/packages", handlePackages);
+    app.get("/package/:name", handlePackageDetail);
+    app.get("/search", handleSearch);
+    app.get("/docs", handleDocs);
+    
+    // API routes
+    app.get("/api/packages", handleApiPackages);
+    app.get("/api/packages/:name", handleApiPackage);
+    app.get("/api/search", handleApiSearch);
+    app.get("/api/index.json", handleApiIndex);
+    
+    // Start server
+    app.start();
+    
+    return 0;
+}

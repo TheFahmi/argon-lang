@@ -1,0 +1,116 @@
+// ============================================
+// CRYO OAUTH2 LIBRARY TEST
+// Test OAuth2 configuration and URL generation
+// ============================================
+
+import "oauth2"
+
+fn main() {
+    print("========================================");
+    print("   CRYO OAUTH2 LIBRARY TEST");
+    print("========================================");
+    print("");
+    
+    let passed = 0;
+    let failed = 0;
+    
+    // Test 1: Create Google config
+    print("[TEST 1] Create Google OAuth2 Config");
+    let config = oauth2GoogleConfig("my-client-id", "my-client-secret", "http://localhost:3000/callback");
+    
+    if (config.clientId == "my-client-id" && contains(config.authorizationUrl, "google.com")) {
+        print("  ✓ PASS: Google config created");
+        print("  Auth URL: " + config.authorizationUrl);
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Config creation failed");
+        failed = failed + 1;
+    }
+    
+    // Test 2: Create GitHub config  
+    print("");
+    print("[TEST 2] Create GitHub OAuth2 Config");
+    config = oauth2GitHubConfig("github-client", "github-secret", "http://localhost:3000/auth/github");
+    
+    if (config.clientId == "github-client" && contains(config.authorizationUrl, "github.com")) {
+        print("  ✓ PASS: GitHub config created");
+        print("  Token URL: " + config.tokenUrl);
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Config creation failed");
+        failed = failed + 1;
+    }
+    
+    // Test 3: Create OAuth2 client
+    print("");
+    print("[TEST 3] Create OAuth2 Client");
+    let client = oauth2CreateClient(config);
+    
+    if (client.config.clientId == "github-client" && client.token.accessToken == "") {
+        print("  ✓ PASS: Client created with empty token");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Client creation failed");
+        failed = failed + 1;
+    }
+    
+    // Test 4: URL Encoding
+    print("");
+    print("[TEST 4] URL Encoding");
+    let encoded = urlEncode("hello world&test=value");
+    print("  Encoded: " + encoded);
+    
+    if (contains(encoded, "+") || contains(encoded, "%")) {
+        print("  ✓ PASS: URL encoding works");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: URL encoding failed");
+        failed = failed + 1;
+    }
+    
+    // Test 5: Join Scopes
+    print("");
+    print("[TEST 5] Join Scopes");
+    let scopes = ["read:user", "user:email", "repo"];
+    let joined = joinScopes(scopes);
+    print("  Joined: " + joined);
+    
+    if (joined == "read:user user:email repo") {
+        print("  ✓ PASS: Scopes joined correctly");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Scope joining failed");
+        failed = failed + 1;
+    }
+    
+    // Test 6: Set Token manually
+    print("");
+    print("[TEST 6] Set Token Manually");
+    oauth2SetToken(client, "test-access-token", 3600, "test-refresh-token");
+    
+    if (client.token.accessToken == "test-access-token" && client.token.expiresIn == 3600) {
+        print("  ✓ PASS: Token set correctly");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Token setting failed");
+        failed = failed + 1;
+    }
+    
+    // Summary
+    print("");
+    print("========================================");
+    print("   TEST SUMMARY");
+    print("========================================");
+    print("  Passed: " + passed);
+    print("  Failed: " + failed);
+    print("  Total:  " + (passed + failed));
+    print("");
+    
+    if (failed == 0) {
+        print("  ✓ ALL TESTS PASSED!");
+        return 0;
+    } else {
+        print("  ✗ SOME TESTS FAILED");
+        return 1;
+    }
+}
