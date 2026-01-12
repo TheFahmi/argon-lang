@@ -300,6 +300,339 @@ impl std::fmt::Display for JitStats {
     }
 }
 
+// ============================================
+// METHOD INLINING
+// ============================================
+
+/// Inlining configuration and state
+pub struct InliningConfig {
+    /// Maximum depth of inlining (prevent infinite recursion)
+    pub max_depth: usize,
+    /// Maximum size of function to inline (in operations)
+    pub max_inline_size: usize,
+    /// Minimum call count before considering inlining
+    pub min_call_count: u64,
+    /// Functions that have been inlined
+    pub inlined_functions: HashMap<String, InlinedFunction>,
+}
+
+impl Default for InliningConfig {
+    fn default() -> Self {
+        Self {
+            max_depth: 3,
+            max_inline_size: 20,
+            min_call_count: 50,
+            inlined_functions: HashMap::new(),
+        }
+    }
+}
+
+/// Represents an inlined function
+pub struct InlinedFunction {
+    pub name: String,
+    pub inline_count: usize,
+    pub size: usize,
+    pub caller_sites: Vec<String>,
+}
+
+impl InliningConfig {
+    /// Create new inlining config
+    pub fn new() -> Self {
+        Self::default()
+    }
+    
+    /// Check if a function should be inlined
+    pub fn should_inline(&self, name: &str, size: usize, call_count: u64) -> bool {
+        size <= self.max_inline_size && call_count >= self.min_call_count
+    }
+    
+    /// Mark a function as inlined
+    pub fn mark_inlined(&mut self, name: &str, caller: &str, size: usize) {
+        let entry = self.inlined_functions.entry(name.to_string()).or_insert(InlinedFunction {
+            name: name.to_string(),
+            inline_count: 0,
+            size,
+            caller_sites: Vec::new(),
+        });
+        entry.inline_count += 1;
+        entry.caller_sites.push(caller.to_string());
+    }
+    
+    /// Get inlining statistics
+    pub fn get_stats(&self) -> InliningStats {
+        let total_inlines: usize = self.inlined_functions.values().map(|f| f.inline_count).sum();
+        InliningStats {
+            functions_inlined: self.inlined_functions.len(),
+            total_inline_sites: total_inlines,
+            max_depth: self.max_depth,
+            max_size: self.max_inline_size,
+        }
+    }
+}
+
+/// Inlining statistics
+pub struct InliningStats {
+    pub functions_inlined: usize,
+    pub total_inline_sites: usize,
+    pub max_depth: usize,
+    pub max_size: usize,
+}
+
+// ============================================
+// TYPE SPECIALIZATION
+// ============================================
+
+/// Represents specialized types for JIT
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SpecializedType {
+    Int64,
+    Float64,
+    Bool,
+    String,
+    Array,
+    Object,
+    Unknown,
+}
+
+impl SpecializedType {
+    /// Get Cranelift type for this specialized type
+    pub fn to_cranelift_type(&self) -> Option<types::Type> {
+        match self {
+            SpecializedType::Int64 => Some(types::I64),
+            SpecializedType::Float64 => Some(types::F64),
+            SpecializedType::Bool => Some(types::I8),
+            _ => None, // Complex types need pointer representation
+        }
+    }
+    
+    /// Check if this type can be unboxed for optimization
+    pub fn is_unboxable(&self) -> bool {
+        matches!(self, SpecializedType::Int64 | SpecializedType::Float64 | SpecializedType::Bool)
+    }
+}
+
+/// Type specialization configuration
+pub struct TypeSpecialization {
+    /// Observed types for each function parameter
+    pub observed_types: HashMap<String, Vec<SpecializedType>>,
+    /// Specialized versions of functions
+    pub specialized_versions: HashMap<String, Vec<SpecializedVersion>>,
+    /// Enable type speculation
+    pub enable_speculation: bool,
+}
+
+impl Default for TypeSpecialization {
+    fn default() -> Self {
+        Self {
+            observed_types: HashMap::new(),
+            specialized_versions: HashMap::new(),
+            enable_speculation: true,
+        }
+    }
+}
+
+/// A specialized version of a function
+pub struct SpecializedVersion {
+    pub base_name: String,
+    pub param_types: Vec<SpecializedType>,
+    pub return_type: SpecializedType,
+    pub compiled: bool,
+}
+
+impl TypeSpecialization {
+    /// Create new type specialization config
+    pub fn new() -> Self {
+        Self::default()
+    }
+    
+    /// Record observed type for a function parameter
+    pub fn record_type(&mut self, func_name: &str, param_index: usize, observed: SpecializedType) {
+        let types = self.observed_types.entry(func_name.to_string()).or_insert_with(Vec::new);
+        while types.len() <= param_index {
+            types.push(SpecializedType::Unknown);
+        }
+        
+        // If we see a consistent type, record it
+        if types[param_index] == SpecializedType::Unknown {
+            types[param_index] = observed;
+        } else if types[param_index] != observed {
+            // Mixed types - keep as unknown for now
+            // In a full impl, we'd create multiple specialized versions
+        }
+    }
+    
+    /// Check if a function has stable types for specialization
+    pub fn can_specialize(&self, func_name: &str) -> bool {
+        if let Some(types) = self.observed_types.get(func_name) {
+            types.iter().all(|t| t.is_unboxable())
+        } else {
+            false
+        }
+    }
+    
+    /// Get specialized function name
+    pub fn get_specialized_name(&self, func_name: &str) -> Option<String> {
+        if let Some(types) = self.observed_types.get(func_name) {
+            let suffix: String = types.iter().map(|t| match t {
+                SpecializedType::Int64 => "i",
+                SpecializedType::Float64 => "f",
+                SpecializedType::Bool => "b",
+                _ => "o",
+            }).collect();
+            Some(format!("{}_{}", func_name, suffix))
+        } else {
+            None
+        }
+    }
+}
+
+// ============================================
+// TRACE-BASED JIT
+// ============================================
+
+/// Represents a recorded trace for JIT compilation
+pub struct Trace {
+    pub id: usize,
+    pub operations: Vec<TraceOp>,
+    pub start_location: String,
+    pub loop_count: usize,
+    pub is_compiled: bool,
+}
+
+/// Operations in a trace
+#[derive(Clone, Debug)]
+pub enum TraceOp {
+    LoadInt(i64),
+    LoadFloat(f64),
+    LoadVar(String),
+    StoreVar(String),
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Compare(CompareOp),
+    Jump(usize),
+    ConditionalJump(usize),
+    Call(String),
+    Return,
+    Guard(GuardType),
+}
+
+/// Comparison operations
+#[derive(Clone, Debug)]
+pub enum CompareOp {
+    Lt,
+    Le,
+    Gt,
+    Ge,
+    Eq,
+    Ne,
+}
+
+/// Guard types for deoptimization
+#[derive(Clone, Debug)]
+pub enum GuardType {
+    TypeCheck(SpecializedType),
+    OverflowCheck,
+    BoundsCheck(usize),
+}
+
+/// Trace recorder for trace-based JIT
+pub struct TraceRecorder {
+    /// Whether recording is active
+    pub is_recording: bool,
+    /// Current trace being recorded
+    pub current_trace: Option<Trace>,
+    /// All recorded traces
+    pub traces: Vec<Trace>,
+    /// Trace ID counter
+    next_trace_id: usize,
+    /// Hot loop threshold
+    pub loop_threshold: usize,
+    /// Loop iteration counts
+    loop_counts: HashMap<String, usize>,
+}
+
+impl Default for TraceRecorder {
+    fn default() -> Self {
+        Self {
+            is_recording: false,
+            current_trace: None,
+            traces: Vec::new(),
+            next_trace_id: 0,
+            loop_threshold: 10,
+            loop_counts: HashMap::new(),
+        }
+    }
+}
+
+impl TraceRecorder {
+    /// Create new trace recorder
+    pub fn new() -> Self {
+        Self::default()
+    }
+    
+    /// Record a loop iteration
+    pub fn record_loop(&mut self, location: &str) -> bool {
+        let count = self.loop_counts.entry(location.to_string()).or_insert(0);
+        *count += 1;
+        
+        if *count >= self.loop_threshold && !self.is_recording {
+            self.start_recording(location);
+            true
+        } else {
+            false
+        }
+    }
+    
+    /// Start recording a trace
+    pub fn start_recording(&mut self, location: &str) {
+        self.is_recording = true;
+        self.current_trace = Some(Trace {
+            id: self.next_trace_id,
+            operations: Vec::new(),
+            start_location: location.to_string(),
+            loop_count: 0,
+            is_compiled: false,
+        });
+        self.next_trace_id += 1;
+    }
+    
+    /// Record an operation
+    pub fn record_op(&mut self, op: TraceOp) {
+        if let Some(ref mut trace) = self.current_trace {
+            trace.operations.push(op);
+        }
+    }
+    
+    /// Stop recording and save trace
+    pub fn stop_recording(&mut self) -> Option<usize> {
+        self.is_recording = false;
+        if let Some(trace) = self.current_trace.take() {
+            let id = trace.id;
+            self.traces.push(trace);
+            Some(id)
+        } else {
+            None
+        }
+    }
+    
+    /// Get trace by ID
+    pub fn get_trace(&self, id: usize) -> Option<&Trace> {
+        self.traces.iter().find(|t| t.id == id)
+    }
+    
+    /// Get number of recorded traces
+    pub fn trace_count(&self) -> usize {
+        self.traces.len()
+    }
+    
+    /// Check if a loop is hot
+    pub fn is_hot_loop(&self, location: &str) -> bool {
+        self.loop_counts.get(location).map(|&c| c >= self.loop_threshold).unwrap_or(false)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -343,5 +676,82 @@ mod tests {
         
         assert!(jit.record_call("test_fn")); // 5th call triggers hot
         assert!(jit.should_compile("test_fn"));
+    }
+    
+    #[test]
+    fn test_inlining_config() {
+        let mut config = InliningConfig::new();
+        
+        // Test should_inline
+        assert!(!config.should_inline("small_fn", 10, 10)); // Not enough calls
+        assert!(config.should_inline("small_fn", 10, 50));  // Enough calls, small size
+        assert!(!config.should_inline("big_fn", 100, 50));  // Too big
+        
+        // Test mark_inlined
+        config.mark_inlined("helper", "main", 5);
+        config.mark_inlined("helper", "process", 5);
+        
+        let stats = config.get_stats();
+        assert_eq!(stats.functions_inlined, 1);
+        assert_eq!(stats.total_inline_sites, 2);
+    }
+    
+    #[test]
+    fn test_type_specialization() {
+        let mut spec = TypeSpecialization::new();
+        
+        // Record consistent int types
+        spec.record_type("add", 0, SpecializedType::Int64);
+        spec.record_type("add", 1, SpecializedType::Int64);
+        
+        assert!(spec.can_specialize("add"));
+        assert_eq!(spec.get_specialized_name("add"), Some("add_ii".to_string()));
+        
+        // Mixed types should not specialize easily
+        spec.record_type("concat", 0, SpecializedType::String);
+        assert!(!spec.can_specialize("concat"));
+    }
+    
+    #[test]
+    fn test_trace_recorder() {
+        let mut recorder = TraceRecorder::new();
+        recorder.loop_threshold = 3;
+        
+        // Record loop iterations
+        assert!(!recorder.record_loop("main:10"));
+        assert!(!recorder.record_loop("main:10"));
+        assert!(recorder.record_loop("main:10")); // 3rd triggers recording
+        
+        assert!(recorder.is_recording);
+        
+        // Record some operations
+        recorder.record_op(TraceOp::LoadInt(10));
+        recorder.record_op(TraceOp::LoadVar("i".to_string()));
+        recorder.record_op(TraceOp::Add);
+        
+        // Stop recording
+        let trace_id = recorder.stop_recording();
+        assert!(trace_id.is_some());
+        assert!(!recorder.is_recording);
+        
+        // Check trace
+        let trace = recorder.get_trace(trace_id.unwrap());
+        assert!(trace.is_some());
+        assert_eq!(trace.unwrap().operations.len(), 3);
+        
+        assert!(recorder.is_hot_loop("main:10"));
+        assert!(!recorder.is_hot_loop("main:20"));
+    }
+    
+    #[test]
+    fn test_specialized_type() {
+        assert!(SpecializedType::Int64.is_unboxable());
+        assert!(SpecializedType::Float64.is_unboxable());
+        assert!(SpecializedType::Bool.is_unboxable());
+        assert!(!SpecializedType::String.is_unboxable());
+        assert!(!SpecializedType::Array.is_unboxable());
+        
+        assert!(SpecializedType::Int64.to_cranelift_type().is_some());
+        assert!(SpecializedType::String.to_cranelift_type().is_none());
     }
 }

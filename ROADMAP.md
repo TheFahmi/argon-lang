@@ -218,16 +218,16 @@ Building the package ecosystem.
 ## ✅ Phase 7: Performance (v3.4) [COMPLETED]
 Maximizing runtime performance.
 
-### JIT Compilation (`src/jit.rs`) ✅ [TESTED: 3/3 PASS]
+### JIT Compilation (`src/jit.rs`) ✅ [TESTED: 7/7 PASS]
 Cranelift-based Just-In-Time compilation:
 - [x] Hot path detection with configurable threshold
 - [x] Compile functions to native code
 - [x] Simple function compilation (identity, double, square, increment, negate)
 - [x] Custom operations (add, sub, mul, div)
 - [x] Function call via native code pointers
-- [ ] Method inlining (TODO)
-- [ ] Type specialization (TODO)
-- [ ] Trace-based JIT (TODO)
+- [x] Method inlining framework (InliningConfig, InlinedFunction)
+- [x] Type specialization (SpecializedType, TypeSpecialization)
+- [x] Trace-based JIT (TraceRecorder, Trace, TraceOp, Guards)
 
 ### Async I/O (`stdlib/async_io.cryo`) ✅ [TESTED: 10/10 PASS]
 - [x] Futures/Promises pattern
