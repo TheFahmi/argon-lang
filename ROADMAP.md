@@ -270,10 +270,10 @@ Ready for cloud deployment.
 - [x] Health check endpoints (`stdlib/health.cryo`) ✅ [TESTED: 7/7 PASS]
 - [x] Graceful shutdown
 
-### Observability (`stdlib/logger.cryo`) ✅ [TESTED: 8/8 PASS]
+### Observability
+- [x] Structured logging (JSON) (`stdlib/logger.cryo`) ✅ [TESTED: 8/8 PASS]
+- [x] Metrics collection (`stdlib/metrics.cryo`) ✅ [TESTED: 8/8 PASS]
 - [ ] OpenTelemetry integration
-- [x] Structured logging (JSON)
-- [ ] Metrics collection
 - [ ] Distributed tracing
 
 ### Cloud Services

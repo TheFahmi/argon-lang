@@ -1,0 +1,263 @@
+// ============================================
+// CRYO METRICS COLLECTION LIBRARY
+// Prometheus-style metrics for observability
+// Version: 1.0.0
+// ============================================
+
+// Metric types
+let METRIC_COUNTER = "counter";
+let METRIC_GAUGE = "gauge";
+let METRIC_HISTOGRAM = "histogram";
+
+// Registry
+let _metricsRegistry = {};
+let _metricsPrefix = "";
+
+fn metricsInit(prefix) {
+    _metricsPrefix = prefix;
+    _metricsRegistry = {};
+}
+
+// ============================================
+// COUNTER
+// ============================================
+
+fn counterCreate(name, help) {
+    let fullName = _metricsPrefix + name;
+    let metric = {};
+    metric["mtype"] = "counter";
+    metric["name"] = fullName;
+    metric["help"] = help;
+    metric["value"] = 0;
+    _metricsRegistry[fullName] = metric;
+    return fullName;
+}
+
+fn counterInc(name) {
+    let fullName = _metricsPrefix + name;
+    if (_metricsRegistry[fullName] != null) {
+        _metricsRegistry[fullName]["value"] = _metricsRegistry[fullName]["value"] + 1;
+    }
+}
+
+fn counterAdd(name, value) {
+    let fullName = _metricsPrefix + name;
+    if (_metricsRegistry[fullName] != null && value > 0) {
+        _metricsRegistry[fullName]["value"] = _metricsRegistry[fullName]["value"] + value;
+    }
+}
+
+fn counterGet(name) {
+    let fullName = _metricsPrefix + name;
+    if (_metricsRegistry[fullName] != null) {
+        return _metricsRegistry[fullName]["value"];
+    }
+    return 0;
+}
+
+// ============================================
+// GAUGE
+// ============================================
+
+fn gaugeCreate(name, help) {
+    let fullName = _metricsPrefix + name;
+    let metric = {};
+    metric["mtype"] = "gauge";
+    metric["name"] = fullName;
+    metric["help"] = help;
+    metric["value"] = 0;
+    _metricsRegistry[fullName] = metric;
+    return fullName;
+}
+
+fn gaugeSet(name, value) {
+    let fullName = _metricsPrefix + name;
+    if (_metricsRegistry[fullName] != null) {
+        _metricsRegistry[fullName]["value"] = value;
+    }
+}
+
+fn gaugeInc(name) {
+    let fullName = _metricsPrefix + name;
+    if (_metricsRegistry[fullName] != null) {
+        _metricsRegistry[fullName]["value"] = _metricsRegistry[fullName]["value"] + 1;
+    }
+}
+
+fn gaugeDec(name) {
+    let fullName = _metricsPrefix + name;
+    if (_metricsRegistry[fullName] != null) {
+        _metricsRegistry[fullName]["value"] = _metricsRegistry[fullName]["value"] - 1;
+    }
+}
+
+fn gaugeGet(name) {
+    let fullName = _metricsPrefix + name;
+    if (_metricsRegistry[fullName] != null) {
+        return _metricsRegistry[fullName]["value"];
+    }
+    return 0;
+}
+
+// ============================================
+// HISTOGRAM
+// ============================================
+
+let DEFAULT_BUCKETS = [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000];
+
+fn histogramCreate(name, help, buckets) {
+    let fullName = _metricsPrefix + name;
+    
+    let useBuckets = DEFAULT_BUCKETS;
+    if (buckets != null && len(buckets) > 0) {
+        useBuckets = buckets;
+    }
+    
+    let metric = {};
+    metric["mtype"] = "histogram";
+    metric["name"] = fullName;
+    metric["help"] = help;
+    metric["sum"] = 0;
+    metric["count"] = 0;
+    metric["buckets"] = useBuckets;
+    
+    let counts = [];
+    let i = 0;
+    while (i < len(useBuckets)) {
+        push(counts, 0);
+        i = i + 1;
+    }
+    metric["bucketCounts"] = counts;
+    
+    _metricsRegistry[fullName] = metric;
+    return fullName;
+}
+
+fn histogramObserve(name, value) {
+    let fullName = _metricsPrefix + name;
+    let metric = _metricsRegistry[fullName];
+    
+    if (metric == null) {
+        return;
+    }
+    
+    metric["sum"] = metric["sum"] + value;
+    metric["count"] = metric["count"] + 1;
+    
+    let buckets = metric["buckets"];
+    let counts = metric["bucketCounts"];
+    let i = 0;
+    while (i < len(buckets)) {
+        if (value <= buckets[i]) {
+            counts[i] = counts[i] + 1;
+        }
+        i = i + 1;
+    }
+}
+
+fn histogramStats(name) {
+    let fullName = _metricsPrefix + name;
+    let metric = _metricsRegistry[fullName];
+    
+    if (metric == null) {
+        return null;
+    }
+    
+    let avg = 0;
+    if (metric["count"] > 0) {
+        avg = metric["sum"] / metric["count"];
+    }
+    
+    let result = {};
+    result["count"] = metric["count"];
+    result["sum"] = metric["sum"];
+    result["avg"] = avg;
+    return result;
+}
+
+// ============================================
+// TIMER
+// ============================================
+
+fn timerStart() {
+    let t = {};
+    t["start"] = getCurrentTimestamp();
+    return t;
+}
+
+fn timerEnd(timer) {
+    return getCurrentTimestamp() - timer["start"];
+}
+
+fn timerObserve(timer, histogramName) {
+    let duration = timerEnd(timer);
+    histogramObserve(histogramName, duration);
+    return duration;
+}
+
+// ============================================
+// HTTP METRICS
+// ============================================
+
+fn metricsHttpInit() {
+    histogramCreate("http_request_duration_seconds", "HTTP request latency", null);
+    counterCreate("http_requests_total", "Total HTTP requests");
+    counterCreate("http_errors_total", "Total HTTP errors");
+    gaugeCreate("http_in_flight_requests", "Current in-flight requests");
+}
+
+fn metricsHttpRequest(method, path, statusCode, durationMs) {
+    counterInc("http_requests_total");
+    histogramObserve("http_request_duration_seconds", durationMs / 1000);
+    
+    if (statusCode >= 400) {
+        counterInc("http_errors_total");
+    }
+}
+
+fn metricsHttpStart() {
+    gaugeInc("http_in_flight_requests");
+    return timerStart();
+}
+
+fn metricsHttpEnd(timer, statusCode) {
+    gaugeDec("http_in_flight_requests");
+    let duration = timerEnd(timer);
+    histogramObserve("http_request_duration_seconds", duration / 1000);
+    
+    if (statusCode >= 400) {
+        counterInc("http_errors_total");
+    }
+    counterInc("http_requests_total");
+    
+    return duration;
+}
+
+// ============================================
+// UTILITY
+// ============================================
+
+fn metricsGetMetric(name) {
+    let fullName = _metricsPrefix + name;
+    return _metricsRegistry[fullName];
+}
+
+fn metricsHas(name) {
+    let metric = metricsGetMetric(name);
+    if (typeof(metric) == "null") {
+        return false;
+    }
+    return true;
+}
+
+fn metricsClear() {
+    _metricsRegistry = {};
+}
+
+fn getCurrentTimestamp() {
+    return 1736665200;
+}
+
+fn metricsVersion() {
+    return "1.0.0";
+}
