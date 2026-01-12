@@ -9,6 +9,15 @@ authors = ["TheFahmi"]
 rustc-hash = "1.1"
 libloading = "0.8"
 
+# JIT Compilation (Cranelift)
+cranelift = "0.95"
+cranelift-module = "0.95"
+cranelift-jit = "0.95"
+cranelift-codegen = "0.95"
+cranelift-frontend = "0.95"
+cranelift-native = "0.95"
+target-lexicon = "0.12"
+
 [[bin]]
 name = "cryo"
 path = "src/main.rs"

@@ -14,6 +14,7 @@ mod ffi;
 mod gc;
 mod native_compiler;
 mod threading;
+mod jit;
 
 use std::env;
 use std::fs;
