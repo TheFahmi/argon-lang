@@ -1,11 +1,13 @@
 # Cryo Programming Language
 
+> **Modern • Fast • Expressive**
+
 <p align="center">
   <img src="logo.svg" alt="Cryo Logo" width="150" height="auto">
 </p>
 
 <p align="center">
-  <strong>Version 3.3.0</strong> | High-Performance Systems Programming Language
+  <strong>Version 3.4.0</strong> | Security & Logging Release
 </p>
 
 <p align="center">

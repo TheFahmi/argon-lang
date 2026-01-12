@@ -425,6 +425,83 @@ The next major version with breaking changes.
 
 ---
 
+## 🔮 Phase 16: Blockchain & Web3 (v5.1)
+Decentralized application development.
+
+### Smart Contracts
+- [ ] EVM bytecode generation
+- [ ] Solidity interop
+- [ ] Solana program support
+- [ ] Move language bridge
+- [ ] Contract testing framework
+
+### Crypto & Wallets
+- [ ] Wallet management (HD wallets)
+- [ ] Transaction signing
+- [ ] Multi-chain support (ETH, SOL, BTC)
+- [ ] NFT minting utilities
+- [ ] DeFi protocol clients
+
+### Web3 Infrastructure
+- [ ] IPFS client
+- [ ] The Graph integration
+- [ ] ENS/Naming services
+- [ ] Decentralized identity (DID)
+
+---
+
+## 🔮 Phase 17: Real-time & Gaming (v5.2)
+Game development and real-time applications.
+
+### Game Engine Bindings
+- [ ] Godot integration
+- [ ] Bevy (Rust) bridge
+- [ ] Love2D compatibility
+- [ ] Physics engine (Box2D/Rapier)
+- [ ] 2D sprite management
+
+### Real-time Systems
+- [ ] Game loop framework
+- [ ] Entity Component System (ECS)
+- [ ] Spatial partitioning
+- [ ] Networked multiplayer
+- [ ] State synchronization
+
+### Media & Audio
+- [ ] Audio playback (OpenAL)
+- [ ] MIDI support
+- [ ] Image manipulation
+- [ ] Video streaming
+- [ ] WebRTC integration
+
+---
+
+## 🔮 Phase 18: Serverless & Edge (v5.3)
+Modern deployment paradigms.
+
+### Serverless Functions
+- [ ] AWS Lambda runtime
+- [ ] Cloudflare Workers
+- [ ] Vercel Edge Functions
+- [ ] Deno Deploy target
+- [ ] Cold start optimization
+
+### Edge Computing
+- [ ] Edge caching
+- [ ] Geo-distributed storage
+- [ ] CDN integration
+- [ ] Request routing
+- [ ] A/B testing utilities
+
+### Event-Driven
+- [ ] EventBridge integration
+- [ ] Webhook handlers
+- [ ] Scheduled functions (cron)
+- [ ] Event sourcing
+- [ ] CQRS patterns
+
+---
+
 ## 📊 Priority Matrix
 
 ### High Priority (2026)
@@ -522,16 +599,20 @@ docker-compose -f docker-compose.db.yml down
 | v3.1.1 | 2025-12 | CryoWeb Framework | ✅ |
 | v3.2.0 | 2025-12 | Native Database Connectors | ✅ |
 | v3.2.1 | 2026-01 | SHA1 Auth & Binary Protocols | ✅ |
-| v3.3.0 | 2026-01-12 | Package Registry & SQLite | ✅ Current |
-| v3.4.0 | 2026-Q2 | Async I/O & TLS | 🚀 In Progress |
-| v3.5.0 | 2026-Q3 | JIT Compilation | 🔮 Planned |
-| v3.6.0 | 2026-Q4 | Static Types Preview | 🔮 Planned |
+| v3.3.0 | 2026-01-12 | Package Registry & SQLite | ✅ |
+| v3.4.0 | 2026-01-12 | Security & Logging Libraries | ✅ Current |
+| v3.5.0 | 2026-Q2 | Async I/O & TLS | 🚀 Next |
+| v3.6.0 | 2026-Q3 | JIT Compilation | 🔮 Planned |
+| v3.7.0 | 2026-Q4 | Static Types Preview | 🔮 Planned |
 | v4.0.0 | 2027-Q1 | Generics & Type System | 🔮 Planned |
 | v4.1.0 | 2027-Q2 | Mobile & Desktop | 🔮 Planned |
 | v4.2.0 | 2027-Q3 | AI/ML Libraries | 🔮 Planned |
 | v4.3.0 | 2027-Q4 | Embedded & IoT | 🔮 Planned |
 | v4.4.0 | 2028-Q1 | Enterprise Features | 🔮 Planned |
 | v5.0.0 | 2028-Q2 | Cryo 5.0 (Next Gen) | 🔮 Vision |
+| v5.1.0 | 2028-Q3 | Blockchain & Web3 | 🔮 Vision |
+| v5.2.0 | 2028-Q4 | Real-time & Gaming | 🔮 Vision |
+| v5.3.0 | 2029-Q1 | Serverless & Edge | 🔮 Vision |
 
 ---
 
