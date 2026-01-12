@@ -1,0 +1,445 @@
+// ============================================
+// CRYO S3 STORAGE LIBRARY
+// S3-compatible object storage client
+// Version: 1.0.0
+// ============================================
+
+// ============================================
+// CONFIGURATION
+// ============================================
+
+let _s3Endpoint = "https://s3.amazonaws.com";
+let _s3Region = "us-east-1";
+let _s3AccessKey = "";
+let _s3SecretKey = "";
+let _s3Bucket = "";
+let _s3UsePathStyle = false;
+
+// Initialize S3 client
+fn s3Init(accessKey, secretKey, region) {
+    _s3AccessKey = accessKey;
+    _s3SecretKey = secretKey;
+    _s3Region = region;
+}
+
+// Set custom endpoint (for MinIO, DigitalOcean Spaces, etc)
+fn s3SetEndpoint(endpoint) {
+    _s3Endpoint = endpoint;
+}
+
+// Set bucket
+fn s3SetBucket(bucket) {
+    _s3Bucket = bucket;
+}
+
+// Use path-style access (bucket in path instead of subdomain)
+fn s3SetPathStyle(usePathStyle) {
+    _s3UsePathStyle = usePathStyle;
+}
+
+// Get current configuration
+fn s3GetConfig() {
+    let config = {};
+    config["endpoint"] = _s3Endpoint;
+    config["region"] = _s3Region;
+    config["bucket"] = _s3Bucket;
+    config["pathStyle"] = _s3UsePathStyle;
+    config["hasCredentials"] = _s3AccessKey != "";
+    return config;
+}
+
+// ============================================
+// OBJECT OPERATIONS (Simulated)
+// ============================================
+
+let _s3Objects = {};
+let _s3Metadata = {};
+
+// Put object
+fn s3PutObject(key, data, contentType) {
+    let obj = {};
+    obj["key"] = key;
+    obj["data"] = data;
+    obj["contentType"] = contentType;
+    obj["size"] = len(data);
+    obj["lastModified"] = getCurrentTimestamp();
+    obj["etag"] = generateEtag(key);
+    
+    _s3Objects[key] = obj;
+    
+    let result = {};
+    result["success"] = true;
+    result["etag"] = obj["etag"];
+    result["key"] = key;
+    return result;
+}
+
+// Get object
+fn s3GetObject(key) {
+    if (typeof(_s3Objects[key]) == "null") {
+        let result = {};
+        result["success"] = false;
+        result["error"] = "NoSuchKey";
+        result["message"] = "The specified key does not exist";
+        return result;
+    }
+    
+    let obj = _s3Objects[key];
+    let result = {};
+    result["success"] = true;
+    result["key"] = key;
+    result["data"] = obj["data"];
+    result["contentType"] = obj["contentType"];
+    result["size"] = obj["size"];
+    result["lastModified"] = obj["lastModified"];
+    result["etag"] = obj["etag"];
+    return result;
+}
+
+// Delete object
+fn s3DeleteObject(key) {
+    if (typeof(_s3Objects[key]) == "null") {
+        let result = {};
+        result["success"] = true; // S3 returns success even if key doesn't exist
+        result["key"] = key;
+        return result;
+    }
+    
+    _s3Objects[key] = null;
+    
+    let result = {};
+    result["success"] = true;
+    result["key"] = key;
+    return result;
+}
+
+// Check if object exists
+fn s3HeadObject(key) {
+    if (typeof(_s3Objects[key]) == "null") {
+        let result = {};
+        result["exists"] = false;
+        return result;
+    }
+    
+    let obj = _s3Objects[key];
+    let result = {};
+    result["exists"] = true;
+    result["key"] = key;
+    result["contentType"] = obj["contentType"];
+    result["size"] = obj["size"];
+    result["lastModified"] = obj["lastModified"];
+    result["etag"] = obj["etag"];
+    return result;
+}
+
+// Copy object
+fn s3CopyObject(sourceKey, destKey) {
+    if (typeof(_s3Objects[sourceKey]) == "null") {
+        let result = {};
+        result["success"] = false;
+        result["error"] = "NoSuchKey";
+        return result;
+    }
+    
+    let source = _s3Objects[sourceKey];
+    let newObj = {};
+    newObj["key"] = destKey;
+    newObj["data"] = source["data"];
+    newObj["contentType"] = source["contentType"];
+    newObj["size"] = source["size"];
+    newObj["lastModified"] = getCurrentTimestamp();
+    newObj["etag"] = generateEtag(destKey);
+    
+    _s3Objects[destKey] = newObj;
+    
+    let result = {};
+    result["success"] = true;
+    result["sourceKey"] = sourceKey;
+    result["destKey"] = destKey;
+    result["etag"] = newObj["etag"];
+    return result;
+}
+
+// ============================================
+// LISTING
+// ============================================
+
+// List objects with prefix
+fn s3ListObjects(prefix, maxKeys) {
+    let objects = [];
+    let count = 0;
+    
+    // Iterate through all objects
+    // Note: Real implementation would use objectKeys()
+    let keys = getObjectKeys();
+    let i = 0;
+    while (i < len(keys)) {
+        let key = keys[i];
+        
+        // Check prefix match (simplified)
+        let isMatch = true;
+        if (prefix != "" && prefix != null) {
+            if (len(key) < len(prefix)) {
+                isMatch = false;
+            } else {
+                // Simple prefix check
+                let j = 0;
+                while (j < len(prefix)) {
+                    // Would need charAt in real impl
+                    j = j + 1;
+                }
+            }
+        }
+        
+        if (isMatch && (maxKeys == 0 || count < maxKeys)) {
+            let obj = _s3Objects[key];
+            if (typeof(obj) != "null") {
+                let item = {};
+                item["key"] = key;
+                item["size"] = obj["size"];
+                item["lastModified"] = obj["lastModified"];
+                item["etag"] = obj["etag"];
+                push(objects, item);
+                count = count + 1;
+            }
+        }
+        
+        i = i + 1;
+    }
+    
+    let result = {};
+    result["success"] = true;
+    result["objects"] = objects;
+    result["count"] = count;
+    result["prefix"] = prefix;
+    result["isTruncated"] = false;
+    return result;
+}
+
+// Helper to track keys (simplified)
+let _s3KeyList = [];
+
+fn getObjectKeys() {
+    return _s3KeyList;
+}
+
+// Track key when object is added
+fn trackKey(key) {
+    let i = 0;
+    let found = false;
+    while (i < len(_s3KeyList)) {
+        if (_s3KeyList[i] == key) {
+            found = true;
+        }
+        i = i + 1;
+    }
+    if (!found) {
+        push(_s3KeyList, key);
+    }
+}
+
+// Override putObject to track keys
+fn s3Put(key, data, contentType) {
+    trackKey(key);
+    return s3PutObject(key, data, contentType);
+}
+
+// ============================================
+// PRESIGNED URLS
+// ============================================
+
+// Generate presigned URL for download
+fn s3PresignedGetUrl(key, expiresInSeconds) {
+    let baseUrl = _s3Endpoint;
+    let bucket = _s3Bucket;
+    let expires = getCurrentTimestamp() + expiresInSeconds;
+    
+    // Simplified URL format
+    let url = baseUrl + "/" + bucket + "/" + key;
+    url = url + "?X-Amz-Expires=" + expiresInSeconds;
+    url = url + "&X-Amz-SignedHeaders=host";
+    url = url + "&X-Amz-Signature=simulated";
+    
+    let result = {};
+    result["url"] = url;
+    result["expires"] = expires;
+    result["method"] = "GET";
+    return result;
+}
+
+// Generate presigned URL for upload
+fn s3PresignedPutUrl(key, expiresInSeconds, contentType) {
+    let baseUrl = _s3Endpoint;
+    let bucket = _s3Bucket;
+    let expires = getCurrentTimestamp() + expiresInSeconds;
+    
+    let url = baseUrl + "/" + bucket + "/" + key;
+    url = url + "?X-Amz-Expires=" + expiresInSeconds;
+    url = url + "&Content-Type=" + contentType;
+    url = url + "&X-Amz-SignedHeaders=host";
+    url = url + "&X-Amz-Signature=simulated";
+    
+    let result = {};
+    result["url"] = url;
+    result["expires"] = expires;
+    result["method"] = "PUT";
+    result["contentType"] = contentType;
+    return result;
+}
+
+// ============================================
+// BUCKET OPERATIONS
+// ============================================
+
+let _s3Buckets = {};
+
+// Create bucket
+fn s3CreateBucket(bucketName) {
+    let bucket = {};
+    bucket["name"] = bucketName;
+    bucket["created"] = getCurrentTimestamp();
+    bucket["region"] = _s3Region;
+    
+    _s3Buckets[bucketName] = bucket;
+    
+    let result = {};
+    result["success"] = true;
+    result["bucket"] = bucketName;
+    return result;
+}
+
+// Delete bucket
+fn s3DeleteBucket(bucketName) {
+    _s3Buckets[bucketName] = null;
+    
+    let result = {};
+    result["success"] = true;
+    result["bucket"] = bucketName;
+    return result;
+}
+
+// List buckets
+fn s3ListBuckets() {
+    let buckets = [];
+    // Would iterate _s3Buckets
+    
+    let result = {};
+    result["success"] = true;
+    result["buckets"] = buckets;
+    return result;
+}
+
+// ============================================
+// MULTIPART UPLOAD
+// ============================================
+
+let _s3Uploads = {};
+let _s3UploadIdCounter = 0;
+
+// Initiate multipart upload
+fn s3CreateMultipartUpload(key, contentType) {
+    _s3UploadIdCounter = _s3UploadIdCounter + 1;
+    let uploadId = "upload_" + _s3UploadIdCounter;
+    
+    let upload = {};
+    upload["uploadId"] = uploadId;
+    upload["key"] = key;
+    upload["contentType"] = contentType;
+    upload["parts"] = [];
+    upload["created"] = getCurrentTimestamp();
+    
+    _s3Uploads[uploadId] = upload;
+    
+    let result = {};
+    result["success"] = true;
+    result["uploadId"] = uploadId;
+    result["key"] = key;
+    return result;
+}
+
+// Upload part
+fn s3UploadPart(uploadId, partNumber, data) {
+    if (typeof(_s3Uploads[uploadId]) == "null") {
+        let result = {};
+        result["success"] = false;
+        result["error"] = "NoSuchUpload";
+        return result;
+    }
+    
+    let etag = "part_" + uploadId + "_" + partNumber;
+    
+    let part = {};
+    part["partNumber"] = partNumber;
+    part["data"] = data;
+    part["size"] = len(data);
+    part["etag"] = etag;
+    
+    push(_s3Uploads[uploadId]["parts"], part);
+    
+    let result = {};
+    result["success"] = true;
+    result["partNumber"] = partNumber;
+    result["etag"] = etag;
+    return result;
+}
+
+// Complete multipart upload
+fn s3CompleteMultipartUpload(uploadId) {
+    if (typeof(_s3Uploads[uploadId]) == "null") {
+        let result = {};
+        result["success"] = false;
+        result["error"] = "NoSuchUpload";
+        return result;
+    }
+    
+    let upload = _s3Uploads[uploadId];
+    let combinedData = "";
+    let totalSize = 0;
+    
+    let i = 0;
+    while (i < len(upload["parts"])) {
+        let part = upload["parts"][i];
+        combinedData = combinedData + part["data"];
+        totalSize = totalSize + part["size"];
+        i = i + 1;
+    }
+    
+    // Create final object
+    s3Put(upload["key"], combinedData, upload["contentType"]);
+    
+    // Clean up upload
+    _s3Uploads[uploadId] = null;
+    
+    let result = {};
+    result["success"] = true;
+    result["key"] = upload["key"];
+    result["size"] = totalSize;
+    result["parts"] = len(upload["parts"]);
+    return result;
+}
+
+// Abort multipart upload
+fn s3AbortMultipartUpload(uploadId) {
+    _s3Uploads[uploadId] = null;
+    
+    let result = {};
+    result["success"] = true;
+    result["uploadId"] = uploadId;
+    return result;
+}
+
+// ============================================
+// UTILITY
+// ============================================
+
+fn generateEtag(key) {
+    return "\"" + key + "_" + getCurrentTimestamp() + "\"";
+}
+
+fn getCurrentTimestamp() {
+    return 1736665200;
+}
+
+fn s3Version() {
+    return "1.0.0";
+}

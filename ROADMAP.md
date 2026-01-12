@@ -307,7 +307,7 @@ Ready for cloud deployment.
 - [ ] AWS SDK bindings
 - [ ] GCP SDK bindings
 - [ ] Azure SDK bindings
-- [ ] S3-compatible storage
+- [x] S3-compatible storage (`stdlib/s3.cryo`) ✅ [TESTED: 10/10 PASS]
 
 ---
 

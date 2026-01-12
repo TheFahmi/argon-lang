@@ -1,0 +1,173 @@
+// Test S3 Storage Library
+import "s3"
+
+fn main() {
+    print("========================================");
+    print("   CRYO S3 STORAGE LIBRARY TEST");
+    print("========================================");
+    
+    let passed = 0;
+    let failed = 0;
+    
+    // Test 1: Initialize S3
+    print("");
+    print("[TEST 1] Initialize S3");
+    s3Init("AKIAIOSFODNN7EXAMPLE", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", "us-west-2");
+    s3SetBucket("my-test-bucket");
+    s3SetEndpoint("https://s3.us-west-2.amazonaws.com");
+    
+    let config = s3GetConfig();
+    if (config["region"] == "us-west-2" && config["hasCredentials"]) {
+        print("  ✓ PASS: S3 initialized");
+        print("  Bucket: " + config["bucket"]);
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Configuration incorrect");
+        failed = failed + 1;
+    }
+    
+    // Test 2: Put Object
+    print("");
+    print("[TEST 2] Put Object");
+    let putResult = s3Put("documents/test.txt", "Hello, S3!", "text/plain");
+    
+    if (putResult["success"] && putResult["key"] == "documents/test.txt") {
+        print("  ✓ PASS: Object uploaded");
+        print("  ETag: " + putResult["etag"]);
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Upload failed");
+        failed = failed + 1;
+    }
+    
+    // Test 3: Get Object
+    print("");
+    print("[TEST 3] Get Object");
+    let getResult = s3GetObject("documents/test.txt");
+    
+    if (getResult["success"] && getResult["data"] == "Hello, S3!") {
+        print("  ✓ PASS: Object retrieved");
+        print("  Size: " + getResult["size"] + " bytes");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Get failed");
+        failed = failed + 1;
+    }
+    
+    // Test 4: Head Object
+    print("");
+    print("[TEST 4] Head Object");
+    let headResult = s3HeadObject("documents/test.txt");
+    
+    if (headResult["exists"]) {
+        print("  ✓ PASS: Object exists");
+        print("  Content-Type: " + headResult["contentType"]);
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Object not found");
+        failed = failed + 1;
+    }
+    
+    // Test 5: Copy Object
+    print("");
+    print("[TEST 5] Copy Object");
+    let copyResult = s3CopyObject("documents/test.txt", "backup/test.txt");
+    
+    if (copyResult["success"]) {
+        print("  ✓ PASS: Object copied");
+        print("  Destination: " + copyResult["destKey"]);
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Copy failed");
+        failed = failed + 1;
+    }
+    
+    // Test 6: Get Non-Existent Object
+    print("");
+    print("[TEST 6] Get Non-Existent Object");
+    let notFoundResult = s3GetObject("nonexistent/file.txt");
+    
+    if (!notFoundResult["success"] && notFoundResult["error"] == "NoSuchKey") {
+        print("  ✓ PASS: NoSuchKey error returned");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Should return error");
+        failed = failed + 1;
+    }
+    
+    // Test 7: Presigned URL
+    print("");
+    print("[TEST 7] Presigned URL");
+    let presignedUrl = s3PresignedGetUrl("documents/test.txt", 3600);
+    
+    if (len(presignedUrl["url"]) > 0 && presignedUrl["method"] == "GET") {
+        print("  ✓ PASS: Presigned URL generated");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: URL generation failed");
+        failed = failed + 1;
+    }
+    
+    // Test 8: Multipart Upload
+    print("");
+    print("[TEST 8] Multipart Upload");
+    let initUpload = s3CreateMultipartUpload("large-file.bin", "application/octet-stream");
+    
+    if (initUpload["success"] && initUpload["uploadId"] != "") {
+        print("  ✓ PASS: Multipart upload initiated");
+        print("  Upload ID: " + initUpload["uploadId"]);
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Initiate failed");
+        failed = failed + 1;
+    }
+    
+    // Test 9: Upload Parts and Complete
+    print("");
+    print("[TEST 9] Upload Parts");
+    let uploadId = initUpload["uploadId"];
+    s3UploadPart(uploadId, 1, "Part1Data");
+    s3UploadPart(uploadId, 2, "Part2Data");
+    let completeResult = s3CompleteMultipartUpload(uploadId);
+    
+    if (completeResult["success"] && completeResult["parts"] == 2) {
+        print("  ✓ PASS: Multipart upload completed");
+        print("  Parts: " + completeResult["parts"]);
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Complete failed");
+        failed = failed + 1;
+    }
+    
+    // Test 10: Delete Object
+    print("");
+    print("[TEST 10] Delete Object");
+    let deleteResult = s3DeleteObject("documents/test.txt");
+    let afterDelete = s3HeadObject("documents/test.txt");
+    
+    if (deleteResult["success"] && !afterDelete["exists"]) {
+        print("  ✓ PASS: Object deleted");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Delete failed");
+        failed = failed + 1;
+    }
+    
+    // Summary
+    print("");
+    print("========================================");
+    print("   TEST SUMMARY");
+    print("========================================");
+    print("  Passed: " + passed);
+    print("  Failed: " + failed);
+    print("  Total:  " + (passed + failed));
+    print("");
+    
+    if (failed == 0) {
+        print("  ✓ ALL TESTS PASSED!");
+    } else {
+        print("  ✗ SOME TESTS FAILED");
+    }
+    
+    return 0;
+}
