@@ -1,0 +1,188 @@
+// Test AWS SDK Library
+import "aws"
+
+fn main() {
+    print("========================================");
+    print("   CRYO AWS SDK LIBRARY TEST");
+    print("========================================");
+    
+    let passed = 0;
+    let failed = 0;
+    
+    // Test 1: Initialize AWS
+    print("");
+    print("[TEST 1] Initialize AWS");
+    awsInit("AKIAIOSFODNN7EXAMPLE", "wJalrXUtnFEMI/K7MDENG", "us-west-2");
+    
+    let config = awsGetConfig();
+    if (config["region"] == "us-west-2" && config["hasCredentials"]) {
+        print("  ✓ PASS: AWS initialized");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Configuration incorrect");
+        failed = failed + 1;
+    }
+    
+    // Test 2: SQS Create Queue
+    print("");
+    print("[TEST 2] SQS Create Queue");
+    let queueResult = sqsCreateQueue("test-queue");
+    
+    if (queueResult["success"] && len(queueResult["queueUrl"]) > 0) {
+        print("  ✓ PASS: Queue created");
+        print("  URL: " + queueResult["queueUrl"]);
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Queue creation failed");
+        failed = failed + 1;
+    }
+    
+    // Test 3: SQS Send/Receive Message
+    print("");
+    print("[TEST 3] SQS Send/Receive Message");
+    sqsSendMessage("test-queue", "Hello from SQS!", 0);
+    let receiveResult = sqsReceiveMessage("test-queue", 1, 0);
+    
+    if (receiveResult["success"] && receiveResult["count"] == 1) {
+        let msg = receiveResult["messages"][0];
+        if (msg["body"] == "Hello from SQS!") {
+            print("  ✓ PASS: Message sent and received");
+            print("  MessageId: " + msg["messageId"]);
+            passed = passed + 1;
+        } else {
+            print("  ✗ FAIL: Message body mismatch");
+            failed = failed + 1;
+        }
+    } else {
+        print("  ✗ FAIL: Message not received");
+        failed = failed + 1;
+    }
+    
+    // Test 4: SNS Create Topic
+    print("");
+    print("[TEST 4] SNS Create Topic");
+    let topicResult = snsCreateTopic("test-topic");
+    
+    if (topicResult["success"] && len(topicResult["topicArn"]) > 0) {
+        print("  ✓ PASS: Topic created");
+        print("  ARN: " + topicResult["topicArn"]);
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Topic creation failed");
+        failed = failed + 1;
+    }
+    
+    // Test 5: SNS Subscribe and Publish
+    print("");
+    print("[TEST 5] SNS Subscribe and Publish");
+    snsSubscribe("test-topic", "email", "test@example.com");
+    let publishResult = snsPublish("test-topic", "Test notification", "Test Subject");
+    
+    if (publishResult["success"] && publishResult["subscribersNotified"] >= 1) {
+        print("  ✓ PASS: Message published");
+        print("  Subscribers notified: " + publishResult["subscribersNotified"]);
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Publish failed");
+        failed = failed + 1;
+    }
+    
+    // Test 6: DynamoDB Create Table
+    print("");
+    print("[TEST 6] DynamoDB Create Table");
+    let tableResult = dynamoCreateTable("users", "userId");
+    
+    if (tableResult["success"] && tableResult["status"] == "ACTIVE") {
+        print("  ✓ PASS: Table created");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Table creation failed");
+        failed = failed + 1;
+    }
+    
+    // Test 7: DynamoDB Put/Get Item
+    print("");
+    print("[TEST 7] DynamoDB Put/Get Item");
+    let item = {};
+    item["userId"] = "user123";
+    item["name"] = "John Doe";
+    item["email"] = "john@example.com";
+    
+    dynamoPutItem("users", item);
+    let getResult = dynamoGetItem("users", "user123");
+    
+    if (getResult["success"] && getResult["found"]) {
+        let retrieved = getResult["item"];
+        if (retrieved["name"] == "John Doe") {
+            print("  ✓ PASS: Item stored and retrieved");
+            print("  Name: " + retrieved["name"]);
+            passed = passed + 1;
+        } else {
+            print("  ✗ FAIL: Item data mismatch");
+            failed = failed + 1;
+        }
+    } else {
+        print("  ✗ FAIL: Item not found");
+        failed = failed + 1;
+    }
+    
+    // Test 8: Lambda Create and Invoke
+    print("");
+    print("[TEST 8] Lambda Create and Invoke");
+    lambdaCreateFunction("hello-world", "cryo1.0", "index.handler");
+    let invokeResult = lambdaInvoke("hello-world", "{\"name\":\"World\"}", "RequestResponse");
+    
+    if (invokeResult["success"] && invokeResult["statusCode"] == 200) {
+        print("  ✓ PASS: Lambda invoked");
+        print("  RequestId: " + invokeResult["requestId"]);
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Lambda invocation failed");
+        failed = failed + 1;
+    }
+    
+    // Test 9: Secrets Manager
+    print("");
+    print("[TEST 9] Secrets Manager");
+    secretsCreateSecret("db-password", "super-secret-123");
+    let secretResult = secretsGetSecretValue("db-password");
+    
+    if (secretResult["success"] && secretResult["secretString"] == "super-secret-123") {
+        print("  ✓ PASS: Secret stored and retrieved");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Secret retrieval failed");
+        failed = failed + 1;
+    }
+    
+    // Test 10: Error Handling
+    print("");
+    print("[TEST 10] Error Handling");
+    let notFoundResult = dynamoGetItem("nonexistent-table", "key");
+    
+    if (!notFoundResult["success"] && notFoundResult["error"] == "ResourceNotFoundException") {
+        print("  ✓ PASS: Error handled correctly");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Error not handled");
+        failed = failed + 1;
+    }
+    
+    // Summary
+    print("");
+    print("========================================");
+    print("   TEST SUMMARY");
+    print("========================================");
+    print("  Passed: " + passed);
+    print("  Failed: " + failed);
+    print("  Total:  " + (passed + failed));
+    print("");
+    
+    if (failed == 0) {
+        print("  ✓ ALL TESTS PASSED!");
+    } else {
+        print("  ✗ SOME TESTS FAILED");
+    }
+    
+    return 0;
+}

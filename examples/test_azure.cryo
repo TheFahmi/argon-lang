@@ -1,0 +1,189 @@
+// Test Azure SDK Library
+import "azure"
+
+fn main() {
+    print("========================================");
+    print("   CRYO AZURE SDK LIBRARY TEST");
+    print("========================================");
+    
+    let passed = 0;
+    let failed = 0;
+    
+    // Test 1: Initialize Azure
+    print("");
+    print("[TEST 1] Initialize Azure");
+    azureInit("12345678-1234-1234-1234-123456789012", "my-resource-group", "eastus");
+    azureSetCredentials("tenant-id", "client-id", "client-secret");
+    
+    let config = azureGetConfig();
+    if (config["resourceGroup"] == "my-resource-group" && config["hasCredentials"]) {
+        print("  ✓ PASS: Azure initialized");
+        print("  Resource Group: " + config["resourceGroup"]);
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Configuration incorrect");
+        failed = failed + 1;
+    }
+    
+    // Test 2: Blob Storage Container
+    print("");
+    print("[TEST 2] Blob Storage Container");
+    let containerResult = blobCreateContainer("my-container");
+    
+    if (containerResult["success"]) {
+        print("  ✓ PASS: Container created");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Container creation failed");
+        failed = failed + 1;
+    }
+    
+    // Test 3: Blob Upload/Download
+    print("");
+    print("[TEST 3] Blob Upload/Download");
+    blobUpload("my-container", "test.txt", "Hello Azure Blob!", "text/plain");
+    let downloadResult = blobDownload("my-container", "test.txt");
+    
+    if (downloadResult["success"] && downloadResult["data"] == "Hello Azure Blob!") {
+        print("  ✓ PASS: Blob uploaded and downloaded");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Blob operation failed");
+        failed = failed + 1;
+    }
+    
+    // Test 4: Service Bus Queue
+    print("");
+    print("[TEST 4] Service Bus Queue");
+    serviceBusCreateQueue("test-queue");
+    serviceBusSendMessage("test-queue", "Hello Service Bus!");
+    let receiveResult = serviceBusReceiveMessage("test-queue");
+    
+    if (receiveResult["success"] && receiveResult["message"] != null) {
+        let msg = receiveResult["message"];
+        if (msg["body"] == "Hello Service Bus!") {
+            print("  ✓ PASS: Message sent and received");
+            print("  MessageId: " + msg["messageId"]);
+            passed = passed + 1;
+        } else {
+            print("  ✗ FAIL: Message body mismatch");
+            failed = failed + 1;
+        }
+    } else {
+        print("  ✗ FAIL: Service Bus operation failed");
+        failed = failed + 1;
+    }
+    
+    // Test 5: Cosmos DB Container
+    print("");
+    print("[TEST 5] Cosmos DB Container");
+    let cosmosResult = cosmosCreateContainer("mydb", "users", "/userId");
+    
+    if (cosmosResult["success"]) {
+        print("  ✓ PASS: Cosmos container created");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Container creation failed");
+        failed = failed + 1;
+    }
+    
+    // Test 6: Cosmos DB Item CRUD
+    print("");
+    print("[TEST 6] Cosmos DB Item");
+    let item = {};
+    item["id"] = "user123";
+    item["name"] = "Bob";
+    item["email"] = "bob@example.com";
+    
+    cosmosCreateItem("mydb", "users", item);
+    let readResult = cosmosReadItem("mydb", "users", "user123");
+    
+    if (readResult["success"]) {
+        let doc = readResult["item"];
+        if (doc["name"] == "Bob") {
+            print("  ✓ PASS: Item created and retrieved");
+            print("  Name: " + doc["name"]);
+            passed = passed + 1;
+        } else {
+            print("  ✗ FAIL: Item data mismatch");
+            failed = failed + 1;
+        }
+    } else {
+        print("  ✗ FAIL: Cosmos DB operation failed");
+        failed = failed + 1;
+    }
+    
+    // Test 7: Azure Functions
+    print("");
+    print("[TEST 7] Azure Functions");
+    azureFunctionsCreate("my-function-app", "hello-http");
+    let invokeResult = azureFunctionsInvoke("my-function-app", "hello-http", "{\"name\":\"World\"}");
+    
+    if (invokeResult["success"] && invokeResult["statusCode"] == 200) {
+        print("  ✓ PASS: Function invoked");
+        print("  InvocationId: " + invokeResult["invocationId"]);
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Function invocation failed");
+        failed = failed + 1;
+    }
+    
+    // Test 8: Key Vault
+    print("");
+    print("[TEST 8] Key Vault");
+    keyVaultSetSecret("my-vault", "db-password", "super-secret-password");
+    let secretResult = keyVaultGetSecret("my-vault", "db-password");
+    
+    if (secretResult["success"] && secretResult["value"] == "super-secret-password") {
+        print("  ✓ PASS: Secret stored and retrieved");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Key Vault operation failed");
+        failed = failed + 1;
+    }
+    
+    // Test 9: Blob Not Found Error
+    print("");
+    print("[TEST 9] Blob Not Found Error");
+    let notFoundResult = blobDownload("nonexistent-container", "file.txt");
+    
+    if (!notFoundResult["success"] && notFoundResult["error"] == "ContainerNotFound") {
+        print("  ✓ PASS: Error handled correctly");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Error not handled");
+        failed = failed + 1;
+    }
+    
+    // Test 10: Delete Operations
+    print("");
+    print("[TEST 10] Delete Operations");
+    blobDelete("my-container", "test.txt");
+    let afterDelete = blobDownload("my-container", "test.txt");
+    
+    if (!afterDelete["success"] && afterDelete["error"] == "BlobNotFound") {
+        print("  ✓ PASS: Delete operations work");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Delete failed");
+        failed = failed + 1;
+    }
+    
+    // Summary
+    print("");
+    print("========================================");
+    print("   TEST SUMMARY");
+    print("========================================");
+    print("  Passed: " + passed);
+    print("  Failed: " + failed);
+    print("  Total:  " + (passed + failed));
+    print("");
+    
+    if (failed == 0) {
+        print("  ✓ ALL TESTS PASSED!");
+    } else {
+        print("  ✗ SOME TESTS FAILED");
+    }
+    
+    return 0;
+}
