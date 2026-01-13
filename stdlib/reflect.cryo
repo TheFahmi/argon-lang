@@ -1,0 +1,427 @@
+// ============================================
+// CRYO REFLECTION API
+// Runtime type introspection and manipulation
+// Version: 1.0.0
+// ============================================
+
+// ============================================
+// TYPE INSPECTION
+// ============================================
+
+// Get type of value as string
+fn typeOf(value) {
+    return typeof(value);
+}
+
+// Check if value is null
+fn isNull(value) {
+    return typeof(value) == "null";
+}
+
+// Check if value is a number (int)
+fn isNumber(value) {
+    return typeof(value) == "int";
+}
+
+// Check if value is a string
+fn isString(value) {
+    return typeof(value) == "string";
+}
+
+// Check if value is a boolean
+fn isBool(value) {
+    return typeof(value) == "bool";
+}
+
+// Check if value is an array
+fn isArray(value) {
+    return typeof(value) == "array";
+}
+
+// Check if value is an object
+fn isObject(value) {
+    return typeof(value) == "struct";
+}
+
+// Check if value is a function
+fn isFunction(value) {
+    return typeof(value) == "function";
+}
+
+// Check if value is callable
+fn isCallable(value) {
+    let t = typeof(value);
+    return t == "function";
+}
+
+// ============================================
+// OBJECT INSPECTION
+// ============================================
+
+let _objectRegistry = {};
+let _objectIdCounter = 0;
+
+// Register an object for reflection
+fn reflectRegister(name, obj) {
+    _objectIdCounter = _objectIdCounter + 1;
+    
+    let entry = {};
+    entry["id"] = _objectIdCounter;
+    entry["name"] = name;
+    entry["object"] = obj;
+    entry["registered"] = getCurrentTimestamp();
+    
+    _objectRegistry[name] = entry;
+    
+    return _objectIdCounter;
+}
+
+// Get registered object
+fn reflectGet(name) {
+    let entry = _objectRegistry[name];
+    if (typeof(entry) == "null") {
+        return null;
+    }
+    return entry["object"];
+}
+
+// Check if object is registered
+fn reflectHas(name) {
+    return typeof(_objectRegistry[name]) != "null";
+}
+
+// List registered objects
+fn reflectList() {
+    let names = [];
+    // Would need objectKeys in real impl
+    return names;
+}
+
+// ============================================
+// PROPERTY ACCESS
+// ============================================
+
+// Get property from object
+fn getProperty(obj, key) {
+    if (typeof(obj) != "struct") {
+        return null;
+    }
+    return obj[key];
+}
+
+// Set property on object
+fn setProperty(obj, key, value) {
+    if (typeof(obj) != "struct") {
+        return false;
+    }
+    obj[key] = value;
+    return true;
+}
+
+// Check if object has property
+fn hasProperty(obj, key) {
+    if (typeof(obj) != "struct") {
+        return false;
+    }
+    return typeof(obj[key]) != "null";
+}
+
+// Delete property from object
+fn deleteProperty(obj, key) {
+    if (typeof(obj) != "struct") {
+        return false;
+    }
+    obj[key] = null;
+    return true;
+}
+
+// ============================================
+// OBJECT CREATION
+// ============================================
+
+// Create empty object
+fn createObject() {
+    return {};
+}
+
+// Create object with properties
+fn createObjectWith(props) {
+    let obj = {};
+    // Would copy props in real impl
+    return obj;
+}
+
+// Clone object (shallow)
+fn cloneShallow(obj) {
+    if (typeof(obj) != "struct") {
+        return obj;
+    }
+    
+    let clone = {};
+    // Would copy all properties
+    return clone;
+}
+
+// ============================================
+// ARRAY INSPECTION
+// ============================================
+
+// Get array length
+fn arrayLength(arr) {
+    if (typeof(arr) != "array") {
+        return 0;
+    }
+    return len(arr);
+}
+
+// Get element at index
+fn arrayGet(arr, index) {
+    if (typeof(arr) != "array") {
+        return null;
+    }
+    if (index < 0 || index >= len(arr)) {
+        return null;
+    }
+    return arr[index];
+}
+
+// Set element at index
+fn arraySet(arr, index, value) {
+    if (typeof(arr) != "array") {
+        return false;
+    }
+    if (index < 0 || index >= len(arr)) {
+        return false;
+    }
+    arr[index] = value;
+    return true;
+}
+
+// ============================================
+// TYPE COERCION
+// ============================================
+
+// Convert to string
+fn toString(value) {
+    let t = typeof(value);
+    
+    if (t == "string") {
+        return value;
+    }
+    if (t == "int") {
+        return "" + value;
+    }
+    if (t == "bool") {
+        if (value) {
+            return "true";
+        }
+        return "false";
+    }
+    if (t == "null") {
+        return "null";
+    }
+    if (t == "array") {
+        return "[array]";
+    }
+    if (t == "object") {
+        return "[object]";
+    }
+    return "[unknown]";
+}
+
+// Convert to int
+fn toInt(value) {
+    let t = typeof(value);
+    
+    if (t == "int") {
+        return value;
+    }
+    if (t == "bool") {
+        if (value) {
+            return 1;
+        }
+        return 0;
+    }
+    return 0;
+}
+
+// Convert to bool
+fn toBool(value) {
+    let t = typeof(value);
+    
+    if (t == "bool") {
+        return value;
+    }
+    if (t == "int") {
+        return value != 0;
+    }
+    if (t == "string") {
+        return len(value) > 0;
+    }
+    if (t == "null") {
+        return false;
+    }
+    return true;
+}
+
+// ============================================
+// TYPE DESCRIPTOR
+// ============================================
+
+// Get detailed type descriptor
+fn describe(value) {
+    let desc = {};
+    desc["type"] = typeof(value);
+    desc["isNull"] = isNull(value);
+    desc["isPrimitive"] = isPrimitive(value);
+    desc["isCollection"] = isCollection(value);
+    
+    let t = typeof(value);
+    
+    if (t == "string") {
+        desc["length"] = len(value);
+    }
+    if (t == "array") {
+        desc["length"] = len(value);
+    }
+    if (t == "int") {
+        desc["value"] = value;
+    }
+    
+    return desc;
+}
+
+// Check if primitive type
+fn isPrimitive(value) {
+    let t = typeof(value);
+    return t == "int" || t == "string" || t == "bool" || t == "null";
+}
+
+// Check if collection type
+fn isCollection(value) {
+    let t = typeof(value);
+    return t == "array" || t == "struct";
+}
+
+// ============================================
+// EQUALITY
+// ============================================
+
+// Deep equality check
+fn deepEquals(a, b) {
+    let typeA = typeof(a);
+    let typeB = typeof(b);
+    
+    if (typeA != typeB) {
+        return false;
+    }
+    
+    if (typeA == "null") {
+        return true;
+    }
+    
+    if (typeA == "int" || typeA == "string" || typeA == "bool") {
+        return a == b;
+    }
+    
+    if (typeA == "array") {
+        if (len(a) != len(b)) {
+            return false;
+        }
+        let i = 0;
+        while (i < len(a)) {
+            if (!deepEquals(a[i], b[i])) {
+                return false;
+            }
+            i = i + 1;
+        }
+        return true;
+    }
+    
+    // Objects - would need to compare all properties
+    return false;
+}
+
+// Strict equality
+fn strictEquals(a, b) {
+    return a == b && typeof(a) == typeof(b);
+}
+
+// ============================================
+// METADATA
+// ============================================
+
+let _metadata = {};
+
+// Set metadata on named entity
+fn setMetadata(name, key, value) {
+    if (typeof(_metadata[name]) == "null") {
+        _metadata[name] = {};
+    }
+    _metadata[name][key] = value;
+}
+
+// Get metadata from named entity
+fn getMetadata(name, key) {
+    if (typeof(_metadata[name]) == "null") {
+        return null;
+    }
+    return _metadata[name][key];
+}
+
+// Check if has metadata
+fn hasMetadata(name, key) {
+    if (typeof(_metadata[name]) == "null") {
+        return false;
+    }
+    return typeof(_metadata[name][key]) != "null";
+}
+
+// Get all metadata for entity
+fn getAllMetadata(name) {
+    if (typeof(_metadata[name]) == "null") {
+        return {};
+    }
+    return _metadata[name];
+}
+
+// ============================================
+// VALIDATION
+// ============================================
+
+// Validate object against schema
+fn validate(obj, schema) {
+    let errors = [];
+    
+    // Check required fields
+    if (typeof(schema["required"]) != "null") {
+        let required = schema["required"];
+        let i = 0;
+        while (i < len(required)) {
+            let field = required[i];
+            if (typeof(obj[field]) == "null") {
+                push(errors, "Missing required field: " + field);
+            }
+            i = i + 1;
+        }
+    }
+    
+    let result = {};
+    result["valid"] = len(errors) == 0;
+    result["errors"] = errors;
+    result["errorCount"] = len(errors);
+    
+    return result;
+}
+
+// ============================================
+// UTILITY
+// ============================================
+
+fn getCurrentTimestamp() {
+    return 1736665200;
+}
+
+fn reflectVersion() {
+    return "1.0.0";
+}

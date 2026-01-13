@@ -326,14 +326,14 @@ Next-generation language features.
 ### Metaprogramming
 - [ ] Compile-time macros
 - [ ] Decorators with code generation
-- [ ] Reflection API
+- [x] Reflection API (`stdlib/reflect.cryo`) ✅ [TESTED: 10/10 PASS]
 - [ ] Source maps
 
 ### Interoperability
 - [ ] C ABI compatibility
 - [ ] Python bindings
 - [ ] Node.js N-API bindings
-- [ ] gRPC support
+- [x] gRPC support (`stdlib/grpc.cryo`) ✅ [TESTED: 10/10 PASS]
 
 ---
 

@@ -1,0 +1,168 @@
+// Test Reflection API Library
+import "reflect"
+
+fn main() {
+    print("========================================");
+    print("   CRYO REFLECTION API TEST");
+    print("========================================");
+    
+    let passed = 0;
+    let failed = 0;
+    
+    // Test 1: Type Checking
+    print("");
+    print("[TEST 1] Type Checking");
+    
+    if (isNumber(42) && isString("hello") && isBool(true) && isNull(null)) {
+        print("  ✓ PASS: Type checking works");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Type checking broken");
+        failed = failed + 1;
+    }
+    
+    // Test 2: Object Type Checks
+    print("");
+    print("[TEST 2] Object/Array Type Checks");
+    let obj = {};
+    let arr = [1, 2, 3];
+    
+    if (isObject(obj) && isArray(arr) && !isArray(obj) && !isObject(arr)) {
+        print("  ✓ PASS: Object/Array detection works");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Object/Array detection broken");
+        failed = failed + 1;
+    }
+    
+    // Test 3: Property Access
+    print("");
+    print("[TEST 3] Property Access");
+    let person = {};
+    person["name"] = "Alice";
+    person["age"] = 30;
+    
+    if (getProperty(person, "name") == "Alice" && hasProperty(person, "age")) {
+        print("  ✓ PASS: Property access works");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Property access broken");
+        failed = failed + 1;
+    }
+    
+    // Test 4: Set Property
+    print("");
+    print("[TEST 4] Set Property");
+    setProperty(person, "email", "alice@example.com");
+    
+    if (person["email"] == "alice@example.com") {
+        print("  ✓ PASS: Set property works");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Set property broken");
+        failed = failed + 1;
+    }
+    
+    // Test 5: Type Coercion - toString
+    print("");
+    print("[TEST 5] Type Coercion - toString");
+    
+    if (toString(42) == "42" && toString(true) == "true" && toString(null) == "null") {
+        print("  ✓ PASS: toString works");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: toString broken");
+        failed = failed + 1;
+    }
+    
+    // Test 6: Type Coercion - toBool
+    print("");
+    print("[TEST 6] Type Coercion - toBool");
+    
+    if (toBool(1) == true && toBool(0) == false && toBool("hello") == true && toBool("") == false) {
+        print("  ✓ PASS: toBool works");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: toBool broken");
+        failed = failed + 1;
+    }
+    
+    // Test 7: Type Descriptors
+    print("");
+    print("[TEST 7] Type Descriptors");
+    let desc = describe("hello");
+    
+    if (desc["type"] == "string" && desc["length"] == 5 && desc["isPrimitive"] == true) {
+        print("  ✓ PASS: describe() works");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: describe() broken");
+        failed = failed + 1;
+    }
+    
+    // Test 8: Deep Equality
+    print("");
+    print("[TEST 8] Deep Equality");
+    let arr1 = [1, 2, 3];
+    let arr2 = [1, 2, 3];
+    let arr3 = [1, 2, 4];
+    
+    if (deepEquals(arr1, arr2) && !deepEquals(arr1, arr3)) {
+        print("  ✓ PASS: deepEquals works");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: deepEquals broken");
+        failed = failed + 1;
+    }
+    
+    // Test 9: Metadata
+    print("");
+    print("[TEST 9] Metadata");
+    setMetadata("User", "table", "users");
+    setMetadata("User", "primaryKey", "id");
+    
+    if (getMetadata("User", "table") == "users" && hasMetadata("User", "primaryKey")) {
+        print("  ✓ PASS: Metadata works");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Metadata broken");
+        failed = failed + 1;
+    }
+    
+    // Test 10: Schema Validation
+    print("");
+    print("[TEST 10] Schema Validation");
+    let user = {};
+    user["name"] = "Bob";
+    
+    let schema = {};
+    schema["required"] = ["name", "email"];
+    
+    let validation = validate(user, schema);
+    
+    if (!validation["valid"] && validation["errorCount"] == 1) {
+        print("  ✓ PASS: Validation detected missing field");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Validation broken");
+        failed = failed + 1;
+    }
+    
+    // Summary
+    print("");
+    print("========================================");
+    print("   TEST SUMMARY");
+    print("========================================");
+    print("  Passed: " + passed);
+    print("  Failed: " + failed);
+    print("  Total:  " + (passed + failed));
+    print("");
+    
+    if (failed == 0) {
+        print("  ✓ ALL TESTS PASSED!");
+    } else {
+        print("  ✗ SOME TESTS FAILED");
+    }
+    
+    return 0;
+}

@@ -1,0 +1,189 @@
+// Test gRPC Library
+import "grpc"
+
+fn main() {
+    print("========================================");
+    print("   CRYO GRPC LIBRARY TEST");
+    print("========================================");
+    
+    let passed = 0;
+    let failed = 0;
+    
+    // Test 1: Initialize gRPC
+    print("");
+    print("[TEST 1] Initialize gRPC");
+    grpcInit("localhost", 50051);
+    
+    let config = grpcGetConfig();
+    if (config["host"] == "localhost" && config["port"] == 50051) {
+        print("  ✓ PASS: gRPC initialized");
+        print("  Address: " + config["address"]);
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Configuration incorrect");
+        failed = failed + 1;
+    }
+    
+    // Test 2: Define Service
+    print("");
+    print("[TEST 2] Define Service");
+    let serviceResult = grpcDefineService("Greeter");
+    
+    if (serviceResult["success"]) {
+        print("  ✓ PASS: Service defined");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Service definition failed");
+        failed = failed + 1;
+    }
+    
+    // Test 3: Define Method
+    print("");
+    print("[TEST 3] Define Method");
+    let methodResult = grpcDefineMethod("Greeter", "SayHello", GRPC_UNARY, null);
+    
+    if (methodResult["success"] && methodResult["fullName"] == "/Greeter/SayHello") {
+        print("  ✓ PASS: Method defined");
+        print("  Full name: " + methodResult["fullName"]);
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Method definition failed");
+        failed = failed + 1;
+    }
+    
+    // Test 4: Create Channel
+    print("");
+    print("[TEST 4] Create Channel");
+    let channelResult = grpcCreateChannel("localhost:50051");
+    
+    if (channelResult["success"] && grpcGetChannelState(channelResult["channelId"]) == "READY") {
+        print("  ✓ PASS: Channel created");
+        print("  State: READY");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Channel creation failed");
+        failed = failed + 1;
+    }
+    
+    // Test 5: Unary Call
+    print("");
+    print("[TEST 5] Unary Call");
+    let request = {};
+    request["name"] = "World";
+    
+    let callResult = grpcUnaryCall(channelResult["channelId"], "Greeter", "SayHello", request);
+    
+    if (callResult["success"] && callResult["response"]["status"] == "OK") {
+        print("  ✓ PASS: Unary call succeeded");
+        print("  CallId: " + callResult["callId"]);
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Unary call failed");
+        failed = failed + 1;
+    }
+    
+    // Test 6: Protocol Buffers - Define Message
+    print("");
+    print("[TEST 6] Protocol Buffers - Define Message");
+    let fields = [];
+    let nameField = {};
+    nameField["name"] = "name";
+    nameField["type"] = "string";
+    nameField["required"] = true;
+    push(fields, nameField);
+    
+    let ageField = {};
+    ageField["name"] = "age";
+    ageField["type"] = "int32";
+    ageField["required"] = false;
+    push(fields, ageField);
+    
+    let protoResult = protoDefineMessage("Person", fields);
+    
+    if (protoResult["success"]) {
+        print("  ✓ PASS: Message type defined");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Message definition failed");
+        failed = failed + 1;
+    }
+    
+    // Test 7: Protocol Buffers - Create Instance
+    print("");
+    print("[TEST 7] Protocol Buffers - Create Instance");
+    let values = {};
+    values["name"] = "Alice";
+    values["age"] = 30;
+    
+    let instance = protoCreateMessage("Person", values);
+    
+    if (instance != null && instance["name"] == "Alice" && instance["_type"] == "Person") {
+        print("  ✓ PASS: Message instance created");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Message creation failed");
+        failed = failed + 1;
+    }
+    
+    // Test 8: Protocol Buffers - Validate
+    print("");
+    print("[TEST 8] Protocol Buffers - Validate");
+    let invalidInstance = {};
+    // Missing required 'name' field
+    
+    let validation = protoValidateMessage("Person", invalidInstance);
+    
+    if (!validation["valid"] && len(validation["errors"]) > 0) {
+        print("  ✓ PASS: Validation detected missing field");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Validation broken");
+        failed = failed + 1;
+    }
+    
+    // Test 9: Status Codes
+    print("");
+    print("[TEST 9] Status Codes");
+    
+    if (GRPC_OK == 0 && grpcStatusName(0) == "OK" && grpcStatusName(5) == "NOT_FOUND") {
+        print("  ✓ PASS: Status codes work");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Status codes broken");
+        failed = failed + 1;
+    }
+    
+    // Test 10: Server Start/Stop
+    print("");
+    print("[TEST 10] Server Start/Stop");
+    grpcStartServer(50051);
+    let running = grpcIsServerRunning();
+    grpcStopServer();
+    let stopped = !grpcIsServerRunning();
+    
+    if (running && stopped) {
+        print("  ✓ PASS: Server start/stop works");
+        passed = passed + 1;
+    } else {
+        print("  ✗ FAIL: Server control broken");
+        failed = failed + 1;
+    }
+    
+    // Summary
+    print("");
+    print("========================================");
+    print("   TEST SUMMARY");
+    print("========================================");
+    print("  Passed: " + passed);
+    print("  Failed: " + failed);
+    print("  Total:  " + (passed + failed));
+    print("");
+    
+    if (failed == 0) {
+        print("  ✓ ALL TESTS PASSED!");
+    } else {
+        print("  ✗ SOME TESTS FAILED");
+    }
+    
+    return 0;
+}
